@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  getJournalEntries,
+  JournalEntry as ApiJournalEntry,
+} from "../../api/finance-extras";
 import {
   Plus,
   Search,
@@ -54,122 +58,6 @@ const ACCOUNTS = [
   { code: "6000", name: "Interest Expense" },
 ];
 
-// TODO: No journal entries endpoint — using placeholder data
-const mockEntries: JournalEntry[] = [
-  {
-    id: "JE-001",
-    date: "2026-04-01",
-    reference: "REF-EXP-0041",
-    description: "Site materials purchase – Block A",
-    status: "Posted",
-    createdBy: "Amara Lawson",
-    lines: [
-      {
-        id: "l1",
-        account: "Materials Expense",
-        glCode: "5200",
-        debit: 2400000,
-        credit: 0,
-        description: "Cement & rebar",
-      },
-      {
-        id: "l2",
-        account: "Cash & Bank",
-        glCode: "1010",
-        debit: 0,
-        credit: 2400000,
-        description: "Paid from ops account",
-      },
-    ],
-  },
-  {
-    id: "JE-002",
-    date: "2026-04-03",
-    reference: "REF-INC-0018",
-    description: "Progress billing – Phase 1",
-    status: "Posted",
-    createdBy: "Femi Bode",
-    lines: [
-      {
-        id: "l3",
-        account: "Accounts Receivable",
-        glCode: "1100",
-        debit: 8500000,
-        credit: 0,
-        description: "Invoice INV-0018",
-      },
-      {
-        id: "l4",
-        account: "Revenue",
-        glCode: "4000",
-        debit: 0,
-        credit: 8500000,
-        description: "Phase 1 completion billing",
-      },
-    ],
-  },
-  {
-    id: "JE-003",
-    date: "2026-04-07",
-    reference: "PAYROLL-APR-2026",
-    description: "April 2026 payroll",
-    status: "Posted",
-    createdBy: "HR System",
-    lines: [
-      {
-        id: "l5",
-        account: "Labour Expense",
-        glCode: "5100",
-        debit: 12400000,
-        credit: 0,
-        description: "Net salaries",
-      },
-      {
-        id: "l6",
-        account: "Cash & Bank",
-        glCode: "1010",
-        debit: 0,
-        credit: 10800000,
-        description: "Net pay to employees",
-      },
-      {
-        id: "l7",
-        account: "WHT Payable",
-        glCode: "2310",
-        debit: 0,
-        credit: 1600000,
-        description: "PAYE withheld",
-      },
-    ],
-  },
-  {
-    id: "JE-004",
-    date: "2026-04-10",
-    reference: "ADJ-001",
-    description: "Inventory adjustment – stock count variance",
-    status: "Draft",
-    createdBy: "Amara Lawson",
-    lines: [
-      {
-        id: "l8",
-        account: "Operating Expense",
-        glCode: "5400",
-        debit: 180000,
-        credit: 0,
-        description: "Adjustment loss",
-      },
-      {
-        id: "l9",
-        account: "Inventory",
-        glCode: "1200",
-        debit: 0,
-        credit: 180000,
-        description: "Write-down",
-      },
-    ],
-  },
-];
-
 const blankLine = (): JournalLine => ({
   id: `ln-${Date.now()}-${Math.random()}`,
   account: "",
@@ -186,7 +74,33 @@ const STATUS_STYLES: Record<EntryStatus, string> = {
 };
 
 export function JournalEntryPage() {
-  const [entries, setEntries] = useState<JournalEntry[]>(mockEntries);
+  const [entries, setEntries] = useState<JournalEntry[]>([]);
+  useEffect(() => {
+    getJournalEntries()
+      .then((data: ApiJournalEntry[]) => {
+        setEntries(
+          data.map((e) => ({
+            id: e.id,
+            date: e.date,
+            reference: e.ref,
+            description: e.description ?? "",
+            status: (["Draft", "Posted", "Reversed"].includes(e.status)
+              ? e.status
+              : "Draft") as EntryStatus,
+            createdBy: e.createdBy ?? "",
+            lines: (e.lines ?? []).map((l) => ({
+              id: l.id,
+              account: l.account,
+              glCode: l.glCode,
+              debit: l.debit,
+              credit: l.credit,
+              description: l.description,
+            })),
+          })),
+        );
+      })
+      .catch(console.error);
+  }, []);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<EntryStatus | "All">("All");
   const [expandedId, setExpandedId] = useState<string | null>(null);

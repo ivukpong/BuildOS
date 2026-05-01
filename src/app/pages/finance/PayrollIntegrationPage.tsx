@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  getPayrollRuns,
+  PayrollRun as ApiPayrollRun,
+} from "../../api/hr-extras";
 import {
   Search,
   Download,
@@ -64,74 +68,15 @@ const statusConfig: Record<
   },
 };
 
-// TODO: No payroll runs endpoint — using placeholder data
-const mockPayrollRuns: PayrollRun[] = [
-  {
-    id: "PRLL-APR26",
-    period: "April 2026",
-    department: "All Departments",
-    headcount: 148,
-    grossPay: 5840000,
-    deductions: 990000,
-    netPay: 4850000,
-    status: "Paid",
-    submittedBy: "Ngozi Okafor",
-    approvedBy: "Amaka Osei",
-    approvedAt: "Apr 8, 2026",
-    paidAt: "Apr 10, 2026",
-  },
-  {
-    id: "PRLL-MAR26",
-    period: "March 2026",
-    department: "All Departments",
-    headcount: 145,
-    grossPay: 5720000,
-    deductions: 970000,
-    netPay: 4750000,
-    status: "Paid",
-    submittedBy: "Ngozi Okafor",
-    approvedBy: "Amaka Osei",
-    approvedAt: "Mar 8, 2026",
-    paidAt: "Mar 10, 2026",
-  },
-  {
-    id: "PRLL-MAY26",
-    period: "May 2026",
-    department: "All Departments",
-    headcount: 150,
-    grossPay: 5960000,
-    deductions: 1010000,
-    netPay: 4950000,
-    status: "Approved",
-    submittedBy: "Ngozi Okafor",
-    approvedBy: "Amaka Osei",
-    approvedAt: "May 7, 2026",
-  },
-  {
-    id: "PRLL-JUN26",
-    period: "June 2026",
-    department: "All Departments",
-    headcount: 152,
-    grossPay: 6010000,
-    deductions: 1020000,
-    netPay: 4990000,
-    status: "Sent for Approval",
-    submittedBy: "Ngozi Okafor",
-  },
-  {
-    id: "PRLL-JUL26",
-    period: "July 2026",
-    department: "All Departments",
-    headcount: 152,
-    grossPay: 6010000,
-    deductions: 1020000,
-    netPay: 4990000,
-    status: "Draft",
-  },
+const STATUS_FLOW: PayrollStatus[] = [
+  "Draft",
+  "Sent for Approval",
+  "Approved",
+  "Paid",
 ];
 
-// TODO: No payroll employees endpoint — using placeholder data
-const mockEmployees: PayrollEmployee[] = [
+// Static employee breakdown sample (bank details not available from API)
+const SAMPLE_EMPLOYEES: PayrollEmployee[] = [
   {
     name: "Amaka Osei",
     role: "Admin",
@@ -189,20 +134,37 @@ const mockEmployees: PayrollEmployee[] = [
   },
 ];
 
-const STATUS_FLOW: PayrollStatus[] = [
-  "Draft",
-  "Sent for Approval",
-  "Approved",
-  "Paid",
-];
-
 export function PayrollIntegrationPage() {
-  const [payrolls, setPayrolls] = useState<PayrollRun[]>(mockPayrollRuns);
+  const [payrolls, setPayrolls] = useState<PayrollRun[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<PayrollStatus | "All">(
     "All",
   );
-  const [activeRun, setActiveRun] = useState<PayrollRun>(mockPayrollRuns[0]);
+  const [activeRun, setActiveRun] = useState<PayrollRun | null>(null);
+
+  useEffect(() => {
+    getPayrollRuns()
+      .then((data: ApiPayrollRun[]) => {
+        const mapped: PayrollRun[] = data.map((r) => ({
+          id: r.id,
+          period: r.periodName,
+          department: "All Departments",
+          headcount: r.employeeCount,
+          grossPay: r.totalGross,
+          deductions: r.totalGross - r.totalNet,
+          netPay: r.totalNet,
+          status: (["Draft", "Sent for Approval", "Approved", "Paid"].includes(
+            r.status,
+          )
+            ? r.status
+            : "Draft") as PayrollStatus,
+          submittedBy: r.processedBy ?? undefined,
+        }));
+        setPayrolls(mapped);
+        if (mapped.length > 0) setActiveRun(mapped[0]);
+      })
+      .catch(console.error);
+  }, []);
 
   const fmt = (n: number) => `$${n.toLocaleString()}`;
 
@@ -310,16 +272,16 @@ export function PayrollIntegrationPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 font-medium">Current Month</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">
-            {fmt(mockPayrollRuns[0].netPay)}
+            {fmt(activeRun?.netPay ?? 0)}
           </p>
           <p className="text-xs text-gray-400 mt-0.5">
-            {mockPayrollRuns[0].period}
+            {activeRun?.period ?? "—"}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs text-gray-500 font-medium">Headcount</p>
           <p className="text-2xl font-bold text-gray-900 mt-1">
-            {activeRun.headcount}
+            {activeRun?.headcount ?? "—"}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
@@ -365,7 +327,7 @@ export function PayrollIntegrationPage() {
               <button
                 key={p.id}
                 onClick={() => setActiveRun(p)}
-                className={`w-full text-left p-3 rounded-xl border transition-all ${activeRun.id === p.id ? "border-emerald-300 bg-emerald-50" : "border-gray-200 bg-white hover:border-gray-300"}`}
+                className={`w-full text-left p-3 rounded-xl border transition-all ${activeRun?.id === p.id ? "border-emerald-300 bg-emerald-50" : "border-gray-200 bg-white hover:border-gray-300"}`}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className="text-sm font-semibold text-gray-900">
@@ -388,106 +350,108 @@ export function PayrollIntegrationPage() {
 
         {/* Run detail */}
         <div className="col-span-2 space-y-4">
-          <div className="bg-white rounded-xl border border-gray-200 p-5">
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-900">
-                  {activeRun.period} Payroll
-                </h3>
-                <p className="text-xs text-gray-500">
-                  {activeRun.id} · {activeRun.department}
-                </p>
-              </div>
-              <span
-                className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full font-medium ${statusConfig[activeRun.status].badge}`}
-              >
-                {statusConfig[activeRun.status].icon}
-                {activeRun.status}
-              </span>
-            </div>
-
-            {/* Breakdown */}
-            <div className="grid grid-cols-3 gap-3 mb-4">
-              <div className="bg-gray-50 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-500">Gross Pay</p>
-                <p className="text-lg font-bold text-gray-900">
-                  {fmt(activeRun.grossPay)}
-                </p>
-              </div>
-              <div className="bg-red-50 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-500">Deductions</p>
-                <p className="text-lg font-bold text-red-600">
-                  −{fmt(activeRun.deductions)}
-                </p>
-              </div>
-              <div className="bg-emerald-50 rounded-lg p-3 text-center">
-                <p className="text-xs text-gray-500">Net Pay</p>
-                <p className="text-lg font-bold text-emerald-700">
-                  {fmt(activeRun.netPay)}
-                </p>
-              </div>
-            </div>
-
-            {/* Status trail */}
-            <div className="space-y-2 border-t border-gray-100 pt-4 mb-4">
-              {activeRun.submittedBy && (
-                <p className="text-xs text-gray-500">
-                  Submitted by{" "}
-                  <span className="font-medium text-gray-700">
-                    {activeRun.submittedBy}
-                  </span>
-                </p>
-              )}
-              {activeRun.approvedBy && (
-                <p className="text-xs text-gray-500">
-                  Approved by{" "}
-                  <span className="font-medium text-gray-700">
-                    {activeRun.approvedBy}
-                  </span>{" "}
-                  on {activeRun.approvedAt}
-                </p>
-              )}
-              {activeRun.paidAt && (
-                <p className="text-xs text-emerald-600 font-medium">
-                  ✓ Payment disbursed on {activeRun.paidAt}
-                </p>
-              )}
-            </div>
-
-            {/* Action */}
-            <div className="flex gap-2">
-              {activeRun.status === "Draft" && (
-                <button
-                  onClick={() => advance(activeRun.id)}
-                  className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          {activeRun && (
+            <div className="bg-white rounded-xl border border-gray-200 p-5">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-900">
+                    {activeRun.period} Payroll
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {activeRun.id} · {activeRun.department}
+                  </p>
+                </div>
+                <span
+                  className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-full font-medium ${statusConfig[activeRun.status].badge}`}
                 >
-                  <span className="flex items-center gap-1.5">
-                    <Send className="w-3.5 h-3.5" /> Submit for Approval
-                  </span>
-                </button>
-              )}
-              {activeRun.status === "Sent for Approval" && (
-                <button
-                  onClick={() => advance(activeRun.id)}
-                  className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle className="w-3.5 h-3.5" /> Approve Payroll
-                  </span>
-                </button>
-              )}
-              {activeRun.status === "Approved" && (
-                <button
-                  onClick={() => advance(activeRun.id)}
-                  className="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700"
-                >
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle className="w-3.5 h-3.5" /> Mark as Paid
-                  </span>
-                </button>
-              )}
+                  {statusConfig[activeRun.status].icon}
+                  {activeRun.status}
+                </span>
+              </div>
+
+              {/* Breakdown */}
+              <div className="grid grid-cols-3 gap-3 mb-4">
+                <div className="bg-gray-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500">Gross Pay</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {fmt(activeRun.grossPay)}
+                  </p>
+                </div>
+                <div className="bg-red-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500">Deductions</p>
+                  <p className="text-lg font-bold text-red-600">
+                    −{fmt(activeRun.deductions)}
+                  </p>
+                </div>
+                <div className="bg-emerald-50 rounded-lg p-3 text-center">
+                  <p className="text-xs text-gray-500">Net Pay</p>
+                  <p className="text-lg font-bold text-emerald-700">
+                    {fmt(activeRun.netPay)}
+                  </p>
+                </div>
+              </div>
+
+              {/* Status trail */}
+              <div className="space-y-2 border-t border-gray-100 pt-4 mb-4">
+                {activeRun.submittedBy && (
+                  <p className="text-xs text-gray-500">
+                    Submitted by{" "}
+                    <span className="font-medium text-gray-700">
+                      {activeRun.submittedBy}
+                    </span>
+                  </p>
+                )}
+                {activeRun.approvedBy && (
+                  <p className="text-xs text-gray-500">
+                    Approved by{" "}
+                    <span className="font-medium text-gray-700">
+                      {activeRun.approvedBy}
+                    </span>{" "}
+                    on {activeRun.approvedAt}
+                  </p>
+                )}
+                {activeRun.paidAt && (
+                  <p className="text-xs text-emerald-600 font-medium">
+                    ✓ Payment disbursed on {activeRun.paidAt}
+                  </p>
+                )}
+              </div>
+
+              {/* Action */}
+              <div className="flex gap-2">
+                {activeRun.status === "Draft" && (
+                  <button
+                    onClick={() => advance(activeRun.id)}
+                    className="px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <Send className="w-3.5 h-3.5" /> Submit for Approval
+                    </span>
+                  </button>
+                )}
+                {activeRun.status === "Sent for Approval" && (
+                  <button
+                    onClick={() => advance(activeRun.id)}
+                    className="px-4 py-2 text-sm bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5" /> Approve Payroll
+                    </span>
+                  </button>
+                )}
+                {activeRun.status === "Approved" && (
+                  <button
+                    onClick={() => advance(activeRun.id)}
+                    className="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700"
+                  >
+                    <span className="flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5" /> Mark as Paid
+                    </span>
+                  </button>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Employee breakdown */}
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
@@ -521,7 +485,7 @@ export function PayrollIntegrationPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {mockEmployees.map((e) => (
+                {SAMPLE_EMPLOYEES.map((e) => (
                   <tr key={e.name} className="hover:bg-gray-50">
                     <td className="px-5 py-2.5">
                       <p className="text-sm font-medium text-gray-900">
