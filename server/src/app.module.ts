@@ -21,6 +21,7 @@ import { ConstructionExtrasModule } from './construction-extras/construction-ext
 import { HrExtrasModule } from './hr-extras/hr-extras.module';
 import { FinanceExtrasModule } from './finance-extras/finance-extras.module';
 import { AdminExtrasModule } from './admin-extras/admin-extras.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
     imports: [
@@ -30,6 +31,7 @@ import { AdminExtrasModule } from './admin-extras/admin-extras.module';
         ProjectsModule,
         EmployeesModule,
         DepartmentsModule,
+        HealthModule,
         SuppliersModule,
         PurchaseOrdersModule,
         LeaveTypesModule,
