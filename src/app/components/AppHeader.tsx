@@ -16,6 +16,7 @@ import {
   Store,
 } from "lucide-react";
 import { useState } from "react";
+import { useAuthUser } from "../utils/useAuthUser";
 
 interface AppHeaderProps {
   currentApp: string;
@@ -38,6 +39,7 @@ export function AppHeader({ currentApp }: AppHeaderProps) {
   const navigate = useNavigate();
   const [showAppSwitcher, setShowAppSwitcher] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const { name: authName, email: authEmail, role: authRole, initials: authInitials } = useAuthUser();
 
   const currentAppInfo = apps.find((a) => a.id === currentApp);
 
@@ -128,11 +130,11 @@ export function AppHeader({ currentApp }: AppHeaderProps) {
               className="flex items-center gap-2 hover:bg-slate-800 rounded-lg px-2 py-1.5 transition-colors"
             >
               <div className="w-7 h-7 bg-indigo-600 rounded-full flex items-center justify-center shrink-0">
-                <span className="text-white text-xs font-semibold">AD</span>
+                <span className="text-white text-xs font-semibold">{authInitials || "?"}</span>
               </div>
               <div className="hidden md:block text-left">
-                <p className="text-xs font-medium text-slate-200 leading-tight">Admin User</p>
-                <p className="text-xs text-slate-500 leading-tight">Super Admin</p>
+                <p className="text-xs font-medium text-slate-200 leading-tight">{authName || "User"}</p>
+                <p className="text-xs text-slate-500 leading-tight capitalize">{authRole || "—"}</p>
               </div>
               <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform hidden md:block ${showProfile ? "rotate-180" : ""}`} />
             </button>
@@ -142,12 +144,14 @@ export function AppHeader({ currentApp }: AppHeaderProps) {
                 <div className="fixed inset-0 z-40" onClick={() => setShowProfile(false)} />
                 <div className="absolute top-full right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-gray-200 py-1 z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-sm font-semibold text-gray-900">Admin User</p>
-                    <p className="text-xs text-gray-500 mt-0.5">admin@buildos.com</p>
-                    <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full font-medium">
-                      <ShieldCheck className="w-3 h-3" />
-                      Super Admin
-                    </span>
+                    <p className="text-sm font-semibold text-gray-900">{authName || "User"}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{authEmail || "—"}</p>
+                    {authRole && (
+                      <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 bg-indigo-100 text-indigo-700 text-xs rounded-full font-medium capitalize">
+                        <ShieldCheck className="w-3 h-3" />
+                        {authRole}
+                      </span>
+                    )}
                   </div>
                   <div className="py-1">
                     <button className="w-full flex items-center gap-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">

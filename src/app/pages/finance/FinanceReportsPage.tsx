@@ -31,44 +31,6 @@ const templates: ReportTemplate[] = [
 ];
 
 const reportData: Record<string, ReportRow[]> = {
-  expense: [
-    { label: "Total Expenses", value: "$2,845,200", positive: false },
-    { label: "Materials", value: "$882,000", sub: "31% of total" },
-    { label: "Labour Costs", value: "$740,000", sub: "26% of total" },
-    { label: "Equipment Hire", value: "$520,000", sub: "18% of total" },
-    { label: "Subcontractors", value: "$420,000", sub: "15% of total" },
-    { label: "Overheads", value: "$283,200", sub: "10% of total" },
-  ],
-  income: [
-    { label: "Total Income", value: "$4,240,000", positive: true },
-    { label: "Contract Revenue", value: "$3,740,000", sub: "88% of total" },
-    { label: "Service Income", value: "$320,000", sub: "8% of total" },
-    { label: "Government Grants", value: "$180,000", sub: "4% of total" },
-  ],
-  cashflow: [
-    { label: "Operating Cash Flow", value: "+$1,394,800", positive: true },
-    { label: "Investing Activities", value: "−$240,000", positive: false },
-    { label: "Financing Activities", value: "−$120,000", positive: false },
-    { label: "Net Cash Movement", value: "+$1,034,800", positive: true },
-    { label: "Opening Balance", value: "$2,800,000" },
-    { label: "Closing Balance", value: "$3,834,800", positive: true },
-  ],
-  budget: [
-    { label: "Lekki Tower A", value: "65% utilised", sub: "$8.1M of $12.5M" },
-    { label: "Riverside Residential", value: "42% utilised", sub: "$3.4M of $8.2M" },
-    { label: "Mall Renovation", value: "105% OVER BUDGET", sub: "$19.3M of $18.4M", positive: false },
-    { label: "Industrial Warehouse", value: "15% utilised", sub: "$0.9M of $5.8M" },
-    { label: "Airport Road Bridge", value: "45% utilised", sub: "$14.4M of $32M" },
-  ],
-  payroll: [
-    { label: "Total Net Payroll", value: "$4,850,000" },
-    { label: "Construction", value: "$1,860,000", sub: "48 employees" },
-    { label: "Finance & Admin", value: "$980,000", sub: "24 employees" },
-    { label: "HR & People", value: "$620,000", sub: "16 employees" },
-    { label: "Procurement", value: "$740,000", sub: "19 employees" },
-    { label: "Engineering", value: "$650,000", sub: "18 employees" },
-    { label: "IT & Systems", value: "$0", sub: "Outsourced" },
-  ],
 };
 
 export function FinanceReportsPage() {

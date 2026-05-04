@@ -127,33 +127,8 @@ export function FinanceDashboardPage() {
     spent: b.spent,
   }));
 
-  // TODO: No approvals endpoint — using placeholder data
-  const pendingApprovals = [
-    {
-      id: "FA-018",
-      type: "Expense Claim",
-      title: "Q1 Marketing Campaign",
-      requestedBy: "Olivia James",
-      amount: 145000,
-      urgency: "urgent",
-    },
-    {
-      id: "FA-017",
-      type: "Budget Override",
-      title: "Data Centre Upgrade",
-      requestedBy: "Marcus Webb",
-      amount: 680000,
-      urgency: "urgent",
-    },
-    {
-      id: "FA-016",
-      type: "Payment Request",
-      title: "Contractor Milestone 3",
-      requestedBy: "Finance Controller",
-      amount: 2400000,
-      urgency: "normal",
-    },
-  ];
+  // No approvals endpoint — empty until backend provides one
+  const pendingApprovals: Array<{ id: string; type: string; title: string; requestedBy: string; amount: number; urgency: string }> = [];
 
   return (
     <div className="space-y-6">

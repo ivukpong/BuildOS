@@ -1,12 +1,25 @@
-import { Users, Shield, Settings, Activity, ArrowUpRight, CheckCircle2, AlertCircle, Info } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Users, Shield, Settings, Activity, ArrowUpRight, Info } from "lucide-react";
 import { NavLink } from "react-router";
+import { getUsers } from "../../api/admin-extras";
+import { getAppRoles } from "../../api/admin-extras";
 
 export function AdminDashboardPage() {
+  const [userCount, setUserCount] = useState<number | null>(null);
+  const [roleCount, setRoleCount] = useState<number | null>(null);
+
+  useEffect(() => {
+    getUsers().then((users) => setUserCount(users.length)).catch(() => setUserCount(0));
+    getAppRoles().then((roles) => setRoleCount(roles.length)).catch(() => setRoleCount(0));
+  }, []);
+
+  const fmt = (n: number | null) => (n === null ? "…" : String(n));
+
   const metrics = [
     {
       label: "Total Users",
-      value: "156",
-      delta: "+8 this month",
+      value: fmt(userCount),
+      delta: userCount !== null ? `${userCount} registered` : null,
       deltaPositive: true,
       icon: Users,
       iconBg: "bg-indigo-100",
@@ -14,8 +27,8 @@ export function AdminDashboardPage() {
     },
     {
       label: "Active Roles",
-      value: "6",
-      delta: "System roles",
+      value: fmt(roleCount),
+      delta: roleCount !== null ? "Configured roles" : null,
       deltaPositive: null,
       icon: Shield,
       iconBg: "bg-violet-100",
@@ -23,36 +36,22 @@ export function AdminDashboardPage() {
     },
     {
       label: "Active Sessions",
-      value: "89",
-      delta: "Currently online",
-      deltaPositive: true,
+      value: "—",
+      delta: "No session endpoint",
+      deltaPositive: null,
       icon: Activity,
       iconBg: "bg-emerald-100",
       iconColor: "text-emerald-600",
     },
     {
       label: "System Health",
-      value: "98%",
-      delta: "All systems operational",
-      deltaPositive: true,
+      value: "—",
+      delta: "No health endpoint",
+      deltaPositive: null,
       icon: Settings,
       iconBg: "bg-blue-100",
       iconColor: "text-blue-600",
     },
-  ];
-
-  const systemStatus = [
-    { name: "Database", status: "Operational" },
-    { name: "API", status: "Operational" },
-    { name: "Storage", status: "Operational" },
-    { name: "Email", status: "Operational" },
-  ];
-
-  const recentActivity = [
-    { color: "bg-emerald-500", title: "New user registered", detail: "john.smith@company.com", time: "1 hour ago" },
-    { color: "bg-indigo-500", title: "Role permissions updated", detail: "Construction Manager role", time: "3 hours ago" },
-    { color: "bg-amber-500", title: "System settings changed", detail: "Currency updated to USD", time: "5 hours ago" },
-    { color: "bg-gray-400", title: "Company profile updated", detail: "Logo and branding", time: "Yesterday" },
   ];
 
   return (
@@ -89,41 +88,39 @@ export function AdminDashboardPage() {
         {/* User Activity */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">User Activity</h2>
-          <div className="space-y-4">
-            {[
-              { label: "Daily Active Users", value: 89, max: 156 },
-              { label: "Weekly Active Users", value: 134, max: 156 },
-              { label: "Monthly Active Users", value: 156, max: 156 },
-            ].map((item) => (
-              <div key={item.label}>
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm text-gray-600">{item.label}</span>
-                  <span className="text-sm font-medium text-gray-900">{item.value}</span>
+          {userCount === null ? (
+            <p className="text-sm text-gray-400">Loading…</p>
+          ) : userCount === 0 ? (
+            <p className="text-sm text-gray-400">No users found.</p>
+          ) : (
+            <div className="space-y-4">
+              {[
+                { label: "Registered Users", value: userCount, max: userCount },
+              ].map((item) => (
+                <div key={item.label}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-sm text-gray-600">{item.label}</span>
+                    <span className="text-sm font-medium text-gray-900">{item.value}</span>
+                  </div>
+                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div
+                      className="bg-indigo-500 h-1.5 rounded-full transition-all"
+                      style={{ width: `${Math.min((item.value / (item.max || 1)) * 100, 100)}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-1.5">
-                  <div
-                    className="bg-indigo-500 h-1.5 rounded-full transition-all"
-                    style={{ width: `${(item.value / item.max) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+              <p className="text-xs text-gray-400 mt-2">Session analytics not yet available.</p>
+            </div>
+          )}
         </div>
 
         {/* Recent Activity */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="space-y-3">
-            {recentActivity.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-3 pb-3 border-b border-gray-50 last:border-0 last:pb-0">
-                <div className={`w-2 h-2 ${item.color} rounded-full mt-1.5 shrink-0`} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900">{item.title}</p>
-                  <p className="text-xs text-gray-400">{item.detail} · {item.time}</p>
-                </div>
-              </div>
-            ))}
+          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+            <Activity className="w-8 h-8 mb-2 opacity-30" />
+            <p className="text-sm">No activity log endpoint available.</p>
           </div>
         </div>
       </div>
@@ -131,17 +128,7 @@ export function AdminDashboardPage() {
       {/* System Status */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">System Status</h2>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {systemStatus.map((s) => (
-            <div key={s.name} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
-              <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-gray-900">{s.name}</p>
-                <p className="text-xs text-emerald-600">{s.status}</p>
-              </div>
-            </div>
-          ))}
-        </div>
+        <p className="text-sm text-gray-400">No system health endpoint available. Configure a health-check API to display service status.</p>
       </div>
 
       {/* Quick Actions */}

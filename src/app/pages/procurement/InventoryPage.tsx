@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getMaterials, Material as ApiMaterial } from "../../api/materials";
 import {
   Package,
   Search,
@@ -28,8 +29,38 @@ const categories = [
   "General",
 ];
 
+type LocalMaterial = {
+  id: string;
+  name: string;
+  category: string;
+  unit: string;
+  currentStock: number;
+  minStock: number;
+  unitCost: number;
+  supplier: string;
+  status: string;
+};
+
+function fromApiMaterial(m: ApiMaterial): LocalMaterial {
+  const stock = m.availableQty ?? m.totalQty ?? 0;
+  const min = m.reorderLevel ?? 0;
+  const status =
+    stock <= 0 ? "out_of_stock" : stock <= min ? "low_stock" : "in_stock";
+  return {
+    id: m.id,
+    name: m.name,
+    category: m.category,
+    unit: m.unit,
+    currentStock: stock,
+    minStock: min,
+    unitCost: m.unitCost ?? 0,
+    supplier: "",
+    status,
+  };
+}
+
 // TODO: No inventory materials endpoint — using placeholder data
-const materials = [
+const _MATERIALS_PLACEHOLDER = [
   {
     id: "MAT-001",
     name: "Concrete Block 9 Inch",
@@ -196,6 +227,7 @@ const materials = [
     status: "in_stock",
   },
 ];
+void _MATERIALS_PLACEHOLDER;
 
 const statusConfig: Record<
   string,
@@ -234,8 +266,17 @@ type MatSortKey =
 type SortDir = "asc" | "desc";
 
 export function InventoryPage() {
+  const [materials, setMaterials] = useState<LocalMaterial[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
+
+  useEffect(() => {
+    getMaterials()
+      .then((data) => setMaterials(data.map(fromApiMaterial)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
   const [statusFilter, setStatusFilter] = useState("All");
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [sortKey, setSortKey] = useState<MatSortKey>("name");
@@ -285,6 +326,11 @@ export function InventoryPage() {
     low_stock: materials.filter((m) => m.status === "low_stock").length,
     out_of_stock: materials.filter((m) => m.status === "out_of_stock").length,
   };
+
+  if (loading)
+    return (
+      <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
+    );
 
   return (
     <div className="space-y-5">

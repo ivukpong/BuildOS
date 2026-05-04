@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getUsers, AppUser } from "../../api/admin-extras";
 import {
   Search,
   Plus,
@@ -270,281 +271,38 @@ const buildProcesses = (allow: string[]): Process[] => [
   },
 ];
 
-// ── Mock Users ────────────────────────────────────────────────────────────────
-// TODO: No users endpoint — using placeholder data
-const mockUsers: UserRecord[] = [
-  {
-    id: "USR-001",
-    name: "Amaka Osei",
-    email: "amaka.osei@buildos.com",
-    phone: "+234 801 234 5678",
-    location: "Lagos",
-    role: "Admin",
-    department: "IT",
-    joinDate: "Jan 12, 2022",
-    status: "Active",
-    apps: ["admin", "hr", "construction", "finance", "procurement", "ess"],
-    lastActive: "2 minutes ago",
-    processes: buildProcesses([
-      "p1_v",
-      "p1_c",
-      "p1_e",
-      "p1_a",
-      "p1_d",
-      "p2_a",
-      "p3_c",
-      "p4_c",
-      "p4_e",
-      "p5_a",
-      "p6_v",
-      "p6_c",
-      "p7_a",
-      "p8_c",
-      "p8_e",
-      "p9_c",
-      "p9_e",
-      "p10_a",
-      "p11_c",
-      "p12_v",
-      "p12_c",
-      "p12_e",
-      "p12_d",
-    ]),
-    activity: [
-      {
-        date: "Apr 10, 2026 09:14",
-        action: "Created user Chukwudi Eze",
-        module: "Users",
-        app: "admin",
-      },
-      {
-        date: "Apr 10, 2026 08:55",
-        action: "Updated project Lekki Tower A",
-        module: "Projects",
-        app: "construction",
-      },
-      {
-        date: "Apr 9, 2026  17:30",
-        action: "Approved expense EXP-0041",
-        module: "Expenses",
-        app: "finance",
-      },
-    ],
-    requests: [
-      {
-        type: "approved",
-        label: "Budget Increase — Lekki Tower A",
-        date: "Apr 9, 2026",
-      },
-      { type: "submitted", label: "Q2 Payroll Run", date: "Apr 8, 2026" },
-    ],
-  },
-  {
-    id: "USR-002",
-    name: "Chukwudi Eze",
-    email: "c.eze@buildos.com",
-    phone: "+234 802 345 6789",
-    location: "Abuja",
-    role: "Construction Manager",
-    department: "Construction",
-    joinDate: "Mar 5, 2023",
-    status: "Active",
-    apps: ["construction", "procurement", "ess"],
-    lastActive: "1 hour ago",
-    processes: buildProcesses(["p8_c", "p8_e", "p9_c", "p9_e", "p3_c", "p1_v"]),
-    activity: [
-      {
-        date: "Apr 10, 2026 07:45",
-        action: "Assigned workforce to Project 003",
-        module: "Workforce",
-        app: "construction",
-      },
-      {
-        date: "Apr 9, 2026  15:20",
-        action: "Submitted purchase request PR-0112",
-        module: "Procurement",
-        app: "procurement",
-      },
-    ],
-    requests: [
-      {
-        type: "submitted",
-        label: "Purchase Request PR-0112",
-        date: "Apr 9, 2026",
-      },
-      {
-        type: "rejected",
-        label: "Equipment Hire — Crane",
-        date: "Apr 7, 2026",
-      },
-    ],
-  },
-  {
-    id: "USR-003",
-    name: "Sola Adeleke",
-    email: "s.adeleke@buildos.com",
-    phone: "+234 803 456 7890",
-    location: "Ibadan",
-    role: "Accountant",
-    department: "Finance",
-    joinDate: "Jun 20, 2023",
-    status: "Active",
-    apps: ["finance", "ess"],
-    lastActive: "30 minutes ago",
-    processes: buildProcesses(["p4_c", "p4_e", "p5_a", "p6_v", "p11_c"]),
-    activity: [
-      {
-        date: "Apr 10, 2026 09:00",
-        action: "Approved expense EXP-0050",
-        module: "Expenses",
-        app: "finance",
-      },
-      {
-        date: "Apr 9, 2026  11:30",
-        action: "Generated monthly report",
-        module: "Reports",
-        app: "admin",
-      },
-    ],
-    requests: [
-      { type: "approved", label: "Expense EXP-0050", date: "Apr 10, 2026" },
-    ],
-  },
-  {
-    id: "USR-004",
-    name: "Musa Ibrahim",
-    email: "m.ibrahim@buildos.com",
-    phone: "+234 804 567 8901",
-    location: "Kano",
-    role: "Store Manager",
-    department: "Procurement",
-    joinDate: "Nov 3, 2022",
-    status: "Active",
-    apps: ["procurement", "ess"],
-    lastActive: "5 hours ago",
-    processes: buildProcesses(["p1_v", "p1_c", "p2_a", "p3_c"]),
-    activity: [
-      {
-        date: "Apr 10, 2026 06:30",
-        action: "Received delivery PO-2026-0041",
-        module: "Purchase Orders",
-        app: "procurement",
-      },
-    ],
-    requests: [
-      {
-        type: "submitted",
-        label: "Purchase Order PO-2026-0044",
-        date: "Apr 8, 2026",
-      },
-    ],
-  },
-  {
-    id: "USR-005",
-    name: "Ngozi Okafor",
-    email: "n.okafor@buildos.com",
-    phone: "+234 805 678 9012",
-    location: "Lagos",
-    role: "HR Manager",
-    department: "Human Resources",
-    joinDate: "Feb 14, 2021",
-    status: "Active",
-    apps: ["hr", "ess"],
-    lastActive: "Yesterday",
-    processes: buildProcesses(["p6_v", "p6_c", "p7_a"]),
-    activity: [
-      {
-        date: "Apr 9, 2026  16:00",
-        action: "Processed April payroll",
-        module: "Payroll",
-        app: "hr",
-      },
-    ],
-    requests: [
-      {
-        type: "submitted",
-        label: "Payroll Processing — April 2026",
-        date: "Apr 9, 2026",
-      },
-    ],
-  },
-  {
-    id: "USR-006",
-    name: "Tunde Bello",
-    email: "t.bello@buildos.com",
-    phone: "+234 806 789 0123",
-    location: "Lagos",
-    role: "Employee",
-    department: "Engineering",
-    joinDate: "Aug 1, 2024",
-    status: "Pending",
-    apps: ["ess"],
-    lastActive: "3 hours ago",
-    processes: buildProcesses([]),
-    activity: [],
-    requests: [
-      {
-        type: "submitted",
-        label: "Leave Request — Annual Leave",
-        date: "Apr 8, 2026",
-      },
-    ],
-  },
-  {
-    id: "USR-007",
-    name: "Fatima Yusuf",
-    email: "f.yusuf@buildos.com",
-    phone: "+234 807 890 1234",
-    location: "Abuja",
-    role: "Finance Manager",
-    department: "Finance",
-    joinDate: "May 10, 2020",
-    status: "Active",
-    apps: ["finance", "procurement", "ess"],
-    lastActive: "4 hours ago",
-    processes: buildProcesses([
-      "p4_c",
-      "p4_e",
-      "p5_a",
-      "p6_v",
-      "p6_c",
-      "p1_v",
-      "p2_a",
-      "p11_c",
-    ]),
-    activity: [
-      {
-        date: "Apr 10, 2026 08:10",
-        action: "Reviewed monthly expenditure",
-        module: "Finance",
-        app: "finance",
-      },
-    ],
-    requests: [
-      {
-        type: "approved",
-        label: "Expense Batch — Apr Week 1",
-        date: "Apr 9, 2026",
-      },
-    ],
-  },
-  {
-    id: "USR-008",
-    name: "Emeka Nwosu",
-    email: "e.nwosu@buildos.com",
-    phone: "+234 808 901 2345",
-    location: "Port Harcourt",
-    role: "Site Engineer",
-    department: "Construction",
-    joinDate: "Sep 22, 2023",
-    status: "Inactive",
+// ── API → UserRecord mapper ─────────────────────────────────────────────────
+function userFromApi(u: AppUser): UserRecord {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: "",
+    location: "",
+    role: u.role,
+    department: u.department ?? "",
+    joinDate: u.createdAt
+      ? new Date(u.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "",
+    status: u.isActive ? "Active" : "Inactive",
     apps: [],
-    lastActive: "2 weeks ago",
-    processes: buildProcesses([]),
+    lastActive: u.lastLogin
+      ? new Date(u.lastLogin).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "Never",
+    processes: [],
     activity: [],
     requests: [],
-  },
-];
+  };
+}
+
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_COLOR: Record<UserStatus, string> = {
@@ -1103,6 +861,7 @@ function UserDetailPanel({
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 export function UsersPage() {
+  const [users, setUsers] = useState<UserRecord[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
   const [appFilter, setAppFilter] = useState<AppKey | "all">("all");
@@ -1110,7 +869,13 @@ export function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  const filtered = mockUsers.filter((u) => {
+  useEffect(() => {
+    getUsers()
+      .then((data) => setUsers(data.map(userFromApi)))
+      .catch(console.error);
+  }, []);
+
+  const filtered = users.filter((u) => {
     const q = search.toLowerCase();
     const matchSearch =
       u.name.toLowerCase().includes(q) ||
@@ -1122,10 +887,10 @@ export function UsersPage() {
   });
 
   const stats = {
-    total: mockUsers.length,
-    active: mockUsers.filter((u) => u.status === "Active").length,
-    pending: mockUsers.filter((u) => u.status === "Pending").length,
-    inactive: mockUsers.filter((u) => u.status === "Inactive").length,
+    total: users.length,
+    active: users.filter((u) => u.status === "Active").length,
+    pending: users.filter((u) => u.status === "Pending").length,
+    inactive: users.filter((u) => u.status === "Inactive").length,
   };
 
   return (
@@ -1272,7 +1037,7 @@ export function UsersPage() {
                     {user.hasSignature && (
                       <BadgeCheck
                         className="w-3.5 h-3.5 text-indigo-500 shrink-0"
-                        title="Signature on file"
+                        aria-label="Signature on file"
                       />
                     )}
                   </div>

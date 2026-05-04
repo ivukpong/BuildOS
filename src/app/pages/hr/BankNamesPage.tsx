@@ -10,25 +10,11 @@ interface Bank {
   active: boolean;
 }
 
-const SEED_BANKS: Bank[] = [
-  { id: "b1",  name: "First National Bank",       code: "021", country: "USA",          swiftCode: "FNBKUS33", active: true  },
-  { id: "b2",  name: "Zenith Bank Plc",            code: "057", country: "Nigeria",      swiftCode: "ZEIBNGLA", active: true  },
-  { id: "b3",  name: "Guaranty Trust Bank",        code: "058", country: "Nigeria",      swiftCode: "GTBINGLA", active: true  },
-  { id: "b4",  name: "Access Bank Plc",            code: "044", country: "Nigeria",      swiftCode: "ABNGNGLA", active: true  },
-  { id: "b5",  name: "United Bank for Africa",     code: "033", country: "Nigeria",      swiftCode: "UNAFNGLA", active: true  },
-  { id: "b6",  name: "First Bank of Nigeria",      code: "011", country: "Nigeria",      swiftCode: "FBNINGLA", active: true  },
-  { id: "b7",  name: "Stanbic IBTC Bank",          code: "221", country: "Nigeria",      swiftCode: "SBICNGLA", active: true  },
-  { id: "b8",  name: "Fidelity Bank Plc",          code: "070", country: "Nigeria",      swiftCode: "FIDTNGLA", active: true  },
-  { id: "b9",  name: "Barclays Bank",              code: "20",  country: "UK",           swiftCode: "BARCGB22", active: true  },
-  { id: "b10", name: "HSBC Holdings",              code: "40",  country: "UK",           swiftCode: "MIDLGB22", active: false },
-  { id: "b11", name: "Standard Chartered",         code: "68",  country: "UK",           swiftCode: "SCBLGB2L", active: true  },
-  { id: "b12", name: "Ecobank Nigeria",            code: "050", country: "Nigeria",      swiftCode: "ECOCNGLA", active: true  },
-];
 
 const EMPTY_FORM = { name: "", code: "", country: "Nigeria", swiftCode: "" };
 
 export function BankNamesPage() {
-  const [banks, setBanks] = useState<Bank[]>(SEED_BANKS);
+  const [banks, setBanks] = useState<Bank[]>([]);
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getAttendance } from "../../api/hr-extras";
 import {
   Search,
   Download,
@@ -28,290 +29,6 @@ interface LogEntry {
   hrs: number;
   note: string;
 }
-
-// TODO: No attendance logs endpoint — using placeholder data
-const rawLogs: LogEntry[] = [
-  {
-    id: "L001",
-    empId: "EMP-001",
-    empName: "Chukwudi Eze",
-    department: "Engineering",
-    role: "Site Engineer",
-    date: "Apr 28, 2025",
-    dayOfWeek: "Mon",
-    checkIn: "07:48 AM",
-    checkOut: "05:10 PM",
-    status: "present",
-    hrs: 9.4,
-    note: "",
-  },
-  {
-    id: "L002",
-    empId: "EMP-002",
-    empName: "Aisha Bello",
-    department: "Operations",
-    role: "Project Manager",
-    date: "Apr 28, 2025",
-    dayOfWeek: "Mon",
-    checkIn: "08:05 AM",
-    checkOut: "06:00 PM",
-    status: "present",
-    hrs: 9.9,
-    note: "",
-  },
-  {
-    id: "L003",
-    empId: "EMP-004",
-    empName: "Sarah Johnson",
-    department: "Finance",
-    role: "Accountant",
-    date: "Apr 28, 2025",
-    dayOfWeek: "Mon",
-    checkIn: "09:47 AM",
-    checkOut: "05:00 PM",
-    status: "late",
-    hrs: 7.2,
-    note: "Traffic delay reported",
-  },
-  {
-    id: "L004",
-    empId: "EMP-012",
-    empName: "Lawal Musa",
-    department: "Engineering",
-    role: "MEP Engineer",
-    date: "Apr 28, 2025",
-    dayOfWeek: "Mon",
-    checkIn: "—",
-    checkOut: "—",
-    status: "absent",
-    hrs: 0,
-    note: "No notification",
-  },
-  {
-    id: "L005",
-    empId: "EMP-005",
-    empName: "Mike Davis",
-    department: "Engineering",
-    role: "Site Foreman",
-    date: "Apr 28, 2025",
-    dayOfWeek: "Mon",
-    checkIn: "—",
-    checkOut: "—",
-    status: "leave",
-    hrs: 0,
-    note: "Annual leave – approved",
-  },
-  {
-    id: "L006",
-    empId: "EMP-001",
-    empName: "Chukwudi Eze",
-    department: "Engineering",
-    role: "Site Engineer",
-    date: "Apr 25, 2025",
-    dayOfWeek: "Fri",
-    checkIn: "07:55 AM",
-    checkOut: "05:00 PM",
-    status: "present",
-    hrs: 9.1,
-    note: "",
-  },
-  {
-    id: "L007",
-    empId: "EMP-001",
-    empName: "Chukwudi Eze",
-    department: "Engineering",
-    role: "Site Engineer",
-    date: "Apr 24, 2025",
-    dayOfWeek: "Thu",
-    checkIn: "09:45 AM",
-    checkOut: "05:00 PM",
-    status: "late",
-    hrs: 7.25,
-    note: "Client meeting ran late",
-  },
-  {
-    id: "L008",
-    empId: "EMP-003",
-    empName: "Robert Lee",
-    department: "Engineering",
-    role: "Structural Engineer",
-    date: "Apr 25, 2025",
-    dayOfWeek: "Fri",
-    checkIn: "07:50 AM",
-    checkOut: "04:45 PM",
-    status: "present",
-    hrs: 8.9,
-    note: "",
-  },
-  {
-    id: "L009",
-    empId: "EMP-009",
-    empName: "Kwame Asante",
-    department: "Engineering",
-    role: "Civil Engineer",
-    date: "Apr 25, 2025",
-    dayOfWeek: "Fri",
-    checkIn: "08:20 AM",
-    checkOut: "12:30 PM",
-    status: "half_day",
-    hrs: 4.2,
-    note: "Medical appointment",
-  },
-  {
-    id: "L010",
-    empId: "EMP-014",
-    empName: "David Obi",
-    department: "IT & Systems",
-    role: "IT Officer",
-    date: "Apr 24, 2025",
-    dayOfWeek: "Thu",
-    checkIn: "09:55 AM",
-    checkOut: "05:00 PM",
-    status: "late",
-    hrs: 7.1,
-    note: "",
-  },
-  {
-    id: "L011",
-    empId: "EMP-006",
-    empName: "Alice Ware",
-    department: "Human Resources",
-    role: "HR Officer",
-    date: "Apr 24, 2025",
-    dayOfWeek: "Thu",
-    checkIn: "08:00 AM",
-    checkOut: "05:00 PM",
-    status: "present",
-    hrs: 9.0,
-    note: "",
-  },
-  {
-    id: "L012",
-    empId: "EMP-013",
-    empName: "Funke Adeyemi",
-    department: "Finance",
-    role: "Finance Analyst",
-    date: "Apr 24, 2025",
-    dayOfWeek: "Thu",
-    checkIn: "08:15 AM",
-    checkOut: "05:00 PM",
-    status: "present",
-    hrs: 8.75,
-    note: "",
-  },
-  {
-    id: "L013",
-    empId: "EMP-007",
-    empName: "Tom Fox",
-    department: "Procurement",
-    role: "Quantity Surveyor",
-    date: "Apr 23, 2025",
-    dayOfWeek: "Wed",
-    checkIn: "08:10 AM",
-    checkOut: "05:15 PM",
-    status: "present",
-    hrs: 9.1,
-    note: "",
-  },
-  {
-    id: "L014",
-    empId: "EMP-004",
-    empName: "Sarah Johnson",
-    department: "Finance",
-    role: "Accountant",
-    date: "Apr 23, 2025",
-    dayOfWeek: "Wed",
-    checkIn: "—",
-    checkOut: "—",
-    status: "absent",
-    hrs: 0,
-    note: "",
-  },
-  {
-    id: "L015",
-    empId: "EMP-011",
-    empName: "Bisi Akinola",
-    department: "Administration",
-    role: "Admin Officer",
-    date: "Apr 23, 2025",
-    dayOfWeek: "Wed",
-    checkIn: "08:02 AM",
-    checkOut: "05:05 PM",
-    status: "present",
-    hrs: 9.0,
-    note: "",
-  },
-  {
-    id: "L016",
-    empId: "EMP-010",
-    empName: "Emeka Nwosu",
-    department: "Health & Safety",
-    role: "HSE Officer",
-    date: "Apr 22, 2025",
-    dayOfWeek: "Tue",
-    checkIn: "07:45 AM",
-    checkOut: "12:00 PM",
-    status: "half_day",
-    hrs: 4.25,
-    note: "Site inspection AM only",
-  },
-  {
-    id: "L017",
-    empId: "EMP-002",
-    empName: "Aisha Bello",
-    department: "Operations",
-    role: "Project Manager",
-    date: "Apr 22, 2025",
-    dayOfWeek: "Tue",
-    checkIn: "08:00 AM",
-    checkOut: "06:15 PM",
-    status: "present",
-    hrs: 10.25,
-    note: "",
-  },
-  {
-    id: "L018",
-    empId: "EMP-001",
-    empName: "Chukwudi Eze",
-    department: "Engineering",
-    role: "Site Engineer",
-    date: "Apr 22, 2025",
-    dayOfWeek: "Tue",
-    checkIn: "—",
-    checkOut: "—",
-    status: "absent",
-    hrs: 0,
-    note: "",
-  },
-  {
-    id: "L019",
-    empId: "EMP-015",
-    empName: "Yemi Olusegun",
-    department: "Operations",
-    role: "Project Manager",
-    date: "Apr 21, 2025",
-    dayOfWeek: "Mon",
-    checkIn: "08:00 AM",
-    checkOut: "06:30 PM",
-    status: "present",
-    hrs: 10.5,
-    note: "",
-  },
-  {
-    id: "L020",
-    empId: "EMP-008",
-    empName: "Ngozi Eze",
-    department: "Engineering",
-    role: "Site Supervisor",
-    date: "Apr 21, 2025",
-    dayOfWeek: "Mon",
-    checkIn: "07:52 AM",
-    checkOut: "04:40 PM",
-    status: "present",
-    hrs: 8.8,
-    note: "",
-  },
-];
 
 const statusConfig: Record<
   AttStatus,
@@ -344,15 +61,6 @@ const statusConfig: Record<
   },
 };
 
-const depts = [
-  "All Departments",
-  ...Array.from(new Set(rawLogs.map((l) => l.department))).sort(),
-];
-const dates = ["All Dates", ...Array.from(new Set(rawLogs.map((l) => l.date)))];
-const employees = [
-  "All Employees",
-  ...Array.from(new Set(rawLogs.map((l) => l.empName))).sort(),
-];
 const statuses = [
   "All Status",
   "present",
@@ -365,6 +73,41 @@ const statuses = [
 const PAGE_SIZE = 10;
 
 export function AttendanceLogsPage() {
+  const [logs, setLogs] = useState<LogEntry[]>([]);
+
+  useEffect(() => {
+    getAttendance()
+      .then((data) =>
+        setLogs(
+          data.map((r) => ({
+            id: r.id,
+            empId: r.employeeId,
+            empName: r.employeeName,
+            department: r.department ?? "",
+            role: "",
+            date: r.date,
+            dayOfWeek: "",
+            checkIn: r.clockIn ?? "—",
+            checkOut: r.clockOut ?? "—",
+            status: (r.status as AttStatus) ?? "present",
+            hrs: r.hoursWorked ?? 0,
+            note: r.notes ?? "",
+          })),
+        ),
+      )
+      .catch(console.error);
+  }, []);
+
+  const depts = [
+    "All Departments",
+    ...Array.from(new Set(logs.map((l) => l.department))).sort(),
+  ];
+  const dates = ["All Dates", ...Array.from(new Set(logs.map((l) => l.date)))];
+  const employees = [
+    "All Employees",
+    ...Array.from(new Set(logs.map((l) => l.empName))).sort(),
+  ];
+
   const [search, setSearch] = useState("");
   const [deptFilter, setDeptFilter] = useState("All Departments");
   const [empFilter, setEmpFilter] = useState("All Employees");
@@ -373,7 +116,7 @@ export function AttendanceLogsPage() {
     useState<(typeof statuses)[number]>("All Status");
   const [page, setPage] = useState(1);
 
-  const filtered = rawLogs.filter((l) => {
+  const filtered = logs.filter((l) => {
     const matchS =
       l.empName.toLowerCase().includes(search.toLowerCase()) ||
       l.empId.toLowerCase().includes(search.toLowerCase());

@@ -84,38 +84,6 @@ const AVAILABLE_USERS = [
 ];
 
 // ── Seed data ─────────────────────────────────────────────────────────────────
-const SEED_WORKFLOWS: ProcessWorkflow[] = [
-  {
-    id: "wf1", process: "Approve Purchase Order", app: "Procurement",
-    workflowType: "single", approver: "Fatima Yusuf (Finance Manager)",
-  },
-  {
-    id: "wf2", process: "Approve Expense", app: "Finance",
-    workflowType: "tier",
-    tierLevels: [
-      { level: 1, approver: "Sola Adeleke (Accountant)", condition: "All amounts" },
-      { level: 2, approver: "Fatima Yusuf (Finance Manager)", condition: "Above ₦500,000" },
-    ],
-  },
-  {
-    id: "wf3", process: "Approve Project Budget", app: "Construction",
-    workflowType: "tier",
-    tierLevels: [
-      { level: 1, approver: "Chukwudi Eze (Construction Manager)", condition: "All budgets" },
-      { level: 2, approver: "Fatima Yusuf (Finance Manager)", condition: "Above ₦2,000,000" },
-      { level: 3, approver: "Amaka Osei (Admin)", condition: "Above ₦10,000,000" },
-    ],
-  },
-  {
-    id: "wf4", process: "Approve Leave Request", app: "HR",
-    workflowType: "single", approver: "Ngozi Okafor (HR Manager)",
-  },
-  {
-    id: "wf5", process: "Create Payroll", app: "HR",
-    workflowType: "group",
-    groupApprovers: ["Ngozi Okafor (HR Manager)", "Fatima Yusuf (Finance Manager)"],
-  },
-];
 
 // ── Extended process catalog ─────────────────────────────────────────────────
 const PROCESS_CATALOG: { id: string; label: string; app: string; description: string; requiresApproval: boolean }[] = [
@@ -352,7 +320,7 @@ function ConfigureWorkflowModal({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export function ProjectConfigurationPage() {
   const [activeTab, setActiveTab] = useState<"workflows" | "process_list">("workflows");
-  const [workflows, setWorkflows] = useState<ProcessWorkflow[]>(SEED_WORKFLOWS);
+  const [workflows, setWorkflows] = useState<ProcessWorkflow[]>([]);
   const [showWfModal, setShowWfModal] = useState(false);
   const [editingWf, setEditingWf] = useState<ProcessWorkflow | undefined>(undefined);
   const [expandedWfId, setExpandedWfId] = useState<string | null>(null);

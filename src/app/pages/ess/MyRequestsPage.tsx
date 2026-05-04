@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { getPurchaseRequests } from "../../api/procurement-requests";
 import {
   Clock,
   CheckCircle,
@@ -122,291 +123,6 @@ interface Request {
   approvalHistory: ApprovalHistoryEntry[];
 }
 
-// ─── Mock data (James Okafor's requests) ─────────────────────────────────────
-
-// TODO: No "my requests by current user" API endpoint — using placeholder data
-const myRequests: Request[] = [
-  {
-    id: "REQ-0041",
-    type: "Material Request",
-    title: "Structural Steel I-beams",
-    project: "Downtown Office Complex",
-    date: "2026-04-09",
-    status: "pending",
-    items: [
-      { name: "Structural Steel I-beam (150mm)", qty: "200 metres" },
-      { name: "Bolts & Washers Set", qty: "50 sets" },
-    ],
-    comments:
-      "Needed for Phase 2 steel erection starting April 16. Please expedite.",
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-04-09 08:30",
-      },
-    ],
-  },
-  {
-    id: "REQ-0039",
-    type: "Expense Request",
-    title: "Site Transport — Week 14",
-    project: "Downtown Office Complex",
-    date: "2026-04-07",
-    status: "approved",
-    items: [
-      { name: "Fuel reimbursement", amount: "$120.00" },
-      { name: "Tolls", amount: "$18.50" },
-    ],
-    comments: "",
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-04-07 07:15",
-      },
-      {
-        actor: "Michael Chen",
-        role: "Senior PM",
-        action: "Approved",
-        date: "2026-04-07 14:30",
-        note: "Transport costs verified against site logs.",
-      },
-    ],
-  },
-  {
-    id: "REQ-0037",
-    type: "Material Request",
-    title: "Portland Cement (200 bags)",
-    project: "Riverside Residential",
-    date: "2026-04-04",
-    status: "approved",
-    items: [{ name: "Ordinary Portland Cement (50kg)", qty: "200 bags" }],
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-04-04 09:00",
-      },
-      {
-        actor: "Sarah Johnson",
-        role: "Project Manager",
-        action: "Approved",
-        date: "2026-04-04 11:45",
-        note: "Stock verified low. Approved.",
-      },
-    ],
-  },
-  {
-    id: "REQ-0036",
-    type: "Expense Request",
-    title: "Safety Gear Replacement",
-    project: "Downtown Office Complex",
-    date: "2026-04-01",
-    status: "rejected",
-    items: [
-      { name: "Hard Hat (replacement)", amount: "$45.00" },
-      { name: "Safety Harness", amount: "$120.00" },
-    ],
-    comments: "Existing gear damaged on site.",
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-04-01 10:00",
-      },
-      {
-        actor: "Michael Chen",
-        role: "Senior PM",
-        action: "Rejected",
-        date: "2026-04-02 09:00",
-        note: "Please re-submit with supplier quotes attached per procurement policy.",
-      },
-    ],
-  },
-  // ── Pending Leave ──────────────────────────────────────────────────────────
-  {
-    id: "REQ-0042",
-    type: "Leave Request",
-    title: "Annual Leave — 5 days",
-    project: "—",
-    date: "2026-04-10",
-    status: "pending",
-    items: [{ name: "Annual Leave: April 14–18 (5 working days)" }],
-    comments: "Prior notice given. All hand-overs complete.",
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-04-10 08:00",
-      },
-      {
-        actor: "Michael Chen",
-        role: "Line Manager",
-        action: "Approved",
-        date: "2026-04-10 10:30",
-        note: "Approved. Please ensure hand-over notes are shared.",
-      },
-    ],
-  },
-  // ── Pending Issue Report ───────────────────────────────────────────────────
-  {
-    id: "ISS-0005",
-    type: "Issue Report",
-    title: "Unsafe scaffolding on Block C",
-    project: "Downtown Office Complex",
-    date: "2026-04-11",
-    status: "pending",
-    items: [
-      {
-        name: "Safety Hazard — scaffolding poles improperly secured, Level 4 Block C",
-      },
-    ],
-    comments: "Immediate risk of collapse if not addressed. Please escalate.",
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-04-11 06:45",
-      },
-      {
-        actor: "HR Department",
-        role: "HR",
-        action: "Received",
-        date: "2026-04-11 08:30",
-        note: "Logged. Assigning to safety manager for investigation.",
-      },
-    ],
-  },
-  // ── Approved Leave ─────────────────────────────────────────────────────────
-  {
-    id: "REQ-0031",
-    type: "Leave Request",
-    title: "Sick Leave — 2 days",
-    project: "—",
-    date: "2026-03-22",
-    status: "approved",
-    items: [{ name: "Sick Leave: March 23–24 (2 days)" }],
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-03-22 07:00",
-      },
-      {
-        actor: "Michael Chen",
-        role: "Line Manager",
-        action: "Approved",
-        date: "2026-03-22 09:00",
-      },
-      {
-        actor: "Ngozi Okafor",
-        role: "HR Manager",
-        action: "Approved",
-        date: "2026-03-22 11:00",
-      },
-      {
-        actor: "HR Department",
-        role: "HR Dept",
-        action: "Approved",
-        date: "2026-03-22 12:00",
-      },
-    ],
-  },
-  // ── Approved Change Request ────────────────────────────────────────────────
-  {
-    id: "CHG-0003",
-    type: "Change Request",
-    title: "Bank Account Update",
-    project: "—",
-    date: "2026-03-15",
-    status: "approved",
-    items: [
-      { name: "Bank Details — account number change (verified by Finance)" },
-    ],
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-03-15 09:00",
-      },
-      {
-        actor: "HR Department",
-        role: "HR",
-        action: "Approved",
-        date: "2026-03-15 11:00",
-      },
-      {
-        actor: "IT Admin",
-        role: "Systems",
-        action: "Updated",
-        date: "2026-03-15 14:00",
-        note: "Account updated in payroll system.",
-      },
-      {
-        actor: "Ngozi Okafor",
-        role: "HR Manager",
-        action: "Confirmed",
-        date: "2026-03-15 16:00",
-      },
-    ],
-  },
-  {
-    id: "REQ-0033",
-    type: "Material Request",
-    title: "Plywood Formwork — 50 Sheets",
-    project: "Downtown Office Complex",
-    date: "2026-03-28",
-    status: "approved",
-    items: [{ name: "18mm Plywood Formwork Sheet", qty: "50 sheets" }],
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-03-28 07:45",
-      },
-      {
-        actor: "Michael Chen",
-        role: "Senior PM",
-        action: "Approved",
-        date: "2026-03-28 13:00",
-      },
-    ],
-  },
-  {
-    id: "REQ-0029",
-    type: "Expense Request",
-    title: "Site Catering — Team Briefing",
-    project: "Downtown Office Complex",
-    date: "2026-03-20",
-    status: "approved",
-    items: [{ name: "Catering for 24 people", amount: "$380.00" }],
-    approvalHistory: [
-      {
-        actor: "System",
-        role: "Auto",
-        action: "Submitted",
-        date: "2026-03-20 08:00",
-      },
-      {
-        actor: "Michael Chen",
-        role: "Senior PM",
-        action: "Approved",
-        date: "2026-03-20 15:00",
-      },
-    ],
-  },
-];
-
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const statusConfig: Record<
@@ -461,6 +177,30 @@ export function MyRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<ReqStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<ReqType | "all">("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [myRequests, setMyRequests] = useState<Request[]>([]);
+
+  useEffect(() => {
+    getPurchaseRequests()
+      .then((data) =>
+        setMyRequests(
+          data.map((pr) => ({
+            id: pr.prRef || pr.id,
+            type: "Material Request" as ReqType,
+            title: pr.title,
+            project: pr.projectName || "—",
+            date: pr.createdAt?.slice(0, 10) || "",
+            status: (pr.status?.toLowerCase() || "pending") as ReqStatus,
+            items: (pr.items || []).map((i: any) => ({
+              name: i.name || i.description || String(i),
+              qty: i.quantity != null ? String(i.quantity) : undefined,
+            })),
+            comments: pr.notes || "",
+            approvalHistory: [],
+          })),
+        ),
+      )
+      .catch(() => {});
+  }, []);
 
   const filtered = myRequests.filter((r) => {
     const matchSearch =

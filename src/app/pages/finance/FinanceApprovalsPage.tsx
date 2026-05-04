@@ -30,99 +30,6 @@ interface FinApproval {
 }
 
 // TODO: No finance approvals endpoint — using placeholder data
-const approvals: FinApproval[] = [
-  {
-    id: "fa1",
-    type: "Expense Claim",
-    title: "Q1 Marketing Campaign Expenses",
-    project: "Marketing Dept",
-    requestedBy: "Olivia James",
-    date: "2026-04-09",
-    amount: 145000,
-    status: "pending",
-    urgency: "urgent",
-    description:
-      "Expense claim for Q1 digital campaigns, event sponsorships, and printed materials. All receipts attached.",
-  },
-  {
-    id: "fa2",
-    type: "Budget Override",
-    title: "Data Centre Infrastructure Upgrade",
-    project: "IT Dept",
-    requestedBy: "Marcus Webb",
-    date: "2026-04-08",
-    amount: 680000,
-    status: "pending",
-    urgency: "urgent",
-    description:
-      "Capex for server upgrades exceeds the approved Q2 budget by ₦180K due to vendor price increases.",
-  },
-  {
-    id: "fa3",
-    type: "Payment Request",
-    title: "Construction Contractor — Milestone 3",
-    project: "Finance Dept",
-    requestedBy: "Finance Controller",
-    date: "2026-04-07",
-    amount: 2400000,
-    status: "pending",
-    urgency: "normal",
-    description:
-      "Milestone 3 completion verified by site manager. Release of 25% contract value per agreed payment schedule.",
-  },
-  {
-    id: "fa4",
-    type: "Budget Override",
-    title: "Emergency IT Security Audit",
-    project: "IT Dept",
-    requestedBy: "CTO",
-    date: "2026-04-04",
-    amount: 40000,
-    status: "pending",
-    urgency: "urgent",
-    description:
-      "External security audit following suspected phishing incident. Unbudgeted but operationally critical.",
-  },
-  {
-    id: "fa5",
-    type: "Vendor Invoice",
-    title: "Oracle ERP Annual License Renewal",
-    project: "IT Dept",
-    requestedBy: "IT Department",
-    date: "2026-04-06",
-    amount: 320000,
-    status: "approved",
-    urgency: "normal",
-    description:
-      "Annual enterprise license renewal. PO already raised; payment aligned with approved vendor terms.",
-  },
-  {
-    id: "fa6",
-    type: "Payment Request",
-    title: "Legal Retainer — Q2 2026",
-    project: "Legal Dept",
-    requestedBy: "Legal Department",
-    date: "2026-04-03",
-    amount: 95000,
-    status: "approved",
-    urgency: "normal",
-    description:
-      "Quarterly retainer payment to Adeyemi & Associates per legal services agreement.",
-  },
-  {
-    id: "fa7",
-    type: "Expense Claim",
-    title: "Lagos Office Renovations",
-    project: "Admin Dept",
-    requestedBy: "Admin Manager",
-    date: "2026-04-05",
-    amount: 87500,
-    status: "rejected",
-    urgency: "normal",
-    description:
-      "Office furniture and partitioning. Rejected — over department cap; requires board approval.",
-  },
-];
 
 const statusConfig: Record<
   ApprovalStatus,
@@ -158,6 +65,7 @@ function fmt(n: number) {
 }
 
 export function FinanceApprovalsPage() {
+  const [approvals, setApprovals] = useState<FinApproval[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "all">(
     "all",

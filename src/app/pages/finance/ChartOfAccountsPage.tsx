@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getChartAccounts } from "../../api/finance-extras";
 import {
   Plus,
   Search,
@@ -30,170 +31,6 @@ const typeColors: Record<AccountType, string> = {
   Expenses: "bg-orange-100 text-orange-700",
 };
 
-// TODO: No chart of accounts endpoint — using placeholder data
-const initialAccounts: Account[] = [
-  {
-    id: "a1",
-    code: "1000",
-    name: "Assets",
-    type: "Assets",
-    parentId: null,
-    description: "All asset accounts",
-  },
-  {
-    id: "a2",
-    code: "1100",
-    name: "Current Assets",
-    type: "Assets",
-    parentId: "a1",
-    description: "Short-term assets",
-  },
-  {
-    id: "a3",
-    code: "1110",
-    name: "Cash & Bank",
-    type: "Assets",
-    parentId: "a2",
-    description: "Cash on hand and bank balances",
-  },
-  {
-    id: "a4",
-    code: "1120",
-    name: "Accounts Receivable",
-    type: "Assets",
-    parentId: "a2",
-    description: "Amounts owed by customers",
-  },
-  {
-    id: "a5",
-    code: "1200",
-    name: "Fixed Assets",
-    type: "Assets",
-    parentId: "a1",
-    description: "Long-term physical assets",
-  },
-  {
-    id: "a6",
-    code: "1210",
-    name: "Plant & Equipment",
-    type: "Assets",
-    parentId: "a5",
-    description: "Machinery and equipment",
-  },
-  {
-    id: "a7",
-    code: "2000",
-    name: "Liabilities",
-    type: "Liabilities",
-    parentId: null,
-    description: "All liability accounts",
-  },
-  {
-    id: "a8",
-    code: "2100",
-    name: "Current Liabilities",
-    type: "Liabilities",
-    parentId: "a7",
-    description: "Short-term obligations",
-  },
-  {
-    id: "a9",
-    code: "2110",
-    name: "Accounts Payable",
-    type: "Liabilities",
-    parentId: "a8",
-    description: "Amounts owed to suppliers",
-  },
-  {
-    id: "a10",
-    code: "2120",
-    name: "Accrued Expenses",
-    type: "Liabilities",
-    parentId: "a8",
-    description: "Expenses incurred but not yet paid",
-  },
-  {
-    id: "a11",
-    code: "3000",
-    name: "Equity",
-    type: "Equity",
-    parentId: null,
-    description: "Owner's equity",
-  },
-  {
-    id: "a12",
-    code: "3100",
-    name: "Retained Earnings",
-    type: "Equity",
-    parentId: "a11",
-    description: "Accumulated profits",
-  },
-  {
-    id: "a13",
-    code: "4000",
-    name: "Income",
-    type: "Income",
-    parentId: null,
-    description: "All income accounts",
-  },
-  {
-    id: "a14",
-    code: "4100",
-    name: "Contract Revenue",
-    type: "Income",
-    parentId: "a13",
-    description: "Revenue from construction contracts",
-  },
-  {
-    id: "a15",
-    code: "4200",
-    name: "Service Income",
-    type: "Income",
-    parentId: "a13",
-    description: "Revenue from services rendered",
-  },
-  {
-    id: "a16",
-    code: "5000",
-    name: "Expenses",
-    type: "Expenses",
-    parentId: null,
-    description: "All expense accounts",
-  },
-  {
-    id: "a17",
-    code: "5100",
-    name: "Labour Costs",
-    type: "Expenses",
-    parentId: "a16",
-    description: "Wages and salaries",
-  },
-  {
-    id: "a18",
-    code: "5200",
-    name: "Material Costs",
-    type: "Expenses",
-    parentId: "a16",
-    description: "Raw materials and supplies",
-  },
-  {
-    id: "a19",
-    code: "5300",
-    name: "Equipment Costs",
-    type: "Expenses",
-    parentId: "a16",
-    description: "Equipment hire and maintenance",
-  },
-  {
-    id: "a20",
-    code: "5400",
-    name: "Overhead",
-    type: "Expenses",
-    parentId: "a16",
-    description: "General overhead costs",
-  },
-];
-
 const ACCOUNT_TYPES: AccountType[] = [
   "Assets",
   "Liabilities",
@@ -212,7 +49,24 @@ const emptyForm = {
 };
 
 export function ChartOfAccountsPage() {
-  const [accounts, setAccounts] = useState<Account[]>(initialAccounts);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+
+  useEffect(() => {
+    getChartAccounts()
+      .then((data) =>
+        setAccounts(
+          data.map((a) => ({
+            id: a.id,
+            code: a.code,
+            name: a.name,
+            type: a.type as AccountType,
+            parentId: a.parentId ?? null,
+            description: a.description ?? "",
+          })),
+        ),
+      )
+      .catch(console.error);
+  }, []);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<AccountType | "All">("All");
   const [showModal, setShowModal] = useState(false);

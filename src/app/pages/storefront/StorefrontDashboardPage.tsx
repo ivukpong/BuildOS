@@ -1,3 +1,4 @@
+import { useState, useEffect, useMemo } from "react";
 import {
   Store,
   FolderOpen,
@@ -9,111 +10,118 @@ import {
   CheckCircle2,
   Clock,
 } from "lucide-react";
+import { getStores, getStockTransfers } from "../../api/materials";
 
-// TODO: No inventory/storefront API endpoint available — using placeholder data
-const stats = [
-  {
-    label: "Total Stock Value",
-    value: "₦142.8M",
-    sub: "Across all stores",
-    icon: DollarSign,
-    color: "text-teal-600 bg-teal-50",
-  },
-  {
-    label: "Available Materials",
-    value: "312",
-    sub: "Unique SKUs in stock",
-    icon: Package,
-    color: "text-blue-600 bg-blue-50",
-  },
-  {
-    label: "Pending Requests",
-    value: "14",
-    sub: "Awaiting processing",
-    icon: Clock,
-    color: "text-yellow-600 bg-yellow-50",
-  },
-  {
-    label: "Approved Transfers",
-    value: "27",
-    sub: "This month",
-    icon: CheckCircle2,
-    color: "text-green-600 bg-green-50",
-  },
-  {
-    label: "Low Stock Alerts",
-    value: "18",
-    sub: "Below reorder level",
-    icon: AlertTriangle,
-    color: "text-red-500 bg-red-50",
-  },
+type StoreDisplay = {
+  id: string;
+  name: string;
+  items: number;
+  lowStock: number;
+  lastActivity: string;
+  icon: React.ElementType;
+  color: string;
+};
+type TransferDisplay = {
+  id: string;
+  from: string;
+  to: string;
+  items: number;
+  date: string;
+  status: string;
+};
+
+const STORE_ICONS: React.ElementType[] = [
+  Store,
+  FolderOpen,
+  FolderOpen,
+  FolderOpen,
+  FolderOpen,
 ];
-
-// TODO: No inventory/storefront API endpoint available — using placeholder data
-const stores = [
-  {
-    name: "General Store",
-    items: 224,
-    lowStock: 8,
-    lastActivity: "Today, 09:12 AM",
-    icon: Store,
-    color: "bg-teal-600",
-  },
-  {
-    name: "Block A Project Store",
-    items: 45,
-    lowStock: 4,
-    lastActivity: "Today, 08:45 AM",
-    icon: FolderOpen,
-    color: "bg-blue-600",
-  },
-  {
-    name: "Block B Project Store",
-    items: 31,
-    lowStock: 2,
-    lastActivity: "Yesterday",
-    icon: FolderOpen,
-    color: "bg-purple-600",
-  },
-  {
-    name: "Block C Project Store",
-    items: 12,
-    lowStock: 4,
-    lastActivity: "Jun 2, 2025",
-    icon: FolderOpen,
-    color: "bg-orange-600",
-  },
-];
-
-// TODO: No inventory/storefront API endpoint available — using placeholder data
-const recentTransfers = [
-  {
-    id: "TRF-041",
-    from: "General Store",
-    to: "Block A Project Store",
-    items: 3,
-    date: "Today, 09:00 AM",
-    status: "Completed",
-  },
-  {
-    id: "TRF-040",
-    from: "General Store",
-    to: "Block B Project Store",
-    items: 5,
-    date: "Yesterday",
-    status: "Completed",
-  },
-  {
-    id: "TRF-039",
-    from: "Block A",
-    to: "Block C Project Store",
-    items: 2,
-    date: "Jun 3, 2025",
-    status: "Pending",
-  },
+const STORE_COLORS = [
+  "bg-teal-600",
+  "bg-blue-600",
+  "bg-purple-600",
+  "bg-orange-600",
+  "bg-sky-600",
 ];
 
 export function StorefrontDashboardPage() {
+  const [stores, setStores] = useState<StoreDisplay[]>([]);
+  const [recentTransfers, setRecentTransfers] = useState<TransferDisplay[]>([]);
+
+  const stats = useMemo(
+    () => [
+      {
+        label: "Total Stores",
+        value: stores.length,
+        sub: "Active stores",
+        icon: Store,
+        color: "bg-teal-100 text-teal-700",
+      },
+      {
+        label: "Total Items",
+        value: stores.reduce((sum, s) => sum + s.items, 0),
+        sub: "Across all stores",
+        icon: Package,
+        color: "bg-blue-100 text-blue-700",
+      },
+      {
+        label: "Low Stock",
+        value: stores.reduce((sum, s) => sum + s.lowStock, 0),
+        sub: "Items below threshold",
+        icon: AlertTriangle,
+        color: "bg-red-100 text-red-700",
+      },
+      {
+        label: "Pending Transfers",
+        value: recentTransfers.filter((t) => t.status !== "Completed").length,
+        sub: "Awaiting approval",
+        icon: Clock,
+        color: "bg-yellow-100 text-yellow-700",
+      },
+      {
+        label: "Completed Transfers",
+        value: recentTransfers.filter((t) => t.status === "Completed").length,
+        sub: "This period",
+        icon: CheckCircle2,
+        color: "bg-green-100 text-green-700",
+      },
+    ],
+    [stores, recentTransfers],
+  );
+
+  useEffect(() => {
+    getStores()
+      .then((data) =>
+        setStores(
+          data.map((s, i) => ({
+            id: s.id,
+            name: s.name,
+            items: s.storeItems?.length ?? 0,
+            lowStock: 0,
+            lastActivity: "—",
+            icon: STORE_ICONS[i] ?? FolderOpen,
+            color: STORE_COLORS[i] ?? "bg-gray-600",
+          })),
+        ),
+      )
+      .catch(console.error);
+    getStockTransfers()
+      .then((data) =>
+        setRecentTransfers(
+          data.slice(0, 5).map((t) => ({
+            id: t.reference,
+            from: t.fromStoreName,
+            to: t.toStoreName,
+            items: Array.isArray(t.items) ? t.items.length : 0,
+            date: t.requestDate,
+            status: t.status,
+          })),
+        ),
+      )
+      .catch(console.error);
+  }, []);
+
   return (
     <div className="space-y-6">
       <div>

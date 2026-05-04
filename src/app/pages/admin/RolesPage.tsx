@@ -147,78 +147,6 @@ const ALL_PROC = (granted: string[]): Record<string, ProcessPerm> =>
   );
 
 // ── Seed roles ────────────────────────────────────────────────────────────────
-const SEED_ROLES: Role[] = [
-  {
-    id: "r1", name: "Super Admin", description: "Full system access — all processes", users: 1, isSuper: true,
-    permissions: Object.fromEntries(DEFAULT_PROCESSES.map((p) => [p.id, { view: true, create: true, edit: true, approve: true, delete: true }])),
-    appAccess: { construction: true, finance: true, hr: true, procurement: true, admin: true, ess: true },
-    navAccess: navAll("construction","finance","hr","procurement","admin","ess"),
-  },
-  {
-    id: "r2", name: "Construction Manager", description: "Manages projects, workforce, and site procurement", users: 3,
-    permissions: ALL_PROC([
-      "p_create_pr_v","p_create_pr_c",
-      "p_approve_po_v","p_issue_mat_v","p_issue_mat_c",
-      "p_create_exp_v","p_create_exp_c",
-      "p_assign_wf_v","p_assign_wf_c","p_assign_wf_e",
-      "p_create_proj_v","p_create_proj_c","p_create_proj_e",
-      "p_approve_bud_v","p_approve_bud_a",
-      "p_gen_rpt_v",
-    ]),
-    appAccess: { construction: true, finance: false, hr: false, procurement: true, admin: false, ess: true },
-    navAccess: navAll("construction","ess"),
-  },
-  {
-    id: "r3", name: "Finance Manager", description: "Full finance and payroll oversight", users: 2,
-    permissions: ALL_PROC([
-      "p_create_pr_v",
-      "p_approve_po_v","p_approve_po_a",
-      "p_create_exp_v","p_create_exp_c","p_create_exp_e",
-      "p_approve_exp_v","p_approve_exp_a",
-      "p_create_pay_v","p_create_pay_c",
-      "p_gen_rpt_v","p_gen_rpt_c",
-    ]),
-    appAccess: { construction: false, finance: true, hr: true, procurement: false, admin: false, ess: true },
-    navAccess: { ...navAll("finance","ess"), hr_payroll: true, hr_payroll_proc: true },
-  },
-  {
-    id: "r4", name: "HR Manager", description: "Employee records, payroll processing, and leave management", users: 2,
-    permissions: ALL_PROC([
-      "p_create_pay_v","p_create_pay_c",
-      "p_approve_lv_v","p_approve_lv_a",
-      "p_gen_rpt_v","p_gen_rpt_c",
-    ]),
-    appAccess: { construction: false, finance: false, hr: true, procurement: false, admin: false, ess: true },
-    navAccess: navAll("hr","ess"),
-  },
-  {
-    id: "r5", name: "Procurement Officer", description: "Raises and tracks purchase requests", users: 4,
-    permissions: ALL_PROC([
-      "p_create_pr_v","p_create_pr_c","p_create_pr_e",
-      "p_approve_po_v",
-      "p_issue_mat_v","p_issue_mat_c",
-    ]),
-    appAccess: { construction: false, finance: false, hr: false, procurement: true, admin: false, ess: true },
-    navAccess: navAll("procurement","ess"),
-  },
-  {
-    id: "r6", name: "Accountant", description: "Records and reviews expenses", users: 3,
-    permissions: ALL_PROC([
-      "p_create_exp_v","p_create_exp_c","p_create_exp_e",
-      "p_approve_exp_v",
-      "p_create_pay_v",
-      "p_gen_rpt_v","p_gen_rpt_c",
-    ]),
-    appAccess: { construction: false, finance: true, hr: false, procurement: false, admin: false, ess: true },
-    navAccess: navAll("finance","ess"),
-  },
-  {
-    id: "r7", name: "Employee", description: "Basic ESS access — submit requests only", users: 18,
-    permissions: ALL_PROC([]),
-    appAccess: { construction: false, finance: false, hr: false, procurement: false, admin: false, ess: true },
-    navAccess: navPartial(["ess_dashboard","ess_requests","ess_submit","ess_profile"]),
-  },
-];
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const PERM_KEYS: Array<keyof ProcessPerm> = ["view", "create", "edit", "approve", "delete"];
@@ -352,7 +280,7 @@ function AddRoleModal({ onAdd, onClose }: { onAdd: (r: Role) => void; onClose: (
 
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export function RolesPage() {
-  const [roles, setRoles] = useState<Role[]>(SEED_ROLES);
+  const [roles, setRoles] = useState<Role[]>([]);
   const [processes, setProcesses] = useState<ProcessDef[]>(DEFAULT_PROCESSES.slice(0, 8));
   const [showAddProcess, setShowAddProcess] = useState(false);
   const [showAddRole, setShowAddRole] = useState(false);

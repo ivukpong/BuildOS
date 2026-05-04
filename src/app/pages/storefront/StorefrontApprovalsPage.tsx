@@ -1,5 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CheckCircle, XCircle, Eye, Search } from "lucide-react";
+import {
+  getConstructionApprovals,
+  updateConstructionApproval,
+  ConstructionApproval as ApiApproval,
+} from "../../api/construction-extras";
 
 type ApprovalType = "Material Request" | "Transfer" | "Return";
 type ApprovalStatus = "Pending" | "Approved" | "Rejected";
@@ -29,140 +34,39 @@ const STATUS_STYLE: Record<ApprovalStatus, string> = {
   Rejected: "bg-red-50 text-red-700",
 };
 
-// TODO: No storefront approvals endpoint — using placeholder data
-const MOCK: ApprovalItem[] = [
-  {
-    id: "APP-018",
-    type: "Material Request",
-    reference: "REQ-041",
-    description: "50 Bags of Cement (50kg) → Block A Project Store",
-    requestedBy: "Emeka Nwosu",
-    requestDate: "Jun 4, 2025",
-    status: "Pending",
-    approvedBy: "",
-    approvalDate: "",
-    details: {
-      Material: "Cement (50kg bag)",
-      Quantity: "50 Bags",
-      "Source Store": "General Store",
-      Destination: "Block A Project Store",
-      Priority: "Urgent",
-      Remarks: "Slab pour scheduled Jun 6",
-    },
-  },
-  {
-    id: "APP-017",
-    type: "Return",
-    reference: "RET-009",
-    description: "30 Bags Cement (50kg) returned from Block B",
-    requestedBy: "Aisha Ibrahim",
-    requestDate: "Jun 4, 2025",
-    status: "Pending",
-    approvedBy: "",
-    approvalDate: "",
-    details: {
-      Material: "Cement (50kg bag)",
-      Quantity: "30 Bags",
-      "From Store": "Block B Project Store",
-      "To Store": "General Store",
-      Condition: "Good",
-      Reason: "Excess — work completed",
-    },
-  },
-  {
-    id: "APP-016",
-    type: "Transfer",
-    reference: "TRF-042",
-    description: "Binding Wire × 10 Rolls → Block C Project Store",
-    requestedBy: "Tunde Bello",
-    requestDate: "Jun 3, 2025",
-    status: "Pending",
-    approvedBy: "",
-    approvalDate: "",
-    details: {
-      Material: "Binding Wire",
-      Quantity: "10 Rolls",
-      "From Store": "General Store",
-      "To Store": "Block C Project Store",
-      Notes: "",
-    },
-  },
-  {
-    id: "APP-015",
-    type: "Material Request",
-    reference: "REQ-040",
-    description: "5 Rolls Binding Wire → Block B Project Store",
-    requestedBy: "Aisha Ibrahim",
-    requestDate: "Jun 3, 2025",
-    status: "Approved",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "Jun 3, 2025",
-    details: {
-      Material: "Binding Wire",
-      Quantity: "5 Rolls",
-      "Source Store": "General Store",
-      Destination: "Block B Project Store",
-    },
-  },
-  {
-    id: "APP-014",
-    type: "Transfer",
-    reference: "TRF-041",
-    description: "Cement × 100 Bags + Binding Wire × 10 Rolls → Block A",
-    requestedBy: "Emeka Nwosu",
-    requestDate: "Jun 2, 2025",
-    status: "Approved",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "Jun 2, 2025",
-    details: {
-      Items: "Cement 100 Bags, Binding Wire 10 Rolls",
-      "From Store": "General Store",
-      "To Store": "Block A Project Store",
-    },
-  },
-  {
-    id: "APP-013",
-    type: "Return",
-    reference: "RET-008",
-    description: "5 Rolls Binding Wire returned from Block A",
-    requestedBy: "Emeka Nwosu",
-    requestDate: "Jun 1, 2025",
-    status: "Approved",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "Jun 1, 2025",
-    details: {
-      Material: "Binding Wire",
-      Quantity: "5 Rolls",
-      "From Store": "Block A Project Store",
-      Condition: "Good",
-    },
-  },
-  {
-    id: "APP-012",
-    type: "Material Request",
-    reference: "REQ-036",
-    description: "8 Sheets Formwork Plywood → Block B",
-    requestedBy: "Grace Eze",
-    requestDate: "May 30, 2025",
-    status: "Rejected",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "May 30, 2025",
-    details: {
-      Material: "Formwork Plywood",
-      Quantity: "8 Sheets",
-      Reason: "Rejected — Insufficient stock",
-    },
-  },
-];
+// MOCK removed — data now from API
+
+function fromApi(a: ApiApproval): ApprovalItem {
+  return {
+    id: a.id,
+    type: a.type as ApprovalType,
+    reference: a.reference,
+    description: a.description ?? "",
+    requestedBy: a.requestedBy ?? "",
+    requestDate: a.requestDate,
+    status: a.status as ApprovalStatus,
+    approvedBy: a.reviewedBy ?? "",
+    approvalDate: a.reviewedAt ?? "",
+    details: { Notes: a.notes ?? "" },
+  };
+}
 
 export function StorefrontApprovalsPage() {
-  const [items, setItems] = useState<ApprovalItem[]>(MOCK);
+  const [items, setItems] = useState<ApprovalItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<ApprovalType | "All">("All");
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "All">(
     "Pending",
   );
   const [selected, setSelected] = useState<ApprovalItem | null>(null);
+
+  useEffect(() => {
+    getConstructionApprovals()
+      .then((data) => setItems(data.map(fromApi)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = items.filter((a) => {
     const q = search.toLowerCase();
@@ -175,49 +79,38 @@ export function StorefrontApprovalsPage() {
     return matchSearch && matchType && matchStatus;
   });
 
-  function approve(id: string) {
-    const now = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    setItems((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              status: "Approved",
-              approvedBy: "Store Manager",
-              approvalDate: now,
-            }
-          : a,
-      ),
-    );
-    setSelected(null);
+  async function approve(id: string) {
+    try {
+      const updated = await updateConstructionApproval(id, {
+        status: "Approved",
+        reviewedBy: "Store Manager",
+      });
+      setItems((prev) => prev.map((a) => (a.id === id ? fromApi(updated) : a)));
+      setSelected(null);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  function reject(id: string) {
-    const now = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    setItems((prev) =>
-      prev.map((a) =>
-        a.id === id
-          ? {
-              ...a,
-              status: "Rejected",
-              approvedBy: "Store Manager",
-              approvalDate: now,
-            }
-          : a,
-      ),
-    );
-    setSelected(null);
+  async function reject(id: string) {
+    try {
+      const updated = await updateConstructionApproval(id, {
+        status: "Rejected",
+        reviewedBy: "Store Manager",
+      });
+      setItems((prev) => prev.map((a) => (a.id === id ? fromApi(updated) : a)));
+      setSelected(null);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   const pendingCount = items.filter((a) => a.status === "Pending").length;
+
+  if (loading)
+    return (
+      <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
+    );
 
   return (
     <div className="space-y-5">

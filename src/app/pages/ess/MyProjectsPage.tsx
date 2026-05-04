@@ -38,59 +38,6 @@ interface MyProject {
 
 // ─── Mock data (James Okafor's view) ─────────────────────────────────────────
 
-// TODO: No user-scoped projects endpoint — loaded from /projects and filtered to active
-// TODO: No tasks endpoint — using placeholder data
-const myTasks: MyTask[] = [
-  {
-    id: "TASK-001",
-    name: "Foundation Works Inspection",
-    project: "Downtown Office Complex",
-    status: "in-progress",
-    due: "2026-04-15",
-    priority: "high",
-  },
-  {
-    id: "TASK-002",
-    name: "Safety Audit — Block B",
-    project: "Downtown Office Complex",
-    status: "todo",
-    due: "2026-04-18",
-    priority: "high",
-  },
-  {
-    id: "TASK-003",
-    name: "Concrete Pour Schedule Review",
-    project: "Riverside Residential",
-    status: "todo",
-    due: "2026-04-20",
-    priority: "medium",
-  },
-  {
-    id: "TASK-004",
-    name: "Site Photo Documentation",
-    project: "Downtown Office Complex",
-    status: "done",
-    due: "2026-04-08",
-    priority: "low",
-  },
-  {
-    id: "TASK-005",
-    name: "Rebar Installation QC Check",
-    project: "Downtown Office Complex",
-    status: "done",
-    due: "2026-04-06",
-    priority: "medium",
-  },
-  {
-    id: "TASK-006",
-    name: "Soil Compaction Test Review",
-    project: "Riverside Residential",
-    status: "blocked",
-    due: "2026-04-14",
-    priority: "high",
-  },
-];
-
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const taskStatusConfig: Record<
@@ -143,6 +90,8 @@ function ProgressBar({ value }: { value: number }) {
 export function MyProjectsPage() {
   const navigate = useNavigate();
   const [myProjects, setMyProjects] = useState<MyProject[]>([]);
+  const [myTasks, setMyTasks] = useState<MyTask[]>([]);
+  void setMyTasks; // no tasks endpoint yet
   useEffect(() => {
     fetchProjects({ status: "active" })
       .then((ps) =>

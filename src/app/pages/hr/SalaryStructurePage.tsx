@@ -61,62 +61,6 @@ const BLANK_COMP: Omit<SalaryComponent, "id"> = {
 };
 
 // ── Seed data ─────────────────────────────────────────────────────────────────
-const SEED_BANDS: SalaryBand[] = [
-  {
-    id: "b1",
-    gradeName: "Junior Engineer",
-    gradeLevel: "L2",
-    department: "Engineering",
-    description: "Entry-level engineering positions",
-    basicSalary: 150000,
-    components: [
-      { id: "c1", name: "Housing Allowance", type: "allowance", calcType: "percent_basic", amount: 0, percentage: 30, taxable: false, description: "Standard housing benefit", applicability: { scope: "all" } },
-      { id: "c2", name: "Transport Allowance", type: "allowance", calcType: "fixed", amount: 15000, taxable: false, description: "Monthly transport stipend", applicability: { scope: "all" } },
-      { id: "c3", name: "Pension (Employee)", type: "deduction", calcType: "percent_basic", amount: 0, percentage: 8, taxable: false, description: "Employee pension contribution", applicability: { scope: "all" } },
-    ],
-  },
-  {
-    id: "b2",
-    gradeName: "Senior Engineer",
-    gradeLevel: "L4",
-    department: "Engineering",
-    description: "Senior individual contributors",
-    basicSalary: 280000,
-    components: [
-      { id: "c4", name: "Housing Allowance", type: "allowance", calcType: "percent_basic", amount: 0, percentage: 35, taxable: false, description: "Standard housing benefit", applicability: { scope: "all" } },
-      { id: "c5", name: "Performance Bonus", type: "allowance", calcType: "formula", amount: 0, formula: "basic * 0.12 * performance_rating", taxable: true, description: "Quarterly performance bonus", applicability: { scope: "roles", target: "Senior Engineer" } },
-      { id: "c6", name: "Pension (Employee)", type: "deduction", calcType: "percent_basic", amount: 0, percentage: 8, taxable: false, description: "Employee pension contribution", applicability: { scope: "all" } },
-    ],
-  },
-  {
-    id: "b3",
-    gradeName: "Project Manager",
-    gradeLevel: "M2",
-    department: "Construction",
-    description: "Mid-level project management",
-    basicSalary: 320000,
-    components: [
-      { id: "c7", name: "Housing Allowance", type: "allowance", calcType: "percent_basic", amount: 0, percentage: 40, taxable: false, description: "Standard housing benefit", applicability: { scope: "all" } },
-      { id: "c8", name: "Site Hazard Allowance", type: "allowance", calcType: "fixed", amount: 25000, taxable: true, description: "Site risk compensation", applicability: { scope: "grade_levels", target: "M2" } },
-      { id: "c9", name: "Pension (Employee)", type: "deduction", calcType: "percent_basic", amount: 0, percentage: 8, taxable: false, description: "Employee pension contribution", applicability: { scope: "all" } },
-      { id: "c10", name: "PAYE Tax", type: "deduction", calcType: "formula", amount: 0, formula: "(basic + taxable_allowances - 200000) * 0.24", taxable: false, description: "Pay as you earn income tax", applicability: { scope: "all" } },
-    ],
-  },
-  {
-    id: "b4",
-    gradeName: "Director",
-    gradeLevel: "D1",
-    department: "Executive",
-    description: "C-suite and directors",
-    basicSalary: 750000,
-    components: [
-      { id: "c11", name: "Housing Allowance", type: "allowance", calcType: "percent_basic", amount: 0, percentage: 50, taxable: false, description: "Executive housing benefit", applicability: { scope: "all" } },
-      { id: "c12", name: "Car Benefit", type: "allowance", calcType: "fixed", amount: 80000, taxable: true, description: "Company vehicle benefit", applicability: { scope: "roles", target: "Director" } },
-      { id: "c13", name: "Annual Bonus", type: "allowance", calcType: "percent_component", amount: 0, percentage: 20, referenceComponent: "c11", taxable: true, description: "Discretionary annual bonus", applicability: { scope: "custom_groups", target: "Executive Committee" } },
-      { id: "c14", name: "Pension (Employee)", type: "deduction", calcType: "percent_basic", amount: 0, percentage: 10, taxable: false, description: "Employee pension contribution", applicability: { scope: "all" } },
-    ],
-  },
-];
 
 // ── Helper badges ─────────────────────────────────────────────────────────────
 function CalcBadge({ type }: { type: CalcType }) {
@@ -381,7 +325,7 @@ function ComponentModal({
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function SalaryStructurePage() {
-  const [bands, setBands] = useState<SalaryBand[]>(SEED_BANDS);
+  const [bands, setBands] = useState<SalaryBand[]>([]);
   const [expanded, setExpanded] = useState<Set<string>>(new Set(["b1"]));
   const [modalBand, setModalBand] = useState<SalaryBand | null>(null);
   const [editComp, setEditComp] = useState<SalaryComponent | null>(null);

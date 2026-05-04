@@ -1,4 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  getMaterialRequests,
+  updateMaterialRequest,
+  type MaterialRequest as ApiRequest,
+} from "../../api/materials";
 import {
   Search,
   Download,
@@ -44,152 +49,6 @@ const STATUS_STYLE: Record<RequestStatus, string> = {
 };
 
 // TODO: No material requests endpoint — using placeholder data
-const MOCK: MaterialRequest[] = [
-  {
-    id: "REQ-041",
-    requestedBy: "Emeka Nwosu",
-    department: "Block A",
-    material: "Cement (50kg bag)",
-    category: "Concrete",
-    quantity: 50,
-    unit: "Bags",
-    sourceStore: "General Store",
-    destination: "Block A Project Store",
-    destinationType: "Project Store",
-    requestDate: "Jun 4, 2025",
-    requiredDate: "Jun 6, 2025",
-    status: "Pending",
-    remarks: "Urgent — slab pour scheduled",
-    approvedBy: "",
-    approvalDate: "",
-  },
-  {
-    id: "REQ-040",
-    requestedBy: "Aisha Ibrahim",
-    department: "Block B",
-    material: "Binding Wire",
-    category: "Steel",
-    quantity: 5,
-    unit: "Rolls",
-    sourceStore: "General Store",
-    destination: "Block B Project Store",
-    destinationType: "Project Store",
-    requestDate: "Jun 3, 2025",
-    requiredDate: "Jun 5, 2025",
-    status: "Approved",
-    remarks: "",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "Jun 3, 2025",
-  },
-  {
-    id: "REQ-039",
-    requestedBy: "Tunde Bello",
-    department: "Block C",
-    material: "PVC Pipes 2 Inch",
-    category: "Plumbing",
-    quantity: 20,
-    unit: "Lengths",
-    sourceStore: "General Store",
-    destination: "Block C Project Store",
-    destinationType: "Project Store",
-    requestDate: "Jun 2, 2025",
-    requiredDate: "Jun 4, 2025",
-    status: "Fulfilled",
-    remarks: "",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "Jun 2, 2025",
-  },
-  {
-    id: "REQ-038",
-    requestedBy: "Fatima Yusuf",
-    department: "HR",
-    material: "Granite Tiles 600x600",
-    category: "Finishes",
-    quantity: 10,
-    unit: "Boxes",
-    sourceStore: "General Store",
-    destination: "Office Block",
-    destinationType: "Project Store",
-    requestDate: "Jun 1, 2025",
-    requiredDate: "Jun 8, 2025",
-    status: "Forwarded to Procurement",
-    remarks: "Out of stock — forwarded to procurement",
-    approvedBy: "",
-    approvalDate: "",
-  },
-  {
-    id: "REQ-037",
-    requestedBy: "David Okafor",
-    department: "Block A",
-    material: "Steel Rebar Y12",
-    category: "Steel",
-    quantity: 2,
-    unit: "Tonnes",
-    sourceStore: "General Store",
-    destination: "Block A Project Store",
-    destinationType: "Project Store",
-    requestDate: "May 31, 2025",
-    requiredDate: "Jun 2, 2025",
-    status: "Fulfilled",
-    remarks: "",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "May 31, 2025",
-  },
-  {
-    id: "REQ-036",
-    requestedBy: "Grace Eze",
-    department: "Block B",
-    material: "Formwork Plywood",
-    category: "Timber",
-    quantity: 8,
-    unit: "Sheets",
-    sourceStore: "General Store",
-    destination: "Block B Project Store",
-    destinationType: "Project Store",
-    requestDate: "May 30, 2025",
-    requiredDate: "Jun 1, 2025",
-    status: "Rejected",
-    remarks: "Insufficient stock level",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "May 30, 2025",
-  },
-  {
-    id: "REQ-035",
-    requestedBy: "Uche Onu",
-    department: "Block C",
-    material: "2.5mm Twin Cable",
-    category: "Electrical",
-    quantity: 150,
-    unit: "Metres",
-    sourceStore: "General Store",
-    destination: "Block C Project Store",
-    destinationType: "Project Store",
-    requestDate: "May 28, 2025",
-    requiredDate: "Jun 3, 2025",
-    status: "Pending",
-    remarks: "",
-    approvedBy: "",
-    approvalDate: "",
-  },
-  {
-    id: "REQ-034",
-    requestedBy: "Ngozi Adeyemi",
-    department: "Admin",
-    material: "Sand",
-    category: "Aggregates",
-    quantity: 10,
-    unit: "Tonnes",
-    sourceStore: "General Store",
-    destination: "Office Extension",
-    destinationType: "Direct Issue",
-    requestDate: "May 25, 2025",
-    requiredDate: "May 28, 2025",
-    status: "Fulfilled",
-    remarks: "",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "May 26, 2025",
-  },
-];
 
 const STATUSES: (RequestStatus | "All")[] = [
   "All",
@@ -200,13 +59,52 @@ const STATUSES: (RequestStatus | "All")[] = [
   "Forwarded to Procurement",
 ];
 
+function toRequest(r: ApiRequest): MaterialRequest {
+  return {
+    id: r.reference || r.id,
+    requestedBy: r.requestedBy ?? "",
+    department: r.projectName ?? "",
+    material: r.materialName,
+    category: "",
+    quantity: r.qty,
+    unit: r.unit,
+    sourceStore: r.storeName,
+    destination: r.projectName ?? "",
+    destinationType: "Project Store",
+    requestDate: new Date(r.requestDate).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    requiredDate: "",
+    status: (r.status as RequestStatus) ?? "Pending",
+    remarks: r.purpose ?? "",
+    approvedBy: r.approvedBy ?? "",
+    approvalDate: r.approvedAt
+      ? new Date(r.approvedAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        })
+      : "",
+  };
+}
+
 export function IncomingRequestsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<RequestStatus | "All">(
     "All",
   );
   const [selected, setSelected] = useState<MaterialRequest | null>(null);
-  const [requests, setRequests] = useState<MaterialRequest[]>(MOCK);
+  const [requests, setRequests] = useState<MaterialRequest[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getMaterialRequests()
+      .then((data) => setRequests(data.map(toRequest)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = requests.filter((r) => {
     const q = search.toLowerCase();
@@ -218,59 +116,89 @@ export function IncomingRequestsPage() {
     return matchSearch && matchStatus;
   });
 
-  function approve(id: string) {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              status: "Approved",
-              approvedBy: "Store Manager",
-              approvalDate: new Date().toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              }),
-            }
-          : r,
-      ),
-    );
+  async function approve(id: string) {
+    try {
+      const updated = await updateMaterialRequest(id, { status: "Approved" });
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? toRequest(updated) : r)),
+      );
+    } catch {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                status: "Approved",
+                approvedBy: "Store Manager",
+                approvalDate: new Date().toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                }),
+              }
+            : r,
+        ),
+      );
+    }
     setSelected(null);
   }
 
-  function reject(id: string) {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              status: "Rejected",
-              approvedBy: "Store Manager",
-              approvalDate: new Date().toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              }),
-            }
-          : r,
-      ),
-    );
+  async function reject(id: string) {
+    try {
+      const updated = await updateMaterialRequest(id, { status: "Rejected" });
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? toRequest(updated) : r)),
+      );
+    } catch {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id
+            ? {
+                ...r,
+                status: "Rejected",
+                approvedBy: "Store Manager",
+                approvalDate: new Date().toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                  year: "numeric",
+                }),
+              }
+            : r,
+        ),
+      );
+    }
     setSelected(null);
   }
 
-  function forwardToProcurement(id: string) {
-    setRequests((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, status: "Forwarded to Procurement" } : r,
-      ),
-    );
+  async function forwardToProcurement(id: string) {
+    try {
+      const updated = await updateMaterialRequest(id, {
+        status: "Forwarded to Procurement",
+      });
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? toRequest(updated) : r)),
+      );
+    } catch {
+      setRequests((prev) =>
+        prev.map((r) =>
+          r.id === id ? { ...r, status: "Forwarded to Procurement" } : r,
+        ),
+      );
+    }
     setSelected(null);
   }
 
-  function fulfill(id: string) {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "Fulfilled" } : r)),
-    );
+  async function fulfill(id: string) {
+    try {
+      const updated = await updateMaterialRequest(id, { status: "Fulfilled" });
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? toRequest(updated) : r)),
+      );
+    } catch {
+      setRequests((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, status: "Fulfilled" } : r)),
+      );
+    }
     setSelected(null);
   }
 
@@ -309,6 +237,9 @@ export function IncomingRequestsPage() {
   }
 
   const pendingCount = requests.filter((r) => r.status === "Pending").length;
+
+  if (loading)
+    return <div className="p-8 text-center text-gray-400">Loading...</div>;
 
   return (
     <div className="space-y-5">

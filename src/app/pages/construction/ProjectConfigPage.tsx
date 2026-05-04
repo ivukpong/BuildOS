@@ -14,20 +14,7 @@ interface ProjectStatus {
   sequence: number;
 }
 
-const SEED_TYPES: ProjectType[] = [
-  { id: "1", name: "Residential",    description: "Residential building projects" },
-  { id: "2", name: "Commercial",     description: "Commercial construction projects" },
-  { id: "3", name: "Infrastructure", description: "Roads, bridges, and utilities" },
-  { id: "4", name: "Industrial",     description: "Factories and warehouses" },
-];
 
-const SEED_STATUSES: ProjectStatus[] = [
-  { id: "1", name: "Planning",    color: "#3B82F6", sequence: 1 },
-  { id: "2", name: "Approved",    color: "#10B981", sequence: 2 },
-  { id: "3", name: "In Progress", color: "#F59E0B", sequence: 3 },
-  { id: "4", name: "On Hold",     color: "#EF4444", sequence: 4 },
-  { id: "5", name: "Completed",   color: "#6B7280", sequence: 5 },
-];
 
 const COLOR_PRESETS = [
   "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
@@ -36,7 +23,7 @@ const COLOR_PRESETS = [
 
 // ─── Project Types Panel ─────────────────────────────────────────────────────
 function ProjectTypesPanel() {
-  const [types, setTypes] = useState<ProjectType[]>(SEED_TYPES);
+  const [types, setTypes] = useState<ProjectType[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<ProjectType | null>(null);
   const [form, setForm] = useState({ name: "", description: "" });
@@ -142,7 +129,7 @@ function ProjectTypesPanel() {
 
 // ─── Project Statuses Panel ───────────────────────────────────────────────────
 function ProjectStatusesPanel() {
-  const [statuses, setStatuses] = useState<ProjectStatus[]>(SEED_STATUSES);
+  const [statuses, setStatuses] = useState<ProjectStatus[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState<ProjectStatus | null>(null);
   const [form, setForm] = useState({ name: "", color: COLOR_PRESETS[0] });

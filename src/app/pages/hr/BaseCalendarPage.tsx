@@ -8,17 +8,6 @@ interface Holiday {
   recurring: boolean;
 }
 
-const SEED_HOLIDAYS: Holiday[] = [
-  { id: "h1", name: "New Year's Day",        date: "2026-01-01", recurring: true  },
-  { id: "h2", name: "Martin Luther King Day", date: "2026-01-19", recurring: true  },
-  { id: "h3", name: "Easter Friday",          date: "2026-04-03", recurring: false },
-  { id: "h4", name: "Workers Day",            date: "2026-05-01", recurring: true  },
-  { id: "h5", name: "Independence Day",       date: "2026-07-04", recurring: true  },
-  { id: "h6", name: "Labour Day",             date: "2026-09-07", recurring: true  },
-  { id: "h7", name: "Thanksgiving",           date: "2026-11-26", recurring: true  },
-  { id: "h8", name: "Christmas Day",          date: "2026-12-25", recurring: true  },
-  { id: "h9", name: "Boxing Day",             date: "2026-12-26", recurring: true  },
-];
 
 const FULL_MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAY_NAMES = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -27,7 +16,7 @@ const DAY_FULL = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","S
 export function BaseCalendarPage() {
   const [year, setYear] = useState(2026);
   const [selectedMonth, setSelectedMonth] = useState(3); // April
-  const [holidays, setHolidays] = useState<Holiday[]>(SEED_HOLIDAYS);
+  const [holidays, setHolidays] = useState<Holiday[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [newHol, setNewHol] = useState({ name: "", date: "", recurring: false });
   const [nonWorkingDays, setNonWorkingDays] = useState<number[]>([0, 6]); // Sun + Sat

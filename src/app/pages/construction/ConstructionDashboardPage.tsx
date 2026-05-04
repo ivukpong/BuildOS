@@ -8,94 +8,15 @@ import {
   Clock,
   DollarSign,
   CheckCircle,
-  XCircle,
   ArrowUpRight,
   ArrowRight,
   HardHat,
-  Wrench,
   Package,
   BarChart3,
-  ChevronRight,
+  Activity,
 } from "lucide-react";
+
 import { fetchProjects } from "../../api/projects";
-
-// TODO: No server endpoint for alerts and activity — using placeholder data
-const alerts = [
-  {
-    type: "error",
-    icon: <XCircle className="w-4 h-4 text-red-500" />,
-    title: "Shopping Mall Renovation is overdue",
-    desc: "Completion date passed 3 weeks ago. Escalation required.",
-    link: "/apps/construction",
-  },
-  {
-    type: "error",
-    icon: <XCircle className="w-4 h-4 text-red-500" />,
-    title: "Highway Interchange behind schedule",
-    desc: "12% behind projected timeline. Resource reallocation needed.",
-    link: "/apps/construction/resource-planning",
-  },
-  {
-    type: "warning",
-    icon: <AlertTriangle className="w-4 h-4 text-amber-500" />,
-    title: "Riverside Residential at risk",
-    desc: "Material shortages may cause 2-week delay.",
-    link: "/apps/construction/approvals",
-  },
-  {
-    type: "warning",
-    icon: <AlertTriangle className="w-4 h-4 text-amber-500" />,
-    title: "8 approvals awaiting review",
-    desc: "3 are urgent material requests over ₦500K.",
-    link: "/apps/construction/approvals",
-  },
-  {
-    type: "info",
-    icon: <CheckCircle className="w-4 h-4 text-green-500" />,
-    title: "Foundation milestone completed",
-    desc: "Downtown Office Complex — Phase 1 signed off.",
-    link: "/apps/construction/projects/1",
-  },
-];
-
-const activity = [
-  {
-    dot: "bg-orange-500",
-    title: "Project milestone completed",
-    desc: "Downtown Office Complex — 2 hours ago",
-    user: "John Smith",
-  },
-  {
-    dot: "bg-green-500",
-    title: "Material request approved",
-    desc: "Riverside Residential — 4 hours ago",
-    user: "Admin",
-  },
-  {
-    dot: "bg-amber-500",
-    title: "Approval pending",
-    desc: "Shopping Mall Renovation — 6 hours ago",
-    user: "Emily Chen",
-  },
-  {
-    dot: "bg-blue-500",
-    title: "New project created",
-    desc: "Industrial Warehouse — Yesterday",
-    user: "Mike Davis",
-  },
-  {
-    dot: "bg-red-500",
-    title: "Budget overrun flagged",
-    desc: "Shopping Mall Renovation — Yesterday",
-    user: "Finance",
-  },
-  {
-    dot: "bg-orange-500",
-    title: "Team member added",
-    desc: "Highway Interchange — 2 days ago",
-    user: "Robert Lee",
-  },
-];
 
 const statusConfig: Record<
   string,
@@ -229,7 +150,7 @@ export function ConstructionDashboardPage() {
             Construction Dashboard
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Overview of all construction activities — April 2026
+            Overview of all construction activities — {new Date().toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
           </p>
         </div>
         <div className="flex gap-2">
@@ -271,35 +192,11 @@ export function ConstructionDashboardPage() {
       <div className="bg-white rounded-lg border border-gray-200 p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-900">Active Alerts</h2>
-          <span className="text-xs font-medium text-white bg-red-500 px-2 py-0.5 rounded-full">
-            {alerts.filter((a) => a.type === "error").length} critical
-          </span>
         </div>
-        <div className="space-y-2.5">
-          {alerts.map((a, i) => (
-            <div
-              key={i}
-              className={`flex items-start gap-3 p-3 rounded-md ${
-                a.type === "error"
-                  ? "bg-red-50 border border-red-100"
-                  : a.type === "warning"
-                    ? "bg-amber-50 border border-amber-100"
-                    : "bg-green-50 border border-green-100"
-              }`}
-            >
-              <div className="mt-0.5">{a.icon}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900">{a.title}</p>
-                <p className="text-xs text-gray-500 mt-0.5">{a.desc}</p>
-              </div>
-              <button
-                onClick={() => navigate(a.link)}
-                className="text-xs text-gray-400 hover:text-gray-600 flex-shrink-0"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </div>
-          ))}
+        <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+          <AlertTriangle className="w-8 h-8 mb-2 opacity-30" />
+          <p className="text-sm">No alert data available.</p>
+          <p className="text-xs mt-1">Connect an alerts endpoint to display project warnings here.</p>
         </div>
       </div>
 
@@ -472,54 +369,21 @@ export function ConstructionDashboardPage() {
 
           {/* Module quick access */}
           <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">
-              Quick Access
-            </h2>
+            <h2 className="text-sm font-semibold text-gray-900 mb-3">Quick Access</h2>
             <div className="grid grid-cols-2 gap-2">
               {[
-                {
-                  label: "Approvals",
-                  href: "/apps/construction/approvals",
-                  icon: <CheckCircle className="w-4 h-4" />,
-                  count: "8 pending",
-                  color: "text-amber-600 bg-amber-50",
-                },
-                {
-                  label: "Documents",
-                  href: "/apps/construction/documents",
-                  icon: <HardHat className="w-4 h-4" />,
-                  count: "156 files",
-                  color: "text-blue-600 bg-blue-50",
-                },
-                {
-                  label: "Resources",
-                  href: "/apps/construction/resource-planning",
-                  icon: <Users className="w-4 h-4" />,
-                  count: "156 workers",
-                  color: "text-purple-600 bg-purple-50",
-                },
-                {
-                  label: "Materials",
-                  href: "/apps/construction/approvals",
-                  icon: <Package className="w-4 h-4" />,
-                  count: "12 requests",
-                  color: "text-green-600 bg-green-50",
-                },
+                { label: "Approvals", href: "/apps/construction/approvals", icon: <CheckCircle className="w-4 h-4" />, color: "text-amber-600 bg-amber-50" },
+                { label: "Documents", href: "/apps/construction/documents", icon: <HardHat className="w-4 h-4" />, color: "text-blue-600 bg-blue-50" },
+                { label: "Resources", href: "/apps/construction/resource-planning", icon: <Users className="w-4 h-4" />, color: "text-purple-600 bg-purple-50" },
+                { label: "Materials", href: "/apps/construction/approvals", icon: <Package className="w-4 h-4" />, color: "text-green-600 bg-green-50" },
               ].map((qa) => (
                 <button
                   key={qa.label}
                   onClick={() => navigate(qa.href)}
                   className="flex flex-col items-start gap-2 p-3 border border-gray-200 rounded-lg hover:border-orange-200 hover:bg-orange-50/30 transition-colors text-left"
                 >
-                  <span className={`p-1.5 rounded-md ${qa.color}`}>
-                    {qa.icon}
-                  </span>
-                  <div>
-                    <p className="text-xs font-medium text-gray-900">
-                      {qa.label}
-                    </p>
-                    <p className="text-xs text-gray-400">{qa.count}</p>
-                  </div>
+                  <span className={`p-1.5 rounded-md ${qa.color}`}>{qa.icon}</span>
+                  <p className="text-xs font-medium text-gray-900">{qa.label}</p>
                 </button>
               ))}
             </div>
@@ -527,23 +391,11 @@ export function ConstructionDashboardPage() {
 
           {/* Activity Feed */}
           <div className="bg-white rounded-lg border border-gray-200 p-5">
-            <h2 className="text-sm font-semibold text-gray-900 mb-4">
-              Recent Activity
-            </h2>
-            <div className="space-y-3">
-              {activity.map((a, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <div
-                    className={`w-2 h-2 rounded-full mt-1.5 flex-shrink-0 ${a.dot}`}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-gray-900 leading-snug">
-                      {a.title}
-                    </p>
-                    <p className="text-xs text-gray-400 mt-0.5">{a.desc}</p>
-                  </div>
-                </div>
-              ))}
+            <h2 className="text-sm font-semibold text-gray-900 mb-4">Recent Activity</h2>
+            <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+              <Activity className="w-8 h-8 mb-2 opacity-30" />
+              <p className="text-sm">No activity log available.</p>
+              <p className="text-xs mt-1">Connect an activity feed endpoint to show recent events.</p>
             </div>
           </div>
         </div>

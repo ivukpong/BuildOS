@@ -36,40 +36,6 @@ interface IssueType {
   active: boolean;
 }
 
-const SEED_ISSUE_TYPES: IssueType[] = [
-  {
-    id: "it-001", name: "Equipment Breakdown", description: "Machine, tool, or equipment failure",
-    priority: "high", color: "bg-red-100 text-red-700", requiresApproval: false, slaHours: 4, active: true,
-  },
-  {
-    id: "it-002", name: "Safety Hazard", description: "Unsafe working conditions or near-miss incident",
-    priority: "critical", color: "bg-orange-100 text-orange-700", requiresApproval: true, slaHours: 1, active: true,
-  },
-  {
-    id: "it-003", name: "Material Shortage", description: "Required materials not available on site",
-    priority: "medium", color: "bg-amber-100 text-amber-700", requiresApproval: false, slaHours: 8, active: true,
-  },
-  {
-    id: "it-004", name: "Payroll Discrepancy", description: "Issues with salary, deductions, or bonuses",
-    priority: "medium", color: "bg-blue-100 text-blue-700", requiresApproval: true, slaHours: 24, active: true,
-  },
-  {
-    id: "it-005", name: "Leave / Absence Issue", description: "Incorrect leave records or attendance disputes",
-    priority: "low", color: "bg-purple-100 text-purple-700", requiresApproval: false, slaHours: 48, active: true,
-  },
-  {
-    id: "it-006", name: "HR / Personal Issue", description: "Workplace conflict, harassment, or disciplinary matter",
-    priority: "high", color: "bg-red-100 text-red-700", requiresApproval: true, slaHours: 48, active: true,
-  },
-  {
-    id: "it-007", name: "IT / System Issue", description: "Software, hardware, or connectivity problem",
-    priority: "medium", color: "bg-gray-100 text-gray-700", requiresApproval: false, slaHours: 8, active: true,
-  },
-  {
-    id: "it-008", name: "Compliance / Regulatory", description: "Potential legal or regulatory non-compliance",
-    priority: "critical", color: "bg-orange-100 text-orange-700", requiresApproval: true, slaHours: 2, active: true,
-  },
-];
 
 const PRIORITY_BADGE: Record<Priority, string> = {
   low:      "bg-gray-100 text-gray-600",
@@ -84,7 +50,7 @@ const EMPTY: Omit<IssueType, "id"> = {
 };
 
 export function IssueTypesPage() {
-  const [issueTypes, setIssueTypes] = useState<IssueType[]>(SEED_ISSUE_TYPES);
+  const [issueTypes, setIssueTypes] = useState<IssueType[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });

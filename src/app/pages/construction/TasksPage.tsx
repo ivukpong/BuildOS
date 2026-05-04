@@ -50,179 +50,6 @@ interface AssignedWorker {
 // allProjects loaded from API — see component state below
 
 // TODO: No tasks endpoint — using placeholder data
-const initTasks: Task[] = [
-  {
-    id: "t1",
-    name: "Site Preparation",
-    project: "Downtown Office Complex",
-    description: "Clear and level the site for construction.",
-    startDate: "2026-01-15",
-    endDate: "2026-02-05",
-    priority: "high",
-    status: "done",
-    dependencies: [],
-    assignees: [
-      {
-        workerId: "w6",
-        name: "Robert Lee",
-        role: "Project Manager",
-        hoursPerDay: 8,
-        hoursPerWeek: 40,
-      },
-    ],
-  },
-  {
-    id: "t2",
-    name: "Foundation Works",
-    project: "Downtown Office Complex",
-    description: "Pile and raft foundation installation.",
-    startDate: "2026-02-06",
-    endDate: "2026-04-15",
-    priority: "critical",
-    status: "in-progress",
-    dependencies: ["t1"],
-    assignees: [
-      {
-        workerId: "w1",
-        name: "James Okafor",
-        role: "Site Engineer",
-        hoursPerDay: 8,
-        hoursPerWeek: 40,
-      },
-      {
-        workerId: "w2",
-        name: "Carlos Rivera",
-        role: "Foreman",
-        hoursPerDay: 8,
-        hoursPerWeek: 40,
-      },
-    ],
-  },
-  {
-    id: "t3",
-    name: "Structural Steel Erection",
-    project: "Downtown Office Complex",
-    description: "Steel frame erection for floors 1–22.",
-    startDate: "2026-04-16",
-    endDate: "2026-08-31",
-    priority: "high",
-    status: "todo",
-    dependencies: ["t2"],
-    assignees: [
-      {
-        workerId: "w8",
-        name: "Kevin Tran",
-        role: "Steel Fixer",
-        hoursPerDay: 8,
-        hoursPerWeek: 40,
-      },
-    ],
-  },
-  {
-    id: "t4",
-    name: "HVAC Rough-in",
-    project: "Downtown Office Complex",
-    description: "Install HVAC ductwork and rough-in.",
-    startDate: "2026-09-01",
-    endDate: "2026-10-31",
-    priority: "medium",
-    status: "todo",
-    dependencies: ["t3"],
-    assignees: [],
-  },
-  {
-    id: "t5",
-    name: "Cost Estimation Rev 2",
-    project: "Riverside Residential",
-    description: "Update cost estimate with latest material prices.",
-    startDate: "2026-03-01",
-    endDate: "2026-03-15",
-    priority: "medium",
-    status: "in-progress",
-    dependencies: [],
-    assignees: [
-      {
-        workerId: "w3",
-        name: "Aisha Bello",
-        role: "Quantity Surveyor",
-        hoursPerDay: 6,
-        hoursPerWeek: 30,
-      },
-    ],
-  },
-  {
-    id: "t6",
-    name: "Ground Breaking",
-    project: "Riverside Residential",
-    description: "Mark boundaries and commence earthworks.",
-    startDate: "2026-02-10",
-    endDate: "2026-02-20",
-    priority: "high",
-    status: "done",
-    dependencies: [],
-    assignees: [
-      {
-        workerId: "w4",
-        name: "Tom Hughes",
-        role: "Laborer",
-        hoursPerDay: 8,
-        hoursPerWeek: 40,
-      },
-    ],
-  },
-  {
-    id: "t7",
-    name: "Safety Audit — Q2",
-    project: "Highway Interchange",
-    description: "Quarterly site safety audit and reporting.",
-    startDate: "2026-04-01",
-    endDate: "2026-04-05",
-    priority: "high",
-    status: "todo",
-    dependencies: [],
-    assignees: [
-      {
-        workerId: "w5",
-        name: "Diana Park",
-        role: "Safety Officer",
-        hoursPerDay: 8,
-        hoursPerWeek: 40,
-      },
-    ],
-  },
-  {
-    id: "t8",
-    name: "Steel Frame Assembly",
-    project: "Industrial Warehouse",
-    description: "Pre-fabricated steel frame assembly and erection.",
-    startDate: "2026-04-20",
-    endDate: "2026-07-01",
-    priority: "high",
-    status: "todo",
-    dependencies: [],
-    assignees: [
-      {
-        workerId: "w7",
-        name: "Linda Chukwu",
-        role: "Laborer",
-        hoursPerDay: 8,
-        hoursPerWeek: 40,
-      },
-    ],
-  },
-  {
-    id: "t9",
-    name: "Electrical Rough-in",
-    project: "Downtown Office Complex",
-    description: "Conduit and rough-in wiring for all floors.",
-    startDate: "2026-08-15",
-    endDate: "2026-10-31",
-    priority: "medium",
-    status: "blocked",
-    dependencies: ["t3"],
-    assignees: [],
-  },
-];
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
@@ -396,10 +223,12 @@ function AssignWorkerModal({
 
 function EditTaskModal({
   task,
+  projects,
   onSave,
   onClose,
 }: {
   task: Task;
+  projects: string[];
   onSave: (updated: Task) => void;
   onClose: () => void;
 }) {
@@ -447,7 +276,7 @@ function EditTaskModal({
               onChange={(e) => set("project", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
-              {allProjects.map((p) => (
+              {projects.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
@@ -546,10 +375,12 @@ function EditTaskModal({
 
 function AddTaskModal({
   tasks,
+  projects,
   onSave,
   onClose,
 }: {
   tasks: Task[];
+  projects: string[];
   onSave: (t: typeof emptyForm) => void;
   onClose: () => void;
 }) {
@@ -593,7 +424,7 @@ function AddTaskModal({
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               <option value="">Select project…</option>
-              {allProjects.map((p) => (
+              {projects.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
@@ -734,7 +565,7 @@ function AddTaskModal({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function TasksPage() {
-  const [tasks, setTasks] = useState<Task[]>(initTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [search, setSearch] = useState("");
   const [projectFilter, setProjectFilter] = useState("All");
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "all">("all");
@@ -1124,6 +955,7 @@ export function TasksPage() {
       {showAddTask && (
         <AddTaskModal
           tasks={tasks}
+          projects={allProjects}
           onSave={handleAddTask}
           onClose={() => setShowAddTask(false)}
         />
@@ -1140,6 +972,7 @@ export function TasksPage() {
       {editFor && taskForEdit && (
         <EditTaskModal
           task={taskForEdit}
+          projects={allProjects}
           onSave={handleEditTask}
           onClose={() => setEditFor(null)}
         />

@@ -14,48 +14,7 @@ export function BoardOfDirectorsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingDirector, setEditingDirector] = useState<Director | null>(null);
 
-  const [directors, setDirectors] = useState<Director[]>([
-    {
-      id: "1",
-      firstName: "John",
-      middleName: "Michael",
-      lastName: "Smith",
-      designation: "Chairman",
-      sequence: 1,
-    },
-    {
-      id: "2",
-      firstName: "Sarah",
-      middleName: "Elizabeth",
-      lastName: "Johnson",
-      designation: "CEO",
-      sequence: 2,
-    },
-    {
-      id: "3",
-      firstName: "Robert",
-      middleName: "James",
-      lastName: "Williams",
-      designation: "CFO",
-      sequence: 3,
-    },
-    {
-      id: "4",
-      firstName: "Emily",
-      middleName: "Rose",
-      lastName: "Brown",
-      designation: "COO",
-      sequence: 4,
-    },
-    {
-      id: "5",
-      firstName: "Michael",
-      middleName: "David",
-      lastName: "Davis",
-      designation: "Director",
-      sequence: 5,
-    },
-  ]);
+  const [directors, setDirectors] = useState<Director[]>([]);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -95,11 +54,10 @@ export function BoardOfDirectorsPage() {
     dragOverIndex.current = null;
   };
 
-  const filteredDirectors = directors.filter(
-    (d) =>
-      `${d.firstName} ${d.middleName} ${d.lastName} ${d.designation}`
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
+  const filteredDirectors = directors.filter((d) =>
+    `${d.firstName} ${d.middleName} ${d.lastName} ${d.designation}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase()),
   );
 
   const handleEdit = (director: Director) => {
@@ -124,8 +82,8 @@ export function BoardOfDirectorsPage() {
     if (editingDirector) {
       setDirectors((prev) =>
         prev.map((d) =>
-          d.id === editingDirector.id ? { ...d, ...formData } : d
-        )
+          d.id === editingDirector.id ? { ...d, ...formData } : d,
+        ),
       );
     } else {
       const newDirector: Director = {
@@ -189,12 +147,24 @@ export function BoardOfDirectorsPage() {
             <thead className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide w-10"></th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">First Name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Middle Name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Last Name</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Designation</th>
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  #
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  First Name
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Middle Name
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Last Name
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Designation
+                </th>
+                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -210,10 +180,18 @@ export function BoardOfDirectorsPage() {
                   <td className="px-4 py-3">
                     <GripVertical className="w-4 h-4 text-gray-300 hover:text-gray-500 cursor-grab active:cursor-grabbing" />
                   </td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-500">{director.sequence}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{director.firstName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{director.middleName}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{director.lastName}</td>
+                  <td className="px-4 py-3 text-sm font-medium text-gray-500">
+                    {director.sequence}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {director.firstName}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-600">
+                    {director.middleName}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-900">
+                    {director.lastName}
+                  </td>
                   <td className="px-4 py-3">
                     <span className="px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-medium rounded-full">
                       {director.designation}
@@ -239,7 +217,10 @@ export function BoardOfDirectorsPage() {
               ))}
               {filteredDirectors.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-gray-400">
+                  <td
+                    colSpan={7}
+                    className="px-4 py-10 text-center text-sm text-gray-400"
+                  >
                     No directors found
                   </td>
                 </tr>

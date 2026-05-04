@@ -25,16 +25,6 @@ interface IssueType {
   priority: IssuePriority; color: string;
   requiresApproval: boolean; slaHours: number; active: boolean;
 }
-const SEED_ISSUE_TYPES: IssueType[] = [
-  { id: "it-001", name: "Equipment Breakdown",    description: "Machine, tool, or equipment failure",                    priority: "high",     color: "bg-red-100 text-red-700",     requiresApproval: false, slaHours: 4,  active: true },
-  { id: "it-002", name: "Safety Hazard",           description: "Unsafe working conditions or near-miss incident",        priority: "critical", color: "bg-orange-100 text-orange-700",requiresApproval: true,  slaHours: 1,  active: true },
-  { id: "it-003", name: "Material Shortage",       description: "Required materials not available on site",               priority: "medium",   color: "bg-amber-100 text-amber-700",  requiresApproval: false, slaHours: 8,  active: true },
-  { id: "it-004", name: "Payroll Discrepancy",     description: "Issues with salary, deductions, or bonuses",             priority: "medium",   color: "bg-blue-100 text-blue-700",    requiresApproval: true,  slaHours: 24, active: true },
-  { id: "it-005", name: "Leave / Absence Issue",   description: "Incorrect leave records or attendance disputes",         priority: "low",      color: "bg-purple-100 text-purple-700",requiresApproval: false, slaHours: 48, active: true },
-  { id: "it-006", name: "HR / Personal Issue",     description: "Workplace conflict, harassment, or disciplinary matter", priority: "high",     color: "bg-red-100 text-red-700",     requiresApproval: true,  slaHours: 48, active: true },
-  { id: "it-007", name: "IT / System Issue",       description: "Software, hardware, or connectivity problem",            priority: "medium",   color: "bg-gray-100 text-gray-700",    requiresApproval: false, slaHours: 8,  active: true },
-  { id: "it-008", name: "Compliance / Regulatory", description: "Potential legal or regulatory non-compliance",           priority: "critical", color: "bg-orange-100 text-orange-700",requiresApproval: true,  slaHours: 2,  active: true },
-];
 const PRIORITY_BADGE: Record<IssuePriority, string> = {
   low: "bg-gray-100 text-gray-600", medium: "bg-amber-100 text-amber-700",
   high: "bg-orange-100 text-orange-700", critical: "bg-red-100 text-red-700",
@@ -46,16 +36,6 @@ const EMPTY_ISSUE: Omit<IssueType, "id"> = {
 
 // ── Change Categories ────────────────────────────────────────────────────────
 interface ChangeCategory { id: string; name: string; description: string; }
-const SEED_CATS: ChangeCategory[] = [
-  { id: "cc-001", name: "Design Change",        description: "Modifications to architectural or engineering designs." },
-  { id: "cc-002", name: "Scope Adjustment",     description: "Changes that expand or reduce the project scope." },
-  { id: "cc-003", name: "Budget Revision",      description: "Requests to revise the approved project budget." },
-  { id: "cc-004", name: "Timeline Change",      description: "Extensions or reductions to project milestones or deadlines." },
-  { id: "cc-005", name: "Specification Change", description: "Changes to material specs, grades, or product standards." },
-  { id: "cc-006", name: "Resource Reallocation",description: "Reassignment of labour, equipment, or personnel across tasks." },
-  { id: "cc-007", name: "Regulatory Compliance",description: "Changes mandated by regulatory or statutory requirements." },
-  { id: "cc-008", name: "Safety Improvement",   description: "Changes required to address site safety or risk findings." },
-];
 const BLANK_CAT: Omit<ChangeCategory, "id"> = { name: "", description: "" };
 
 function CategoryModal({
@@ -148,7 +128,7 @@ export function GeneralSettingsPage() {
   const handleSave = () => console.log("Saving settings:", settings);
 
   // ── Issue Types state ────────────────────────────────────────────────────
-  const [issueTypes, setIssueTypes] = useState<IssueType[]>(SEED_ISSUE_TYPES);
+  const [issueTypes, setIssueTypes] = useState<IssueType[]>([]);
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [editIssueId, setEditIssueId] = useState<string | null>(null);
   const [issueForm, setIssueForm] = useState<typeof EMPTY_ISSUE>({ ...EMPTY_ISSUE });
@@ -171,7 +151,7 @@ export function GeneralSettingsPage() {
   function toggleIssueActive(id: string) { setIssueTypes((prev) => prev.map((t) => t.id === id ? { ...t, active: !t.active } : t)); }
 
   // ── Change Categories state ──────────────────────────────────────────────
-  const [categories, setCategories] = useState<ChangeCategory[]>(SEED_CATS);
+  const [categories, setCategories] = useState<ChangeCategory[]>([]);
   const [catSearch, setCatSearch] = useState("");
   const [showCatModal, setShowCatModal] = useState(false);
   const [editingCat, setEditingCat] = useState<ChangeCategory | null>(null);

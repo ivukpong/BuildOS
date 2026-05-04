@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getBankAccounts, getTaxConfigs } from "../../api/finance-extras";
 import {
   Save,
   Plus,
@@ -29,46 +30,6 @@ interface PaymentMethod {
   enabled: boolean;
 }
 
-// TODO: No bank accounts endpoint — using placeholder data
-const initialBankAccounts: BankAccount[] = [
-  {
-    id: "b1",
-    name: "Primary Operations Account",
-    bank: "GTBank",
-    accountNumber: "****8821",
-    currency: "USD",
-    balance: 3834800,
-    isDefault: true,
-  },
-  {
-    id: "b2",
-    name: "Payroll Account",
-    bank: "Access Bank",
-    accountNumber: "****4432",
-    currency: "USD",
-    balance: 5200000,
-    isDefault: false,
-  },
-  {
-    id: "b3",
-    name: "Project Reserve Account",
-    bank: "Zenith Bank",
-    accountNumber: "****7715",
-    currency: "USD",
-    balance: 12400000,
-    isDefault: false,
-  },
-];
-
-// TODO: No payment methods endpoint — using placeholder data
-const initialPaymentMethods: PaymentMethod[] = [
-  { id: "pm1", name: "Bank Transfer", enabled: true },
-  { id: "pm2", name: "Cheque", enabled: true },
-  { id: "pm3", name: "Mobile Payment", enabled: true },
-  { id: "pm4", name: "Credit Card", enabled: false },
-  { id: "pm5", name: "Cash", enabled: true },
-];
-
 type TaxType = "VAT" | "WHT" | "PAYE" | "Custom";
 
 interface TaxEntry {
@@ -80,46 +41,6 @@ interface TaxEntry {
   appliesTo: string;
   enabled: boolean;
 }
-
-// TODO: No tax entries endpoint — using placeholder data
-const initialTaxEntries: TaxEntry[] = [
-  {
-    id: "t1",
-    name: "VAT (Standard Rate)",
-    type: "VAT",
-    rate: 7.5,
-    glCode: "2300",
-    appliesTo: "Goods & Services",
-    enabled: true,
-  },
-  {
-    id: "t2",
-    name: "WHT (Contractor)",
-    type: "WHT",
-    rate: 5,
-    glCode: "2310",
-    appliesTo: "Contractor Payments",
-    enabled: true,
-  },
-  {
-    id: "t3",
-    name: "WHT (Professional Services)",
-    type: "WHT",
-    rate: 10,
-    glCode: "2310",
-    appliesTo: "Professional Fees",
-    enabled: true,
-  },
-  {
-    id: "t4",
-    name: "PAYE",
-    type: "PAYE",
-    rate: 0,
-    glCode: "2320",
-    appliesTo: "Employee Salaries",
-    enabled: true,
-  },
-];
 
 const CURRENCIES = ["USD", "NGN", "GBP", "EUR", "GHS", "ZAR"];
 const FISCAL_MONTHS = [
@@ -138,11 +59,8 @@ const FISCAL_MONTHS = [
 ];
 
 export function FinanceConfigPage() {
-  const [bankAccounts, setBankAccounts] =
-    useState<BankAccount[]>(initialBankAccounts);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(
-    initialPaymentMethods,
-  );
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [saved, setSaved] = useState(false);
 
   // General settings state
@@ -160,8 +78,41 @@ export function FinanceConfigPage() {
     balance: "",
   });
 
+  useEffect(() => {
+    getBankAccounts()
+      .then((data) =>
+        setBankAccounts(
+          data.map((a) => ({
+            id: a.id,
+            name: a.accountName,
+            bank: a.bankName,
+            accountNumber: a.accountNumber,
+            currency: a.currency,
+            balance: a.balance ?? 0,
+            isDefault: a.isDefault ?? false,
+          })),
+        ),
+      )
+      .catch(console.error);
+    getTaxConfigs()
+      .then((data) =>
+        setTaxEntries(
+          data.map((t) => ({
+            id: t.id,
+            name: t.name,
+            type: (t.type as TaxType) ?? "Custom",
+            rate: t.rate,
+            glCode: t.code ?? "",
+            appliesTo: t.description ?? "",
+            enabled: t.isActive ?? true,
+          })),
+        ),
+      )
+      .catch(console.error);
+  }, []);
+
   // Tax state
-  const [taxEntries, setTaxEntries] = useState<TaxEntry[]>(initialTaxEntries);
+  const [taxEntries, setTaxEntries] = useState<TaxEntry[]>([]);
   const [companyTIN, setCompanyTIN] = useState("12345678-0001");
   const [vatRegNumber, setVatRegNumber] = useState("VAT-NG-00987654");
   const [showTaxModal, setShowTaxModal] = useState(false);
