@@ -37,20 +37,14 @@ const MODULE_COLORS: Record<ReportModule, string> = {
   Storefront: "bg-orange-50 text-orange-700",
 };
 
-const MOCK_SCHEDULES: ReportSchedule[] = [
-  { id: "RS-001", name: "Daily Finance Summary",       module: "Finance",     frequency: "Daily",   sendTime: "07:00",  recipients: "cfo@buildos.ng, finance@buildos.ng",    enabled: true,  lastSent: "Today, 07:00 AM" },
-  { id: "RS-002", name: "Weekly Payroll Report",       module: "HR",          frequency: "Weekly",  sendTime: "08:00",  recipients: "hr@buildos.ng, payroll@buildos.ng",      enabled: true,  lastSent: "Jun 2, 2025" },
-  { id: "RS-003", name: "Monthly Procurement Summary", module: "Procurement", frequency: "Monthly", sendTime: "09:00",  recipients: "procurement@buildos.ng",                 enabled: true,  lastSent: "Jun 1, 2025" },
-  { id: "RS-004", name: "Weekly Project Progress",     module: "Projects",    frequency: "Weekly",  sendTime: "17:00",  recipients: "projects@buildos.ng, ceo@buildos.ng",    enabled: false, lastSent: "May 26, 2025" },
-  { id: "RS-005", name: "Monthly Inventory Report",    module: "Storefront",  frequency: "Monthly", sendTime: "08:00",  recipients: "stores@buildos.ng",                      enabled: true,  lastSent: "Jun 1, 2025" },
-];
+
 
 const BLANK_FORM: Omit<ReportSchedule, "id" | "lastSent"> = {
   name: AVAILABLE_REPORTS[0].name, module: AVAILABLE_REPORTS[0].module, frequency: "Daily", sendTime: "08:00", recipients: "", enabled: true,
 };
 
 export function ReportAutomationPage() {
-  const [schedules, setSchedules] = useState<ReportSchedule[]>(MOCK_SCHEDULES);
+  const [schedules, setSchedules] = useState<ReportSchedule[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ ...BLANK_FORM });
 

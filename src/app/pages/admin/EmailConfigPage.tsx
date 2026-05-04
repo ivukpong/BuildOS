@@ -44,22 +44,14 @@ const MODULE_COLORS: Record<TriggerModule, string> = {
   Storefront: "bg-orange-50 text-orange-700",
 };
 
-const MOCK_CONFIGS: EmailConfig[] = [
-  { id: "EC-001", trigger: "Leave Request Submitted",   module: "HR",          subject: "New Leave Request — {{employee_name}}",           body: "Dear {{employee_manager}},\n\n{{employee_name}} has submitted a leave request ({{leave_type}}) from {{start_date}} to {{end_date}}.\n\nPlease review and approve or reject the request in BuildOS.",                                  recipients: "hr@buildos.ng",              cc: "{{employee_manager}}", enabled: true  },
-  { id: "EC-002", trigger: "Payroll Processed",         module: "HR",          subject: "Payroll Processed — {{period}}",                   body: "Dear Team,\n\nPayroll for {{period}} has been processed successfully. Please log in to BuildOS ESS to view your payslip.",                                                                    recipients: "all-staff@buildos.ng",       cc: "cfo@buildos.ng",       enabled: true  },
-  { id: "EC-003", trigger: "Send PO to Supplier",       module: "Procurement", subject: "Purchase Order {{po_number}} — BuildOS",             body: "Dear {{supplier_name}},\n\nPlease find attached Purchase Order {{po_number}}. Kindly confirm receipt and expected delivery date.\n\nRegards,\nBuildOS Procurement Team",              recipients: "{{supplier_email}}",         cc: "procurement@buildos.ng",enabled: true  },
-  { id: "EC-004", trigger: "Invoice Overdue",           module: "Finance",     subject: "Overdue Invoice Notice — {{invoice_number}}",      body: "Dear Finance Team,\n\nInvoice {{invoice_number}} for {{invoice_amount}} from {{vendor_name}} is past its due date of {{due_date}}.\n\nPlease take action.",                             recipients: "finance@buildos.ng",         cc: "cfo@buildos.ng",       enabled: true  },
-  { id: "EC-005", trigger: "New User Created",          module: "Admin",       subject: "Welcome to BuildOS — {{user_name}}",               body: "Dear {{user_name}},\n\nYour BuildOS account has been created. You can now log in at buildos.ng using your registered email address.\n\nPlease contact admin if you have any issues.",    recipients: "{{user_email}}",             cc: "admin@buildos.ng",     enabled: true  },
-  { id: "EC-006", trigger: "Material Request Approved", module: "Procurement", subject: "Material Request Approved — {{request_number}}",   body: "Dear {{requester_email}},\n\nYour material request {{request_number}} has been approved. The procurement team will proceed with sourcing.",                                              recipients: "{{requester_email}}",        cc: "",                     enabled: false },
-  { id: "EC-007", trigger: "Appraisal Cycle Opened",    module: "HR",          subject: "Performance Appraisal Cycle Started — {{cycle}}", body: "Dear Team,\n\nThe {{cycle}} performance appraisal cycle is now open. Please log in to BuildOS and complete your self-assessment by the deadline.",                                   recipients: "all-staff@buildos.ng",       cc: "hr@buildos.ng",        enabled: true  },
-];
+
 
 const BLANK_FORM: Omit<EmailConfig, "id"> = {
   trigger: "", module: "HR", subject: "", body: "", recipients: "", cc: "", enabled: true,
 };
 
 export function EmailConfigPage() {
-  const [configs, setConfigs] = useState<EmailConfig[]>(MOCK_CONFIGS);
+  const [configs, setConfigs] = useState<EmailConfig[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...BLANK_FORM });

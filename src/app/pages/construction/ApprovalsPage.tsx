@@ -1,4 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  getConstructionApprovals,
+  updateConstructionApproval,
+} from "../../api/construction-extras";
 import {
   CheckCircle,
   XCircle,
@@ -30,8 +34,7 @@ interface Approval {
   description: string;
 }
 
-// TODO: No construction approvals endpoint — using placeholder data
-const approvals: Approval[] = [
+const _APPROVALS_PLACEHOLDER: Approval[] = [
   {
     id: "ap1",
     type: "Material Request",
@@ -165,6 +168,27 @@ const typeColors: Record<ApprovalType, string> = {
   Subcontract: "bg-orange-50 text-orange-700",
 };
 
+void _APPROVALS_PLACEHOLDER;
+
+function fromApiApproval(
+  r: Awaited<ReturnType<typeof getConstructionApprovals>>[0],
+): Approval {
+  return {
+    id: r.id,
+    type: (r.type ?? "Material Request") as ApprovalType,
+    title: r.reference ?? "",
+    project: r.projectName ?? "—",
+    requestedBy: r.requestedBy ?? "",
+    date: (r.requestDate ?? r.createdAt ?? "").slice(0, 10),
+    amount: undefined,
+    status: (r.status === "approved" || r.status === "rejected"
+      ? r.status
+      : "pending") as ApprovalStatus,
+    urgency: "normal",
+    description: r.description ?? r.notes ?? "",
+  };
+}
+
 function fmt(n: number) {
   if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
   return `$${(n / 1000).toFixed(0)}K`;
@@ -183,6 +207,17 @@ export function ApprovalsPage() {
   const [requestInfoFor, setRequestInfoFor] = useState<string | null>(null);
   const [infoNote, setInfoNote] = useState("");
   const [sentInfoFor, setSentInfoFor] = useState<Set<string>>(new Set());
+  const [items, setItems] = useState<Approval[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getConstructionApprovals()
+      .then((data) => setItems(data.map(fromApiApproval)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const approvals = items;
 
   function getStatus(a: Approval): ApprovalStatus {
     return approvalStates[a.id] ?? a.status;
@@ -219,6 +254,8 @@ export function ApprovalsPage() {
     approved: approvals.filter((a) => getStatus(a) === "approved").length,
     rejected: approvals.filter((a) => getStatus(a) === "rejected").length,
   };
+
+  if (loading) return null;
 
   return (
     <div className="space-y-5">

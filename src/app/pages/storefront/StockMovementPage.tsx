@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Search,
   Download,
@@ -8,6 +8,11 @@ import {
   LayoutList,
   Building2,
 } from "lucide-react";
+import {
+  getStockMovements,
+  createStockMovement,
+  getStores,
+} from "../../api/materials";
 
 type MovementType = "Transfer" | "Issue" | "Receipt" | "Return" | "Adjustment";
 
@@ -34,164 +39,7 @@ const TYPE_STYLE: Record<MovementType, string> = {
 };
 
 // TODO: No stock movement endpoint — using placeholder data
-const MOCK: Movement[] = [
-  {
-    id: "MOV-001",
-    date: "Jun 4, 2025",
-    material: "Cement (50kg bag)",
-    category: "Concrete",
-    fromStore: "General Store",
-    toStore: "Block A Project Store",
-    quantity: 100,
-    unit: "Bags",
-    type: "Transfer",
-    reference: "TRF-041",
-    remarks: "Weekly replenishment",
-  },
-  {
-    id: "MOV-002",
-    date: "Jun 4, 2025",
-    material: "Binding Wire",
-    category: "Steel",
-    fromStore: "General Store",
-    toStore: "Block A Project Store",
-    quantity: 10,
-    unit: "Rolls",
-    type: "Transfer",
-    reference: "TRF-041",
-    remarks: "",
-  },
-  {
-    id: "MOV-003",
-    date: "Jun 3, 2025",
-    material: "Concrete Block 9 Inch",
-    category: "Concrete",
-    fromStore: "General Store",
-    toStore: "Block B Project Store",
-    quantity: 500,
-    unit: "Units",
-    type: "Transfer",
-    reference: "TRF-040",
-    remarks: "",
-  },
-  {
-    id: "MOV-004",
-    date: "Jun 3, 2025",
-    material: "Steel Rebar Y16",
-    category: "Steel",
-    fromStore: "Vendor (Receipt)",
-    toStore: "General Store",
-    quantity: 5,
-    unit: "Tonnes",
-    type: "Receipt",
-    reference: "GRN-022",
-    remarks: "PO-018 delivery",
-  },
-  {
-    id: "MOV-005",
-    date: "Jun 2, 2025",
-    material: "Formwork Plywood",
-    category: "Timber",
-    fromStore: "Block A Project Store",
-    toStore: "Block C Project Store",
-    quantity: 5,
-    unit: "Sheets",
-    type: "Transfer",
-    reference: "TRF-039",
-    remarks: "Temporary transfer",
-  },
-  {
-    id: "MOV-006",
-    date: "Jun 1, 2025",
-    material: "Cement (50kg bag)",
-    category: "Concrete",
-    fromStore: "Block B Project Store",
-    toStore: "General Store",
-    quantity: 30,
-    unit: "Bags",
-    type: "Return",
-    reference: "RET-007",
-    remarks: "Excess from Block B",
-  },
-  {
-    id: "MOV-007",
-    date: "May 30, 2025",
-    material: "PVC Pipes 2 Inch",
-    category: "Plumbing",
-    fromStore: "General Store",
-    toStore: "Block A Project Store",
-    quantity: 20,
-    unit: "Lengths",
-    type: "Issue",
-    reference: "REQ-031",
-    remarks: "ESS request by Emeka",
-  },
-  {
-    id: "MOV-008",
-    date: "May 28, 2025",
-    material: "Steel Rebar Y16",
-    category: "Steel",
-    fromStore: "General Store",
-    toStore: "Block A Project Store",
-    quantity: 2,
-    unit: "Tonnes",
-    type: "Transfer",
-    reference: "TRF-038",
-    remarks: "",
-  },
-  {
-    id: "MOV-009",
-    date: "May 25, 2025",
-    material: "Sand",
-    category: "Aggregates",
-    fromStore: "Vendor (Receipt)",
-    toStore: "General Store",
-    quantity: 50,
-    unit: "Tonnes",
-    type: "Receipt",
-    reference: "GRN-021",
-    remarks: "",
-  },
-  {
-    id: "MOV-010",
-    date: "May 22, 2025",
-    material: "2.5mm Twin Cable",
-    category: "Electrical",
-    fromStore: "General Store",
-    toStore: "Block A Project Store",
-    quantity: 200,
-    unit: "Metres",
-    type: "Issue",
-    reference: "REQ-028",
-    remarks: "Electrical phase 2",
-  },
-  {
-    id: "MOV-011",
-    date: "May 20, 2025",
-    material: "Electrical Conduit 25mm",
-    category: "Electrical",
-    fromStore: "—",
-    toStore: "General Store",
-    quantity: 200,
-    unit: "Metres",
-    type: "Receipt",
-    reference: "GRN-020",
-    remarks: "Opening stock adjustment",
-  },
-  {
-    id: "MOV-012",
-    date: "May 18, 2025",
-    material: "Flush Doors",
-    category: "Finishes",
-    fromStore: "Block C Project Store",
-    toStore: "General Store",
-    quantity: 6,
-    unit: "Units",
-    type: "Return",
-    reference: "RET-006",
-    remarks: "Unused doors returned",
-  },
-];
+const MOCK: Movement[] = [];
 
 const TYPES: (MovementType | "All")[] = [
   "All",
@@ -201,13 +49,7 @@ const TYPES: (MovementType | "All")[] = [
   "Return",
   "Adjustment",
 ];
-const STORES = [
-  "All Stores",
-  "General Store",
-  "Block A Project Store",
-  "Block B Project Store",
-  "Block C Project Store",
-];
+
 const MATERIALS = [
   "Cement (50kg bag)",
   "Steel Rebar Y16",
@@ -224,8 +66,8 @@ const MATERIALS = [
 const BLANK_FORM = {
   material: MATERIALS[0],
   category: "Concrete",
-  fromStore: STORES[1],
-  toStore: STORES[0],
+  fromStore: "",
+  toStore: "",
   quantity: 1,
   unit: "Units",
   type: "Adjustment" as MovementType,
@@ -234,13 +76,46 @@ const BLANK_FORM = {
 };
 
 export function StockMovementPage() {
-  const [movements, setMovements] = useState<Movement[]>(MOCK);
+  const [movements, setMovements] = useState<Movement[]>([]);
+  const [stores, setStores] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"material" | "store">("material");
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<MovementType | "All">("All");
   const [storeFilter, setStoreFilter] = useState("All Stores");
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState<typeof BLANK_FORM>({ ...BLANK_FORM });
+
+  useEffect(() => {
+    Promise.all([getStockMovements(), getStores()])
+      .then(([movs, strs]) => {
+        setMovements(
+          movs.map((m) => ({
+            id: m.id,
+            date: new Date(m.date).toLocaleDateString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }),
+            material: m.materialName,
+            category: "",
+            fromStore: m.storeName,
+            toStore: m.projectName ?? "—",
+            quantity: m.qty,
+            unit: m.unit,
+            type: m.type as MovementType,
+            reference: m.reference ?? "",
+            remarks: m.notes ?? "",
+          })),
+        );
+        setStores(strs.map((s) => s.name));
+      })
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
+
+  const storeOptions = stores.length > 0 ? stores : [];
+  const STORE_FILTER_OPTIONS = ["All Stores", ...storeOptions];
 
   const filtered = movements.filter((m) => {
     const q = search.toLowerCase();
@@ -256,20 +131,40 @@ export function StockMovementPage() {
     return matchSearch && matchType && matchStore;
   });
 
-  function record() {
-    const now = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    const newMov: Movement = {
-      ...form,
-      id: `MOV-${String(movements.length + 1).padStart(3, "0")}`,
-      date: now,
-    };
-    setMovements([newMov, ...movements]);
-    setShowModal(false);
-    setForm({ ...BLANK_FORM });
+  async function record() {
+    try {
+      const created = await createStockMovement({
+        type: form.type,
+        materialName: form.material,
+        unit: form.unit,
+        qty: form.quantity,
+        storeName: form.fromStore,
+        reference: form.reference || undefined,
+        notes: form.remarks || undefined,
+      });
+      const mov: Movement = {
+        id: created.id,
+        date: new Date(created.date).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+        material: created.materialName,
+        category: "",
+        fromStore: created.storeName,
+        toStore: created.projectName ?? "—",
+        quantity: created.qty,
+        unit: created.unit,
+        type: created.type as MovementType,
+        reference: created.reference ?? "",
+        remarks: created.notes ?? "",
+      };
+      setMovements((prev) => [mov, ...prev]);
+      setShowModal(false);
+      setForm({ ...BLANK_FORM });
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   function exportCSV() {
@@ -307,6 +202,9 @@ export function StockMovementPage() {
     a.download = "stock_movement.csv";
     a.click();
   }
+
+  if (loading)
+    return <div className="p-8 text-center text-gray-400">Loading...</div>;
 
   return (
     <div className="space-y-5">
@@ -385,7 +283,7 @@ export function StockMovementPage() {
               onChange={(e) => setStoreFilter(e.target.value)}
               className="border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500 bg-white"
             >
-              {STORES.map((s) => (
+              {STORE_FILTER_OPTIONS.map((s) => (
                 <option key={s}>{s}</option>
               ))}
             </select>
@@ -471,7 +369,7 @@ export function StockMovementPage() {
 
       {view === "store" && (
         <div className="space-y-4">
-          {STORES.filter((s) => s !== "All Stores").map((store) => {
+          {storeOptions.map((store) => {
             const outbound = movements.filter(
               (m) => m.fromStore === store && m.type !== "Receipt",
             );
@@ -657,7 +555,7 @@ export function StockMovementPage() {
                   }
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  {STORES.filter((s) => s !== "All Stores").map((s) => (
+                  {storeOptions.map((s) => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
@@ -673,7 +571,7 @@ export function StockMovementPage() {
                   }
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  {STORES.filter((s) => s !== "All Stores").map((s) => (
+                  {storeOptions.map((s) => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>

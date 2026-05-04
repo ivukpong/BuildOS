@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Plus,
   Search,
@@ -8,6 +8,12 @@ import {
   XCircle,
   RotateCcw,
 } from "lucide-react";
+import {
+  getMaterialReturns,
+  createMaterialReturn,
+  updateMaterialReturn,
+  MaterialReturn as ApiMaterialReturn,
+} from "../../api/materials";
 
 type ReturnStatus =
   | "Draft"
@@ -47,129 +53,6 @@ const CONDITION_STYLE: Record<string, string> = {
   "Partially Damaged": "bg-yellow-50 text-yellow-700",
   Damaged: "bg-red-50 text-red-700",
 };
-
-// TODO: No material returns endpoint — using placeholder data
-const MOCK: MaterialReturn[] = [
-  {
-    id: "RET-009",
-    material: "Cement (50kg bag)",
-    category: "Concrete",
-    quantity: 30,
-    unit: "Bags",
-    fromStore: "Block B Project Store",
-    toStore: "General Store",
-    reason: "Excess — work completed ahead of schedule",
-    condition: "Good",
-    requestedBy: "Aisha Ibrahim",
-    requestDate: "Jun 4, 2025",
-    status: "Pending Approval",
-    approvedBy: "",
-    approvalDate: "",
-    receivedDate: "",
-  },
-  {
-    id: "RET-008",
-    material: "Binding Wire",
-    category: "Steel",
-    quantity: 5,
-    unit: "Rolls",
-    fromStore: "Block A Project Store",
-    toStore: "General Store",
-    reason: "Unused stock",
-    condition: "Good",
-    requestedBy: "Emeka Nwosu",
-    requestDate: "Jun 3, 2025",
-    status: "Approved",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "Jun 3, 2025",
-    receivedDate: "",
-  },
-  {
-    id: "RET-007",
-    material: "Cement (50kg bag)",
-    category: "Concrete",
-    quantity: 30,
-    unit: "Bags",
-    fromStore: "Block B Project Store",
-    toStore: "General Store",
-    reason: "Excess materials from Block B",
-    condition: "Good",
-    requestedBy: "Grace Eze",
-    requestDate: "Jun 1, 2025",
-    status: "Received",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "Jun 1, 2025",
-    receivedDate: "Jun 2, 2025",
-  },
-  {
-    id: "RET-006",
-    material: "Flush Doors",
-    category: "Finishes",
-    quantity: 6,
-    unit: "Units",
-    fromStore: "Block C Project Store",
-    toStore: "General Store",
-    reason: "Unused — design changed",
-    condition: "Good",
-    requestedBy: "Tunde Bello",
-    requestDate: "May 18, 2025",
-    status: "Received",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "May 18, 2025",
-    receivedDate: "May 20, 2025",
-  },
-  {
-    id: "RET-005",
-    material: "Formwork Plywood",
-    category: "Timber",
-    quantity: 3,
-    unit: "Sheets",
-    fromStore: "Block A Project Store",
-    toStore: "General Store",
-    reason: "Damaged during storage",
-    condition: "Damaged",
-    requestedBy: "Emeka Nwosu",
-    requestDate: "May 15, 2025",
-    status: "Rejected",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "May 16, 2025",
-    receivedDate: "",
-  },
-  {
-    id: "RET-004",
-    material: "PVC Pipes 2 Inch",
-    category: "Plumbing",
-    quantity: 5,
-    unit: "Lengths",
-    fromStore: "Block C Project Store",
-    toStore: "General Store",
-    reason: "Wrong spec issued",
-    condition: "Good",
-    requestedBy: "Tunde Bello",
-    requestDate: "May 10, 2025",
-    status: "Received",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "May 10, 2025",
-    receivedDate: "May 12, 2025",
-  },
-  {
-    id: "RET-003",
-    material: "Steel Rebar Y12",
-    category: "Steel",
-    quantity: 1,
-    unit: "Tonnes",
-    fromStore: "Block A Project Store",
-    toStore: "General Store",
-    reason: "Project design revised",
-    condition: "Good",
-    requestedBy: "David Okafor",
-    requestDate: "May 5, 2025",
-    status: "Received",
-    approvedBy: "Chukwu Obi",
-    approvalDate: "May 5, 2025",
-    receivedDate: "May 7, 2025",
-  },
-];
 
 const STORES = [
   "General Store",
@@ -214,13 +97,41 @@ const STATUSES: (ReturnStatus | "All")[] = [
   "Rejected",
 ];
 
+function fromApi(r: ApiMaterialReturn): MaterialReturn {
+  return {
+    id: r.id,
+    material: r.materialName,
+    category: "",
+    quantity: r.qty,
+    unit: r.unit,
+    fromStore: r.fromStoreName,
+    toStore: r.toStoreName,
+    reason: r.reason ?? "",
+    condition: (r.condition as MaterialReturn["condition"]) ?? "Good",
+    requestedBy: r.requestedBy ?? "",
+    requestDate: r.requestDate,
+    status: r.status as ReturnStatus,
+    approvedBy: r.approvedBy ?? "",
+    approvalDate: r.approvedAt ?? "",
+    receivedDate: "",
+  };
+}
+
 export function MaterialReturnsPage() {
-  const [returns, setReturns] = useState<MaterialReturn[]>(MOCK);
+  const [returns, setReturns] = useState<MaterialReturn[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReturnStatus | "All">("All");
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<MaterialReturn | null>(null);
   const [form, setForm] = useState<typeof BLANK>({ ...BLANK });
+
+  useEffect(() => {
+    getMaterialReturns()
+      .then((data) => setReturns(data.map(fromApi)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
 
   const filtered = returns.filter((r) => {
     const q = search.toLowerCase();
@@ -232,80 +143,67 @@ export function MaterialReturnsPage() {
     return matchSearch && matchStatus;
   });
 
-  function submitReturn() {
-    const now = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    const newReturn: MaterialReturn = {
-      ...form,
-      id: `RET-${String(returns.length + 10).padStart(3, "0")}`,
-      requestDate: now,
-      status: "Pending Approval",
-      approvedBy: "",
-      approvalDate: "",
-      receivedDate: "",
-    };
-    setReturns([newReturn, ...returns]);
-    setShowModal(false);
-    setForm({ ...BLANK });
+  async function submitReturn() {
+    try {
+      const created = await createMaterialReturn({
+        materialName: form.material,
+        unit: form.unit,
+        qty: form.quantity,
+        fromStoreName: form.fromStore,
+        toStoreName: form.toStore,
+        reason: form.reason,
+        condition: form.condition,
+        requestedBy: form.requestedBy,
+        status: "Pending Approval",
+      });
+      setReturns((prev) => [fromApi(created), ...prev]);
+      setShowModal(false);
+      setForm({ ...BLANK });
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  function approve(id: string) {
-    const now = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    setReturns((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              status: "Approved",
-              approvedBy: "Store Manager",
-              approvalDate: now,
-            }
-          : r,
-      ),
-    );
-    setSelected(null);
+  async function approve(id: string) {
+    try {
+      const updated = await updateMaterialReturn(id, {
+        status: "Approved",
+        approvedBy: "Store Manager",
+      });
+      setReturns((prev) =>
+        prev.map((r) => (r.id === id ? fromApi(updated) : r)),
+      );
+      setSelected(null);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  function markReceived(id: string) {
-    const now = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    setReturns((prev) =>
-      prev.map((r) =>
-        r.id === id ? { ...r, status: "Received", receivedDate: now } : r,
-      ),
-    );
-    setSelected(null);
+  async function markReceived(id: string) {
+    try {
+      const updated = await updateMaterialReturn(id, { status: "Received" });
+      setReturns((prev) =>
+        prev.map((r) => (r.id === id ? fromApi(updated) : r)),
+      );
+      setSelected(null);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
-  function reject(id: string) {
-    const now = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-    setReturns((prev) =>
-      prev.map((r) =>
-        r.id === id
-          ? {
-              ...r,
-              status: "Rejected",
-              approvedBy: "Store Manager",
-              approvalDate: now,
-            }
-          : r,
-      ),
-    );
-    setSelected(null);
+  async function reject(id: string) {
+    try {
+      const updated = await updateMaterialReturn(id, {
+        status: "Rejected",
+        approvedBy: "Store Manager",
+      });
+      setReturns((prev) =>
+        prev.map((r) => (r.id === id ? fromApi(updated) : r)),
+      );
+      setSelected(null);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   function exportCSV() {
@@ -347,6 +245,11 @@ export function MaterialReturnsPage() {
   const pendingCount = returns.filter(
     (r) => r.status === "Pending Approval",
   ).length;
+
+  if (loading)
+    return (
+      <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
+    );
 
   return (
     <div className="space-y-5">

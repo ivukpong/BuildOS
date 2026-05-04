@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getMaterials, Material as ApiMaterial } from "../../api/materials";
 import {
   Package,
   TrendingUp,
@@ -17,8 +18,36 @@ import {
 } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
 
+type StockItem = {
+  id: string;
+  name: string;
+  category: string;
+  unit: string;
+  current: number;
+  min: number;
+  max: number;
+  reorderQty: number;
+  location: string;
+  lastUpdated: string;
+};
+
+function fromApiStock(m: ApiMaterial): StockItem {
+  return {
+    id: m.id,
+    name: m.name,
+    category: m.category,
+    unit: m.unit,
+    current: m.availableQty,
+    min: m.reorderLevel,
+    max: m.totalQty,
+    reorderQty: Math.round(m.totalQty * 0.4),
+    location: "",
+    lastUpdated: m.createdAt ? new Date(m.createdAt).toLocaleDateString() : "",
+  };
+}
+
 // TODO: No stock levels endpoint — using placeholder data
-const stockItems = [
+const _STOCK_PLACEHOLDER = [
   {
     id: "MAT-001",
     name: "Concrete Block 9 Inch",
@@ -165,7 +194,9 @@ const stockItems = [
   },
 ];
 
-function getStatus(item: (typeof stockItems)[0]) {
+void _STOCK_PLACEHOLDER;
+
+function getStatus(item: StockItem) {
   if (item.current === 0) return "out_of_stock";
   if (item.current < item.min) return "low_stock";
   if (item.current > item.max * 0.9) return "overstocked";
@@ -190,10 +221,16 @@ type SLSortKey = "name" | "category" | "current" | "min" | "max" | "status";
 type SortDir = "asc" | "desc";
 
 export function StockLevelsPage() {
+  const [items, setItems] = useState<StockItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    getMaterials()
+      .then((data) => setItems(data.map(fromApiStock)))
+      .catch(console.error)
+      .finally(() => setLoading(false));
+  }, []);
   const [search, setSearch] = useState("");
-  const [adjustModal, setAdjustModal] = useState<(typeof stockItems)[0] | null>(
-    null,
-  );
+  const [adjustModal, setAdjustModal] = useState<StockItem | null>(null);
   const [adjustType, setAdjustType] = useState("recount");
   const [adjustQty, setAdjustQty] = useState("");
   const [adjustNote, setAdjustNote] = useState("");
@@ -217,7 +254,7 @@ export function StockLevelsPage() {
     );
   }
 
-  const filtered = stockItems
+  const filtered = items
     .filter(
       (m) =>
         m.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -237,13 +274,13 @@ export function StockLevelsPage() {
     });
 
   const statCounts = {
-    in_stock: stockItems.filter((m) => getStatus(m) === "in_stock").length,
-    low_stock: stockItems.filter((m) => getStatus(m) === "low_stock").length,
-    out_of_stock: stockItems.filter((m) => getStatus(m) === "out_of_stock")
-      .length,
-    overstocked: stockItems.filter((m) => getStatus(m) === "overstocked")
-      .length,
+    in_stock: items.filter((m) => getStatus(m) === "in_stock").length,
+    low_stock: items.filter((m) => getStatus(m) === "low_stock").length,
+    out_of_stock: items.filter((m) => getStatus(m) === "out_of_stock").length,
+    overstocked: items.filter((m) => getStatus(m) === "overstocked").length,
   };
+
+  if (loading) return null;
 
   return (
     <div className="space-y-5">

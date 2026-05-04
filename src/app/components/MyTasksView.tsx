@@ -34,7 +34,7 @@ export interface MyTasksViewProps {
   accentTextClass?: string;
 }
 
-const MOCK_USERS: Record<string, string[]> = {
+const DEPT_USERS: Record<string, string[]> = {
   finance:      ["Amara Lawson", "Femi Bode", "Ngozi Eze", "Sola Adeleke"],
   hr:           ["Ngozi Okafor", "Tunde Bello", "Musa Ibrahim", "Fatima Yusuf"],
   procurement:  ["Kene Obi", "Lawal Musa", "Emeka Nwosu", "Chidi Ogbu"],
@@ -109,7 +109,7 @@ const APP_SEEDS: Record<string, SeedDef[]> = {
 function makeId() { return `TK-${String(Math.floor(Math.random() * 9000) + 1000)}`; }
 
 function buildSeeds(app: string): MyTask[] {
-  const users  = MOCK_USERS[app]  ?? ["Team Member"];
+  const users  = DEPT_USERS[app]  ?? ["Team Member"];
   const manager = MANAGERS[app]  ?? "Manager";
   const seeds  = APP_SEEDS[app]  ?? APP_SEEDS.finance;
   return seeds.map((s) => ({
@@ -187,7 +187,7 @@ export function MyTasksView({
   accentClass    = "bg-indigo-600 border-indigo-600",
   accentTextClass = "text-indigo-700",
 }: MyTasksViewProps) {
-  const users = MOCK_USERS[app] ?? ["Team Member"];
+  const users = DEPT_USERS[app] ?? ["Team Member"];
   const [tasks, setTasks]         = useState<MyTask[]>(() => buildSeeds(app));
   const [currentUser, setCurrentUser] = useState(users[0]);
   const [expandedId, setExpandedId]   = useState<string | null>(null);

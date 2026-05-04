@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getUsers, AppUser } from "../../api/admin-extras";
 import {
   Search,
   Plus,
@@ -270,9 +271,32 @@ const buildProcesses = (allow: string[]): Process[] => [
   },
 ];
 
-// ── Mock Users ────────────────────────────────────────────────────────────────
-// TODO: No users endpoint — using placeholder data
-const mockUsers: UserRecord[] = [
+// ── API → UserRecord mapper ─────────────────────────────────────────────────
+function userFromApi(u: AppUser): UserRecord {
+  return {
+    id: u.id,
+    name: u.name,
+    email: u.email,
+    phone: "",
+    location: "",
+    role: u.role,
+    department: u.department ?? "",
+    joinDate: u.createdAt
+      ? new Date(u.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : "",
+    status: u.isActive ? "Active" : "Inactive",
+    apps: [],
+    lastActive: u.lastLogin
+      ? new Date(u.lastLogin).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      : "Never",
+    processes: [],
+    activity: [],
+    requests: [],
+  };
+}
+
+/* legacy seed removed — was const mockUsers: UserRecord[] = [ */
+const _LEGACY_SEED_USERS: UserRecord[] = [
   {
     id: "USR-001",
     name: "Amaka Osei",
@@ -545,6 +569,7 @@ const mockUsers: UserRecord[] = [
     requests: [],
   },
 ];
+// _LEGACY_SEED_USERS kept for reference but not used — component fetches from API
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const STATUS_COLOR: Record<UserStatus, string> = {
@@ -1103,6 +1128,7 @@ function UserDetailPanel({
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 export function UsersPage() {
+  const [users, setUsers] = useState<UserRecord[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<UserStatus | "all">("all");
   const [appFilter, setAppFilter] = useState<AppKey | "all">("all");
@@ -1110,7 +1136,11 @@ export function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
-  const filtered = mockUsers.filter((u) => {
+  useEffect(() => {
+    getUsers().then((data) => setUsers(data.map(userFromApi))).catch(console.error);
+  }, []);
+
+  const filtered = users.filter((u) => {
     const q = search.toLowerCase();
     const matchSearch =
       u.name.toLowerCase().includes(q) ||
@@ -1122,10 +1152,10 @@ export function UsersPage() {
   });
 
   const stats = {
-    total: mockUsers.length,
-    active: mockUsers.filter((u) => u.status === "Active").length,
-    pending: mockUsers.filter((u) => u.status === "Pending").length,
-    inactive: mockUsers.filter((u) => u.status === "Inactive").length,
+    total: users.length,
+    active: users.filter((u) => u.status === "Active").length,
+    pending: users.filter((u) => u.status === "Pending").length,
+    inactive: users.filter((u) => u.status === "Inactive").length,
   };
 
   return (
@@ -1272,7 +1302,7 @@ export function UsersPage() {
                     {user.hasSignature && (
                       <BadgeCheck
                         className="w-3.5 h-3.5 text-indigo-500 shrink-0"
-                        title="Signature on file"
+                        aria-label="Signature on file"
                       />
                     )}
                   </div>

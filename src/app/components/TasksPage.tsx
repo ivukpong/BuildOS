@@ -25,7 +25,7 @@ interface TasksPageProps {
   badgeColor?: string;  // active nav badge e.g. "bg-emerald-50 text-emerald-700"
 }
 
-const MOCK_USERS: Record<string, string[]> = {
+const DEPT_USERS: Record<string, string[]> = {
   finance:     ["Amara Lawson", "Femi Bode", "Ngozi Eze", "Sola Adeleke"],
   hr:          ["Ngozi Okafor", "Tunde Bello", "Musa Ibrahim", "Fatima Yusuf"],
   procurement: ["Kene Obi", "Lawal Musa", "Emeka Nwosu", "Chidi Ogbu"],
@@ -91,7 +91,7 @@ const STATUS_NEXT: Record<TaskStatus, TaskStatus> = {
 };
 
 export function TasksPage({ app, accentColor = "bg-indigo-600 hover:bg-indigo-700", ringColor = "focus:ring-indigo-500", badgeColor = "bg-indigo-50 text-indigo-700" }: TasksPageProps) {
-  const users = MOCK_USERS[app] ?? ["Team Member"];
+  const users = DEPT_USERS[app] ?? ["Team Member"];
   const today = new Date().toISOString().slice(0, 10);
 
   const seeds = SEED_TASKS[app] ?? SEED_TASKS.finance;
