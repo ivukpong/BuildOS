@@ -14,10 +14,25 @@ import {
 } from "lucide-react";
 
 // TODO: No reports endpoint — using placeholder data
-const seedReports: { id: string; title: string; description: string; icon: ReactNode; color: string; lastRun: string; frequency: string; status: string }[] = [];
+const seedReports: {
+  id: string;
+  title: string;
+  description: string;
+  icon: ReactNode;
+  color: string;
+  lastRun: string;
+  frequency: string;
+  status: string;
+}[] = [];
 
 // TODO: No report runs endpoint — using placeholder data
-const recentRuns: { title: string; project: string; generatedBy: string; date: string; format: string }[] = [];
+const recentRuns: {
+  title: string;
+  project: string;
+  generatedBy: string;
+  date: string;
+  format: string;
+}[] = [];
 
 function typeIcon(type: string) {
   switch (type?.toLowerCase()) {

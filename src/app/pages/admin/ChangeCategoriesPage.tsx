@@ -39,7 +39,10 @@ function CategoryModal({
           <h2 className="text-base font-semibold text-gray-900">
             {initial.id ? "Edit Change Category" : "New Change Category"}
           </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -56,13 +59,19 @@ function CategoryModal({
                 errors.name ? "border-red-400" : "border-gray-200"
               }`}
             />
-            {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+            {errors.name && (
+              <p className="text-xs text-red-500 mt-1">{errors.name}</p>
+            )}
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              Description
+            </label>
             <textarea
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
               rows={3}
               placeholder="Describe when this category applies…"
               className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
@@ -100,7 +109,9 @@ function DeleteModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 space-y-4">
-        <h2 className="text-base font-semibold text-gray-900">Delete Change Category?</h2>
+        <h2 className="text-base font-semibold text-gray-900">
+          Delete Change Category?
+        </h2>
         <p className="text-sm text-gray-500">
           <strong>"{name}"</strong> will be permanently removed.
         </p>
@@ -112,7 +123,10 @@ function DeleteModal({
             Cancel
           </button>
           <button
-            onClick={() => { onConfirm(); onClose(); }}
+            onClick={() => {
+              onConfirm();
+              onClose();
+            }}
             className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl"
           >
             Delete
@@ -142,10 +156,7 @@ export function ChangeCategoriesPage() {
         prev.map((c) => (c.id === data.id ? { ...data, id: data.id! } : c)),
       );
     } else {
-      setCategories((prev) => [
-        ...prev,
-        { ...data, id: `cc-${Date.now()}` },
-      ]);
+      setCategories((prev) => [...prev, { ...data, id: `cc-${Date.now()}` }]);
     }
   }
 
@@ -154,13 +165,18 @@ export function ChangeCategoriesPage() {
       {/* Header */}
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Change Categories</h1>
+          <h1 className="text-2xl font-semibold text-gray-900">
+            Change Categories
+          </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             Define categories used when employees raise change requests in ESS
           </p>
         </div>
         <button
-          onClick={() => { setEditing(null); setShowModal(true); }}
+          onClick={() => {
+            setEditing(null);
+            setShowModal(true);
+          }}
           className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm px-4 py-2 rounded-xl"
         >
           <Plus className="w-4 h-4" /> Add Category
@@ -171,8 +187,9 @@ export function ChangeCategoriesPage() {
       <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 flex items-start gap-3">
         <RefreshCw className="w-4 h-4 text-indigo-500 mt-0.5 flex-shrink-0" />
         <p className="text-xs text-indigo-700">
-          These categories appear in the ESS <strong>Change Request</strong> form. They help classify and route
-          change requests to the appropriate approvers.
+          These categories appear in the ESS <strong>Change Request</strong>{" "}
+          form. They help classify and route change requests to the appropriate
+          approvers.
         </p>
       </div>
 
@@ -201,20 +218,33 @@ export function ChangeCategoriesPage() {
           <tbody className="divide-y divide-gray-50">
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-400 text-sm">
+                <td
+                  colSpan={4}
+                  className="px-4 py-8 text-center text-gray-400 text-sm"
+                >
                   No categories found.
                 </td>
               </tr>
             )}
             {filtered.map((cat, i) => (
-              <tr key={cat.id} className="hover:bg-gray-50 transition-colors group">
+              <tr
+                key={cat.id}
+                className="hover:bg-gray-50 transition-colors group"
+              >
                 <td className="px-4 py-3 text-gray-400 text-xs">{i + 1}</td>
-                <td className="px-4 py-3 font-medium text-gray-900">{cat.name}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{cat.description || "—"}</td>
+                <td className="px-4 py-3 font-medium text-gray-900">
+                  {cat.name}
+                </td>
+                <td className="px-4 py-3 text-gray-500 text-xs">
+                  {cat.description || "—"}
+                </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
-                      onClick={() => { setEditing(cat); setShowModal(true); }}
+                      onClick={() => {
+                        setEditing(cat);
+                        setShowModal(true);
+                      }}
                       className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
                     >
                       <Edit className="w-4 h-4" />
