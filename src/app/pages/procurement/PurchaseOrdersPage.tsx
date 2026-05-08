@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchPurchaseOrders } from "../../api/purchase-orders";
+import { getReferenceData } from "../../api/reference-data";
 import {
   ShoppingCart,
   Plus,
@@ -124,22 +125,6 @@ function fmt(n: number) {
   return `₦${n}`;
 }
 
-const PO_SUPPLIERS = [
-  "Alpha Aggregates",
-  "SteelMart International",
-  "ElectraHub",
-  "PlumbTech Ltd",
-  "DangCem Enterprises",
-  "BuildPlus Supplies",
-  "CemCo Nigeria Ltd",
-];
-const PO_PROJECTS = [
-  "Industrial Warehouse",
-  "Downtown Office Complex",
-  "Riverside Residential",
-  "Highway Interchange",
-  "University Science Block",
-];
 const PO_UNITS = [
   "Tonnes",
   "Bags",
@@ -180,14 +165,29 @@ function NewPOModal({
     return fmtDate(d2);
   };
 
-  const [supplier, setSupplier] = useState(PO_SUPPLIERS[0]);
+  const [suppliers, setSuppliers] = useState<string[]>([]);
+  const [projects, setProjects] = useState<string[]>([]);
+  const [supplier, setSupplier] = useState("");
   const [supplierContact, setSupplierContact] = useState("");
   const [prRef, setPrRef] = useState("");
-  const [project, setProject] = useState(PO_PROJECTS[0]);
+  const [project, setProject] = useState("");
   const [deliveryDays, setDeliveryDays] = useState("7");
   const [items, setItems] = useState<POItem[]>([
     { material: "", qty: "", unit: PO_UNITS[0], unitCost: "" },
   ]);
+
+  useEffect(() => {
+    getReferenceData()
+      .then((data) => {
+        const supplierNames = data.suppliers.map((s) => s.name);
+        const projectNames = data.projects.map((p) => p.name);
+        setSuppliers(supplierNames);
+        setProjects(projectNames);
+        setSupplier((prev) => prev || supplierNames[0] || "");
+        setProject((prev) => prev || projectNames[0] || "");
+      })
+      .catch(() => {});
+  }, []);
 
   const addItem = () =>
     setItems((p) => [
@@ -261,7 +261,7 @@ function NewPOModal({
                 onChange={(e) => setSupplier(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {PO_SUPPLIERS.map((s) => (
+                {suppliers.map((s) => (
                   <option key={s}>{s}</option>
                 ))}
               </select>
@@ -297,7 +297,7 @@ function NewPOModal({
                 onChange={(e) => setProject(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {PO_PROJECTS.map((p) => (
+                {projects.map((p) => (
                   <option key={p}>{p}</option>
                 ))}
               </select>

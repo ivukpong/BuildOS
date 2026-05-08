@@ -29,206 +29,8 @@ interface PayrollEntry {
   status: PayStatus;
   paymentMethod: string;
   bankName: string;
+  period?: string;
 }
-
-// NOTE: payrollData replaced by API state inside component
-const _payrollData: PayrollEntry[] = [
-  {
-    id: "EMP-001",
-    name: "Chukwudi Eze",
-    role: "Site Engineer",
-    department: "Engineering",
-    gradeLevel: "Level 7",
-    grossPay: 320000,
-    deductions: 48000,
-    netPay: 272000,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "GTBank",
-  },
-  {
-    id: "EMP-002",
-    name: "Aisha Bello",
-    role: "Project Manager",
-    department: "Operations",
-    gradeLevel: "Level 9",
-    grossPay: 580000,
-    deductions: 87000,
-    netPay: 493000,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "Zenith Bank",
-  },
-  {
-    id: "EMP-003",
-    name: "Robert Lee",
-    role: "Structural Engineer",
-    department: "Engineering",
-    gradeLevel: "Level 8",
-    grossPay: 420000,
-    deductions: 63000,
-    netPay: 357000,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "Access Bank",
-  },
-  {
-    id: "EMP-004",
-    name: "Sarah Johnson",
-    role: "Accountant",
-    department: "Finance",
-    gradeLevel: "Level 7",
-    grossPay: 290000,
-    deductions: 43500,
-    netPay: 246500,
-    status: "pending",
-    paymentMethod: "Bank Transfer",
-    bankName: "First Bank",
-  },
-  {
-    id: "EMP-005",
-    name: "Mike Davis",
-    role: "Site Foreman",
-    department: "Engineering",
-    gradeLevel: "Level 5",
-    grossPay: 195000,
-    deductions: 29250,
-    netPay: 165750,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "UBA",
-  },
-  {
-    id: "EMP-006",
-    name: "Alice Ware",
-    role: "HR Officer",
-    department: "Human Resources",
-    gradeLevel: "Level 6",
-    grossPay: 245000,
-    deductions: 36750,
-    netPay: 208250,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "GTBank",
-  },
-  {
-    id: "EMP-007",
-    name: "Tom Fox",
-    role: "Quantity Surveyor",
-    department: "Procurement",
-    gradeLevel: "Level 7",
-    grossPay: 310000,
-    deductions: 46500,
-    netPay: 263500,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "Zenith Bank",
-  },
-  {
-    id: "EMP-008",
-    name: "Ngozi Eze",
-    role: "Site Supervisor",
-    department: "Engineering",
-    gradeLevel: "Level 6",
-    grossPay: 255000,
-    deductions: 38250,
-    netPay: 216750,
-    status: "processing",
-    paymentMethod: "Bank Transfer",
-    bankName: "Access Bank",
-  },
-  {
-    id: "EMP-009",
-    name: "Kwame Asante",
-    role: "Civil Engineer",
-    department: "Engineering",
-    gradeLevel: "Level 7",
-    grossPay: 315000,
-    deductions: 47250,
-    netPay: 267750,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "Stanbic IBTC",
-  },
-  {
-    id: "EMP-010",
-    name: "Emeka Nwosu",
-    role: "HSE Officer",
-    department: "Health & Safety",
-    gradeLevel: "Level 6",
-    grossPay: 250000,
-    deductions: 37500,
-    netPay: 212500,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "UBA",
-  },
-  {
-    id: "EMP-011",
-    name: "Bisi Akinola",
-    role: "Admin Officer",
-    department: "Administration",
-    gradeLevel: "Level 5",
-    grossPay: 175000,
-    deductions: 26250,
-    netPay: 148750,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "First Bank",
-  },
-  {
-    id: "EMP-012",
-    name: "Lawal Musa",
-    role: "MEP Engineer",
-    department: "Engineering",
-    gradeLevel: "Level 7",
-    grossPay: 320000,
-    deductions: 48000,
-    netPay: 272000,
-    status: "pending",
-    paymentMethod: "Bank Transfer",
-    bankName: "GTBank",
-  },
-  {
-    id: "EMP-013",
-    name: "Funke Adeyemi",
-    role: "Finance Analyst",
-    department: "Finance",
-    gradeLevel: "Level 6",
-    grossPay: 260000,
-    deductions: 39000,
-    netPay: 221000,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "Zenith Bank",
-  },
-  {
-    id: "EMP-014",
-    name: "David Obi",
-    role: "IT Officer",
-    department: "IT & Systems",
-    gradeLevel: "Level 6",
-    grossPay: 255000,
-    deductions: 38250,
-    netPay: 216750,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "Access Bank",
-  },
-  {
-    id: "EMP-015",
-    name: "Yemi Olusegun",
-    role: "Project Manager",
-    department: "Operations",
-    gradeLevel: "Level 9",
-    grossPay: 560000,
-    deductions: 84000,
-    netPay: 476000,
-    status: "paid",
-    paymentMethod: "Bank Transfer",
-    bankName: "First Bank",
-  },
-];
 
 const statusConfig: Record<
   PayStatus,
@@ -252,11 +54,6 @@ const statusConfig: Record<
 };
 
 const fmt = (n: number) => `₦${n.toLocaleString()}`;
-// NOTE: depts derived inside component
-const _depts_placeholder: string[] = [];
-
-const prevMonthTotal = 27_500_000;
-const currentMonth = "April 2025";
 
 type SortKey = "name" | "gross" | "deductions" | "net" | "status";
 type SortDir = "asc" | "desc";
@@ -294,6 +91,7 @@ export function PayrollPage() {
               : "pending",
             paymentMethod: "Bank Transfer",
             bankName: "—",
+            period: s.period,
           })),
         ),
       )
@@ -333,12 +131,9 @@ export function PayrollPage() {
   const totalNet = filtered.reduce((s, p) => s + p.netPay, 0);
   const paidCount = filtered.filter((p) => p.status === "paid").length;
   const pendingCount = filtered.filter((p) => p.status === "pending").length;
-
-  const mthDiff = (
-    ((totalGross - prevMonthTotal) / prevMonthTotal) *
-    100
-  ).toFixed(1);
-  const isUp = totalGross >= prevMonthTotal;
+  const currentMonth =
+    payrollData[0]?.period ??
+    new Date().toLocaleString("default", { month: "long", year: "numeric" });
 
   function SortIcon({ col }: { col: SortKey }) {
     if (sortKey !== col) return <ChevronUp className="w-3 h-3 text-gray-300" />;
@@ -410,19 +205,10 @@ export function PayrollPage() {
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs text-gray-500">Total Gross Pay</p>
-            <div
-              className={`flex items-center gap-0.5 text-xs font-medium ${isUp ? "text-green-600" : "text-red-500"}`}
-            >
-              {isUp ? (
-                <TrendingUp className="w-3 h-3" />
-              ) : (
-                <ChevronDown className="w-3 h-3" />
-              )}
-              {Math.abs(parseFloat(mthDiff))}%
-            </div>
+            <TrendingUp className="w-3 h-3 text-gray-300" />
           </div>
           <p className="text-2xl font-bold text-gray-900">{fmt(totalGross)}</p>
-          <p className="text-xs text-gray-400 mt-0.5">vs ₦27.5M last month</p>
+          <p className="text-xs text-gray-400 mt-0.5">{currentMonth}</p>
         </div>
         <div className="bg-white rounded-lg border border-gray-200 p-4">
           <p className="text-xs text-gray-500 mb-2">Total Deductions</p>

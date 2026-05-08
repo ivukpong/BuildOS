@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getTransactions } from "../../api/finance-extras";
+import { getChartAccounts, getTransactions } from "../../api/finance-extras";
 import {
   Zap,
   Search,
@@ -58,28 +58,6 @@ interface Transaction {
   notes?: string;
   ledgerRef?: string;
 }
-
-// No process-categories endpoint — populated via user-created entries
-
-// ── Chart of Accounts ─────────────────────────────────────────────────────────
-const COA_ACCOUNTS = [
-  "1100 Accounts Receivable",
-  "1110 Cash & Bank",
-  "1200 Staff Advances",
-  "1210 Plant & Equipment",
-  "1300 Inventory",
-  "2000 Accounts Payable",
-  "2100 Accrued Liabilities",
-  "2300 Tax Payable – VAT",
-  "2310 Tax Payable – WHT",
-  "2320 PAYE Liability",
-  "4100 Contract Revenue",
-  "4200 Service Income",
-  "5100 Labour Costs",
-  "5200 Material Costs",
-  "5300 Equipment Costs",
-  "5400 Overhead",
-];
 
 // ── Config maps ───────────────────────────────────────────────────────────────
 const STATUS_CFG: Record<
@@ -160,9 +138,11 @@ function todayStr() {
 
 // ── New Category Modal ────────────────────────────────────────────────────────
 function NewCategoryModal({
+  accountOptions,
   onClose,
   onSave,
 }: {
+  accountOptions: string[];
   onClose: () => void;
   onSave: (c: ProcessCategory) => void;
 }) {
@@ -171,9 +151,16 @@ function NewCategoryModal({
     description: "",
     sourceApp: "HR" as SourceApp,
     linkedProcess: "",
-    debitAccount: "5100 Labour Costs",
-    creditAccount: "1110 Cash & Bank",
+    debitAccount: "",
+    creditAccount: "",
   });
+  useEffect(() => {
+    setForm((prev) => ({
+      ...prev,
+      debitAccount: prev.debitAccount || accountOptions[0] || "",
+      creditAccount: prev.creditAccount || accountOptions[1] || "",
+    }));
+  }, [accountOptions]);
   const canSubmit =
     form.name.trim() &&
     form.linkedProcess.trim() &&
@@ -283,7 +270,7 @@ function NewCategoryModal({
                     }
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white appearance-none pr-7"
                   >
-                    {COA_ACCOUNTS.map((a) => (
+                    {accountOptions.map((a) => (
                       <option key={a}>{a}</option>
                     ))}
                   </select>
@@ -305,7 +292,7 @@ function NewCategoryModal({
                     }
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-500 bg-white appearance-none pr-7"
                   >
-                    {COA_ACCOUNTS.map((a) => (
+                    {accountOptions.map((a) => (
                       <option key={a}>{a}</option>
                     ))}
                   </select>
@@ -936,10 +923,12 @@ function CategoryCard({
 export function PostingEnginePage() {
   const [categories, setCategories] = useState<ProcessCategory[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [accountOptions, setAccountOptions] = useState<string[]>([]);
 
   useEffect(() => {
-    getTransactions()
-      .then((data) =>
+    Promise.all([getTransactions(), getChartAccounts()])
+      .then(([data, accounts]) => {
+        setAccountOptions(accounts.map((a) => `${a.code} ${a.name}`));
         setTransactions(
           data.map((t) => ({
             id: t.id,
@@ -953,8 +942,8 @@ export function PostingEnginePage() {
             status: (t.status as TxnStatus) ?? "pending",
             notes: t.notes,
           })),
-        ),
-      )
+        );
+      })
       .catch(console.error);
   }, []);
   const [activeCategory, setActiveCategory] = useState<ProcessCategory | null>(
@@ -1168,6 +1157,7 @@ export function PostingEnginePage() {
 
       {showNewCatModal && (
         <NewCategoryModal
+          accountOptions={accountOptions}
           onClose={() => setShowNewCatModal(false)}
           onSave={(c) => setCategories((prev) => [...prev, c])}
         />

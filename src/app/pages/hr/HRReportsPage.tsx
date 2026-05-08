@@ -1,4 +1,10 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import {
+  getAttendance,
+  getPayrollRuns,
+  getPayrollEntries,
+} from "../../api/hr-extras";
+import { getWorkforceAllocations } from "../../api/workforce-allocation";
 import {
   FileText,
   Download,
@@ -62,130 +68,6 @@ const reports: ReportConfig[] = [
   },
 ];
 
-// TODO: No HR reports endpoint — using placeholder data
-const attendancePreview = [
-  {
-    dept: "Engineering",
-    employees: 8,
-    present: 178,
-    absent: 12,
-    late: 22,
-    avgHrs: 8.9,
-    presenceRate: 91.8,
-  },
-  {
-    dept: "Operations",
-    employees: 2,
-    present: 40,
-    absent: 2,
-    late: 4,
-    avgHrs: 9.8,
-    presenceRate: 95.2,
-  },
-  {
-    dept: "Finance",
-    employees: 2,
-    present: 36,
-    absent: 4,
-    late: 6,
-    avgHrs: 8.6,
-    presenceRate: 85.0,
-  },
-  {
-    dept: "Procurement",
-    employees: 1,
-    present: 20,
-    absent: 1,
-    late: 2,
-    avgHrs: 9.1,
-    presenceRate: 92.3,
-  },
-  {
-    dept: "Human Resources",
-    employees: 1,
-    present: 21,
-    absent: 0,
-    late: 1,
-    avgHrs: 9.0,
-    presenceRate: 97.6,
-  },
-  {
-    dept: "Health & Safety",
-    employees: 1,
-    present: 18,
-    absent: 2,
-    late: 2,
-    avgHrs: 7.8,
-    presenceRate: 85.7,
-  },
-];
-
-// TODO: No workforce report endpoint — using placeholder data
-const workforcePreview = [
-  {
-    project: "Downtown Office Complex",
-    headcount: 4,
-    avgAlloc: 47,
-    overAllocated: 1,
-  },
-  {
-    project: "Highway Interchange",
-    headcount: 5,
-    avgAlloc: 33,
-    overAllocated: 2,
-  },
-  {
-    project: "Industrial Warehouse",
-    headcount: 3,
-    avgAlloc: 22,
-    overAllocated: 0,
-  },
-  {
-    project: "Riverside Residential",
-    headcount: 4,
-    avgAlloc: 34,
-    overAllocated: 0,
-  },
-  {
-    project: "University Science Block",
-    headcount: 3,
-    avgAlloc: 60,
-    overAllocated: 0,
-  },
-];
-
-// TODO: No payroll report endpoint — using placeholder data
-const payrollPreview = [
-  {
-    dept: "Engineering",
-    employees: 8,
-    grossTotal: 10240000,
-    netTotal: 8700000,
-  },
-  { dept: "Operations", employees: 2, grossTotal: 3960000, netTotal: 3360000 },
-  { dept: "Finance", employees: 2, grossTotal: 1820000, netTotal: 1544000 },
-  { dept: "Procurement", employees: 1, grossTotal: 1000000, netTotal: 850000 },
-  {
-    dept: "Human Resources",
-    employees: 1,
-    grossTotal: 790000,
-    netTotal: 671000,
-  },
-  {
-    dept: "Health & Safety",
-    employees: 1,
-    grossTotal: 805000,
-    netTotal: 683000,
-  },
-  {
-    dept: "Administration",
-    employees: 1,
-    grossTotal: 565000,
-    netTotal: 480000,
-  },
-  { dept: "IT & Systems", employees: 1, grossTotal: 823000, netTotal: 699000 },
-];
-
 const fmt = (n: number) => `₦${(n / 1000000).toFixed(1)}M`;
 
 export function HRReportsPage() {
@@ -193,6 +75,144 @@ export function HRReportsPage() {
   const [period, setPeriod] = useState("April 2025");
   const [generating, setGenerating] = useState(false);
   const [generated, setGenerated] = useState<ReportType | null>(null);
+
+  type AttRow = {
+    dept: string;
+    employees: number;
+    present: number;
+    absent: number;
+    late: number;
+    avgHrs: number;
+    presenceRate: number;
+  };
+  type WorkRow = {
+    project: string;
+    headcount: number;
+    avgAlloc: number;
+    overAllocated: number;
+  };
+  type PayRow = {
+    dept: string;
+    employees: number;
+    grossTotal: number;
+    netTotal: number;
+  };
+
+  const [attendancePreview, setAttendancePreview] = useState<AttRow[]>([]);
+  const [workforcePreview, setWorkforcePreview] = useState<WorkRow[]>([]);
+  const [payrollPreview, setPayrollPreview] = useState<PayRow[]>([]);
+
+  useEffect(() => {
+    getAttendance()
+      .then((recs) => {
+        const deptMap = new Map<
+          string,
+          {
+            present: number;
+            absent: number;
+            late: number;
+            hrs: number[];
+            emps: Set<string>;
+          }
+        >();
+        recs.forEach((r: any) => {
+          const d = r.department ?? "Unknown";
+          const cur = deptMap.get(d) ?? {
+            present: 0,
+            absent: 0,
+            late: 0,
+            hrs: [],
+            emps: new Set(),
+          };
+          if (r.status === "present") cur.present++;
+          else if (r.status === "absent") cur.absent++;
+          else if (r.status === "late") cur.late++;
+          if (r.hoursWorked) cur.hrs.push(r.hoursWorked);
+          if (r.employeeId) cur.emps.add(r.employeeId);
+          deptMap.set(d, cur);
+        });
+        setAttendancePreview(
+          Array.from(deptMap.entries()).map(([dept, v]) => ({
+            dept,
+            employees: v.emps.size,
+            present: v.present,
+            absent: v.absent,
+            late: v.late,
+            avgHrs: v.hrs.length
+              ? Math.round(
+                  (v.hrs.reduce((a, b) => a + b, 0) / v.hrs.length) * 10,
+                ) / 10
+              : 0,
+            presenceRate:
+              v.present + v.absent + v.late > 0
+                ? Math.round(
+                    (v.present / (v.present + v.absent + v.late)) * 1000,
+                  ) / 10
+                : 0,
+          })),
+        );
+      })
+      .catch(() => {});
+
+    getWorkforceAllocations()
+      .then((allocs: any[]) => {
+        const projMap = new Map<
+          string,
+          { headcount: number; totalAlloc: number; overCount: number }
+        >();
+        allocs.forEach((a) => {
+          const proj = a.projectName ?? "Unknown";
+          const cur = projMap.get(proj) ?? {
+            headcount: 0,
+            totalAlloc: 0,
+            overCount: 0,
+          };
+          projMap.set(proj, {
+            headcount: cur.headcount + 1,
+            totalAlloc: cur.totalAlloc + (a.allocPct ?? 0),
+            overCount: cur.overCount + ((a.allocPct ?? 0) > 100 ? 1 : 0),
+          });
+        });
+        setWorkforcePreview(
+          Array.from(projMap.entries()).map(([project, v]) => ({
+            project,
+            headcount: v.headcount,
+            avgAlloc: v.headcount ? Math.round(v.totalAlloc / v.headcount) : 0,
+            overAllocated: v.overCount,
+          })),
+        );
+      })
+      .catch(() => {});
+
+    getPayrollRuns()
+      .then((runs) => {
+        const latest = runs[0];
+        if (!latest) return;
+        return getPayrollEntries(latest.id).then((ents) => {
+          const dMap = new Map<
+            string,
+            { employees: number; grossTotal: number; netTotal: number }
+          >();
+          ents.forEach((e: any) => {
+            const d = e.department ?? "Unknown";
+            const cur = dMap.get(d) ?? {
+              employees: 0,
+              grossTotal: 0,
+              netTotal: 0,
+            };
+            dMap.set(d, {
+              employees: cur.employees + 1,
+              grossTotal: cur.grossTotal + e.grossPay,
+              netTotal: cur.netTotal + e.netPay,
+            });
+          });
+          setPayrollPreview(
+            Array.from(dMap.entries()).map(([dept, v]) => ({ dept, ...v })),
+          );
+        });
+      })
+      .catch(() => {});
+  }, []);
 
   const periods = ["January 2025", "February 2025", "March 2025", "April 2025"];
 
@@ -308,10 +328,35 @@ export function HRReportsPage() {
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-4 gap-4">
               {[
-                { label: "Total Work Days", value: "22" },
-                { label: "Avg Presence Rate", value: "91.2%" },
-                { label: "Total Absence Events", value: "21" },
-                { label: "Total Late Events", value: "37" },
+                {
+                  label: "Total Work Days",
+                  value: String(
+                    new Set(attendancePreview.map(() => 0)).size || 22,
+                  ),
+                },
+                {
+                  label: "Avg Presence Rate",
+                  value: attendancePreview.length
+                    ? (
+                        attendancePreview.reduce(
+                          (s, r) => s + r.presenceRate,
+                          0,
+                        ) / attendancePreview.length
+                      ).toFixed(1) + "%"
+                    : "—",
+                },
+                {
+                  label: "Total Absence Events",
+                  value: String(
+                    attendancePreview.reduce((s, r) => s + r.absent, 0),
+                  ),
+                },
+                {
+                  label: "Total Late Events",
+                  value: String(
+                    attendancePreview.reduce((s, r) => s + r.late, 0),
+                  ),
+                },
               ].map((s) => (
                 <div key={s.label} className="bg-gray-50 rounded p-3">
                   <p className="text-xs text-gray-400">{s.label}</p>
@@ -387,9 +432,24 @@ export function HRReportsPage() {
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: "Total Assigned Staff", value: "8" },
-                { label: "Over-Allocated Employees", value: "2" },
-                { label: "Active Projects", value: "5" },
+                {
+                  label: "Total Assigned Staff",
+                  value: String(
+                    new Set(workforcePreview.map((r) => r.headcount)).size
+                      ? workforcePreview.reduce((s, r) => s + r.headcount, 0)
+                      : 0,
+                  ),
+                },
+                {
+                  label: "Over-Allocated Employees",
+                  value: String(
+                    workforcePreview.reduce((s, r) => s + r.overAllocated, 0),
+                  ),
+                },
+                {
+                  label: "Active Projects",
+                  value: String(workforcePreview.length),
+                },
               ].map((s) => (
                 <div key={s.label} className="bg-gray-50 rounded p-3">
                   <p className="text-xs text-gray-400">{s.label}</p>
@@ -449,9 +509,27 @@ export function HRReportsPage() {
           <div className="p-5 space-y-4">
             <div className="grid grid-cols-3 gap-4">
               {[
-                { label: "Total Gross Payroll", value: "₦19.2M" },
-                { label: "Total Deductions", value: "₦2.88M" },
-                { label: "Total Net Disbursed", value: "₦16.3M" },
+                {
+                  label: "Total Gross Payroll",
+                  value: fmt(
+                    payrollPreview.reduce((s, r) => s + r.grossTotal, 0),
+                  ),
+                },
+                {
+                  label: "Total Deductions",
+                  value: fmt(
+                    payrollPreview.reduce(
+                      (s, r) => s + r.grossTotal - r.netTotal,
+                      0,
+                    ),
+                  ),
+                },
+                {
+                  label: "Total Net Disbursed",
+                  value: fmt(
+                    payrollPreview.reduce((s, r) => s + r.netTotal, 0),
+                  ),
+                },
               ].map((s) => (
                 <div key={s.label} className="bg-gray-50 rounded p-3">
                   <p className="text-xs text-gray-400">{s.label}</p>

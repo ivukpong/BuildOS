@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchDepartments } from "../../api/departments";
+import { getDepartmentPayrollSummary } from "../../api/hr-extras";
 import {
   Building2,
   Plus,
@@ -37,8 +38,14 @@ const deptColors = [
 
 export function DepartmentsPage() {
   const [depts, setDepts] = useState<Department[]>([]);
+  const [payrollSummary, setPayrollSummary] = useState<
+    { department: string; employees: number; grossPay: number; netPay: number }[]
+  >([]);
   useEffect(() => {
     fetchDepartments().then(setDepts);
+    getDepartmentPayrollSummary()
+      .then(setPayrollSummary)
+      .catch(() => setPayrollSummary([]));
   }, []);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -55,6 +62,11 @@ export function DepartmentsPage() {
   );
 
   const total = depts.reduce((s, d) => s + d.headcount, 0);
+  const largest = depts.reduce<Department | null>(
+    (best, d) => (!best || d.headcount > best.headcount ? d : best),
+    null,
+  );
+  const totalPayroll = payrollSummary.reduce((sum, d) => sum + d.grossPay, 0);
 
   return (
     <div className="space-y-5">
@@ -90,13 +102,13 @@ export function DepartmentsPage() {
           },
           {
             label: "Largest Dept",
-            value: "Engineering (28)",
+            value: largest ? `${largest.name} (${largest.headcount})` : "—",
             color: "text-green-700",
             bg: "bg-green-50",
           },
           {
-            label: "Total Budget",
-            value: "₦110.5M / yr",
+            label: "Latest Payroll",
+            value: `₦${totalPayroll.toLocaleString()}`,
             color: "text-amber-700",
             bg: "bg-amber-50",
           },

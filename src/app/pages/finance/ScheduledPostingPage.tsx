@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { getChartAccounts } from "../../api/finance-extras";
 import {
   CalendarClock,
   Plus,
@@ -33,7 +34,6 @@ interface ScheduledPosting {
   processedDate?: string;
 }
 
-const COA_ACCOUNTS: string[] = [];
 const RECURRENCE_PATTERNS: string[] = [];
 const SOURCE_PROCESSES: string[] = [];
 
@@ -84,9 +84,11 @@ function fmt(n: number) {
 
 // ── New Posting Modal ─────────────────────────────────────────────────────────
 function NewPostingModal({
+  accountOptions,
   onClose,
   onSave,
 }: {
+  accountOptions: string[];
   onClose: () => void;
   onSave: (p: ScheduledPosting) => void;
 }) {
@@ -103,6 +105,10 @@ function NewPostingModal({
   const [scheduledDate, setScheduledDate] = useState("");
   const [recurringPattern, setRecurringPattern] = useState("");
   const [sourceProcess, setSourceProcess] = useState("");
+  useEffect(() => {
+    setDebit((prev) => prev || accountOptions[0] || "");
+    setCredit((prev) => prev || accountOptions[1] || "");
+  }, [accountOptions]);
 
   const valid =
     description.trim() &&
@@ -260,7 +266,7 @@ function NewPostingModal({
                 onChange={(e) => setDebit(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {COA_ACCOUNTS.map((a) => (
+                {accountOptions.map((a) => (
                   <option key={a}>{a}</option>
                 ))}
               </select>
@@ -274,7 +280,7 @@ function NewPostingModal({
                 onChange={(e) => setCredit(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
-                {COA_ACCOUNTS.map((a) => (
+                {accountOptions.map((a) => (
                   <option key={a}>{a}</option>
                 ))}
               </select>
@@ -327,6 +333,15 @@ export function ScheduledPostingPage() {
   );
   const [typeFilter, setTypeFilter] = useState<ScheduleType | "all">("all");
   const [showModal, setShowModal] = useState(false);
+  const [accountOptions, setAccountOptions] = useState<string[]>([]);
+
+  useEffect(() => {
+    getChartAccounts()
+      .then((accounts) =>
+        setAccountOptions(accounts.map((a) => `${a.code} ${a.name}`)),
+      )
+      .catch(console.error);
+  }, []);
 
   const filtered = postings.filter((p) => {
     if (statusFilter !== "all" && p.status !== statusFilter) return false;
@@ -580,6 +595,7 @@ export function ScheduledPostingPage() {
 
       {showModal && (
         <NewPostingModal
+          accountOptions={accountOptions}
           onClose={() => setShowModal(false)}
           onSave={(p) => {
             setPostings((prev) => [p, ...prev]);

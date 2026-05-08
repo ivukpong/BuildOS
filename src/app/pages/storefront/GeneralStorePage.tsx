@@ -56,7 +56,7 @@ function toStockItem(item: ApiStoreItem): StockItem {
 
 const BLANK: Omit<StockItem, "id"> = {
   name: "",
-  category: "Concrete",
+  category: "",
   unit: "Units",
   qty: 0,
   reorderLevel: 0,
@@ -64,17 +64,6 @@ const BLANK: Omit<StockItem, "id"> = {
   lastReceived: "",
   bin: "",
 };
-
-const CATEGORIES = [
-  "All",
-  "Concrete",
-  "Steel",
-  "Electrical",
-  "Plumbing",
-  "Aggregates",
-  "Timber",
-  "Finishes",
-];
 
 export function GeneralStorePage() {
   const [items, setItems] = useState<StockItem[]>([]);
@@ -107,6 +96,11 @@ export function GeneralStorePage() {
     const matchLow = !lowOnly || getStatus(i) !== "In Stock";
     return matchSearch && matchCat && matchLow;
   });
+  const categories = [
+    "All",
+    ...Array.from(new Set(items.map((i) => i.category).filter(Boolean))),
+  ];
+  const editableCategories = categories.filter((c) => c !== "All");
 
   async function saveItem() {
     try {
@@ -192,7 +186,7 @@ export function GeneralStorePage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        {CATEGORIES.map((c) => (
+        {categories.map((c) => (
           <button
             key={c}
             onClick={() => setCatFilter(c)}
@@ -416,15 +410,8 @@ export function GeneralStorePage() {
                       setForm({ ...form, category: e.target.value })
                     }
                   >
-                    {[
-                      "Concrete",
-                      "Steel",
-                      "Electrical",
-                      "Plumbing",
-                      "Aggregates",
-                      "Timber",
-                      "Finishes",
-                    ].map((c) => (
+                    <option value="">Select category</option>
+                    {editableCategories.map((c) => (
                       <option key={c}>{c}</option>
                     ))}
                   </select>

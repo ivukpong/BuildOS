@@ -1,98 +1,127 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart2, Package, TrendingDown, ShoppingCart, Building,
-  Download, Calendar, RefreshCw, ChevronRight, FileText,
+  Download, RefreshCw,
   ArrowUpRight, ArrowDownRight,
 } from "lucide-react";
-
-const reportTypes = [
-  {
-    id: "stock",
-    title: "Stock Report",
-    description: "Current inventory levels, valuation, and stock health overview across all material categories.",
-    icon: <Package className="w-5 h-5 text-blue-600" />,
-    color: "bg-blue-50 border-blue-200",
-    iconBg: "bg-blue-100",
-    lastRun: "Apr 9, 2026 — 10:00",
-    metrics: [
-      { label: "Total Materials", value: "148" },
-      { label: "Total Stock Value", value: "₦86.4M" },
-      { label: "Low Stock Items", value: "11" },
-      { label: "Out of Stock", value: "4" },
-    ],
-  },
-  {
-    id: "consumption",
-    title: "Material Consumption",
-    description: "Material usage trend by project and time period. Identify high-consumption materials and projects.",
-    icon: <TrendingDown className="w-5 h-5 text-amber-600" />,
-    color: "bg-amber-50 border-amber-200",
-    iconBg: "bg-amber-100",
-    lastRun: "Apr 9, 2026 — 09:30",
-    metrics: [
-      { label: "Materials Used (Apr)", value: "63 items" },
-      { label: "Total Qty Issued", value: "4,820 units" },
-      { label: "Top Material", value: "Steel Y16" },
-      { label: "Top Project", value: "Downtown Office" },
-    ],
-  },
-  {
-    id: "spend",
-    title: "Procurement Spend",
-    description: "Purchase order spend analysis by supplier, category, and project. Monthly and YTD breakdowns.",
-    icon: <ShoppingCart className="w-5 h-5 text-green-600" />,
-    color: "bg-green-50 border-green-200",
-    iconBg: "bg-green-100",
-    lastRun: "Apr 9, 2026 — 08:15",
-    metrics: [
-      { label: "Monthly Spend", value: "₦42.0M" },
-      { label: "YTD Spend", value: "₦143.8M" },
-      { label: "No. of POs", value: "31" },
-      { label: "Avg PO Value", value: "₦4.64M" },
-    ],
-  },
-  {
-    id: "supplier",
-    title: "Supplier Performance",
-    description: "Supplier scorecard with on-time delivery rates, rejection rates, spend, and overall ratings.",
-    icon: <Building className="w-5 h-5 text-purple-600" />,
-    color: "bg-purple-50 border-purple-200",
-    iconBg: "bg-purple-100",
-    lastRun: "Apr 8, 2026 — 17:00",
-    metrics: [
-      { label: "Active Suppliers", value: "7" },
-      { label: "Avg On-time Rate", value: "84.7%" },
-      { label: "Best Performer", value: "SteelMart" },
-      { label: "Needs Attention", value: "Alpha Agg." },
-    ],
-  },
-];
-
-const recentRuns = [
-  { id: "RPT-0089", name: "Stock Report", format: "PDF", runBy: "Amaka Osei", date: "Apr 9, 2026", time: "10:00" },
-  { id: "RPT-0088", name: "Procurement Spend", format: "Excel", runBy: "Amaka Osei", date: "Apr 9, 2026", time: "09:30" },
-  { id: "RPT-0087", name: "Material Consumption", format: "PDF", runBy: "Admin", date: "Apr 9, 2026", time: "08:15" },
-  { id: "RPT-0086", name: "Supplier Performance", format: "PDF", runBy: "Amaka Osei", date: "Apr 8, 2026", time: "17:00" },
-  { id: "RPT-0085", name: "Stock Report", format: "Excel", runBy: "Admin", date: "Apr 8, 2026", time: "09:00" },
-];
-
-const spendTrend = [
-  { month: "Nov", val: 28 }, { month: "Dec", val: 31 }, { month: "Jan", val: 24 },
-  { month: "Feb", val: 38 }, { month: "Mar", val: 36 }, { month: "Apr", val: 42 },
-];
-const maxSpend = Math.max(...spendTrend.map(s => s.val));
-
-const categorySpend = [
-  { cat: "Concrete & Masonry", val: 14.2, pct: 34, change: "+8%", up: true },
-  { cat: "Steel & Ironmongery", val: 10.9, pct: 26, change: "+12%", up: true },
-  { cat: "Electrical", val: 6.7, pct: 16, change: "-3%", up: false },
-  { cat: "Plumbing & MEP", val: 5.5, pct: 13, change: "+5%", up: true },
-  { cat: "Timber & Formwork", val: 4.6, pct: 11, change: "-1%", up: false },
-];
+import { getMaterialRequests, getMaterials } from "../../api/materials";
+import { fetchPurchaseOrders } from "../../api/purchase-orders";
+import { fetchSuppliers } from "../../api/suppliers";
 
 export function ProcurementReportsPage() {
   const [activeReport, setActiveReport] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState("This Month");
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [purchaseOrders, setPurchaseOrders] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+
+  useEffect(() => {
+    getMaterials().then(setMaterials).catch(() => {});
+    fetchPurchaseOrders().then(setPurchaseOrders).catch(() => {});
+    getMaterialRequests().then(setRequests).catch(() => {});
+    fetchSuppliers().then(setSuppliers).catch(() => {});
+  }, []);
+
+  const stockValue = materials.reduce(
+    (sum, m) => sum + (m.availableQty ?? m.totalQty ?? 0) * (m.unitCost ?? 0),
+    0,
+  );
+  const lowStock = materials.filter(
+    (m) => (m.availableQty ?? m.totalQty ?? 0) > 0 && (m.availableQty ?? m.totalQty ?? 0) <= (m.reorderLevel ?? 0),
+  ).length;
+  const outOfStock = materials.filter((m) => (m.availableQty ?? m.totalQty ?? 0) <= 0).length;
+  const totalSpend = purchaseOrders.reduce((sum, po) => sum + (po.totalValue || 0), 0);
+  const averagePo = purchaseOrders.length ? totalSpend / purchaseOrders.length : 0;
+  const categoryTotals = materials.reduce<Record<string, number>>((acc, m) => {
+    const category = m.category || "Uncategorised";
+    acc[category] = (acc[category] || 0) + (m.availableQty ?? m.totalQty ?? 0) * (m.unitCost ?? 0);
+    return acc;
+  }, {});
+  const categoryTotal = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
+  const categorySpend = Object.entries(categoryTotals)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([cat, value]) => ({
+      cat,
+      val: value / 1_000_000,
+      pct: categoryTotal ? Math.round((value / categoryTotal) * 100) : 0,
+      change: "Live",
+      up: true,
+    }));
+  const spendTrend = [
+    {
+      month: new Date().toLocaleString("default", { month: "short" }),
+      val: Number((totalSpend / 1_000_000).toFixed(1)),
+    },
+  ];
+  const maxSpend = Math.max(...spendTrend.map((s) => s.val), 1);
+  const recentRuns = [
+    { id: "LIVE-STOCK", name: "Stock Report", format: "Live", runBy: "System", date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+    { id: "LIVE-SPEND", name: "Procurement Spend", format: "Live", runBy: "System", date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) },
+  ];
+  const reportTypes = [
+    {
+      id: "stock",
+      title: "Stock Report",
+      description: "Current inventory levels, valuation, and stock health overview across all material categories.",
+      icon: <Package className="w-5 h-5 text-blue-600" />,
+      color: "bg-blue-50 border-blue-200",
+      iconBg: "bg-blue-100",
+      lastRun: "Live",
+      metrics: [
+        { label: "Total Materials", value: String(materials.length) },
+        { label: "Total Stock Value", value: `₦${(stockValue / 1_000_000).toFixed(1)}M` },
+        { label: "Low Stock Items", value: String(lowStock) },
+        { label: "Out of Stock", value: String(outOfStock) },
+      ],
+    },
+    {
+      id: "consumption",
+      title: "Material Requests",
+      description: "Current request volume and pending material demand from site/store workflows.",
+      icon: <TrendingDown className="w-5 h-5 text-amber-600" />,
+      color: "bg-amber-50 border-amber-200",
+      iconBg: "bg-amber-100",
+      lastRun: "Live",
+      metrics: [
+        { label: "Total Requests", value: String(requests.length) },
+        { label: "Pending", value: String(requests.filter((r) => String(r.status).toLowerCase().includes("pending")).length) },
+        { label: "Top Material", value: requests[0]?.materialName || "—" },
+        { label: "Top Project", value: requests[0]?.projectName || "—" },
+      ],
+    },
+    {
+      id: "spend",
+      title: "Procurement Spend",
+      description: "Purchase order spend analysis by supplier, category, and project.",
+      icon: <ShoppingCart className="w-5 h-5 text-green-600" />,
+      color: "bg-green-50 border-green-200",
+      iconBg: "bg-green-100",
+      lastRun: "Live",
+      metrics: [
+        { label: "Total Spend", value: `₦${(totalSpend / 1_000_000).toFixed(1)}M` },
+        { label: "No. of POs", value: String(purchaseOrders.length) },
+        { label: "Avg PO Value", value: `₦${(averagePo / 1_000_000).toFixed(1)}M` },
+        { label: "Open POs", value: String(purchaseOrders.filter((po) => !["completed", "received"].includes(String(po.status).toLowerCase())).length) },
+      ],
+    },
+    {
+      id: "supplier",
+      title: "Supplier Performance",
+      description: "Supplier coverage and active procurement relationships.",
+      icon: <Building className="w-5 h-5 text-purple-600" />,
+      color: "bg-purple-50 border-purple-200",
+      iconBg: "bg-purple-100",
+      lastRun: "Live",
+      metrics: [
+        { label: "Active Suppliers", value: String(suppliers.length) },
+        { label: "Linked POs", value: String(purchaseOrders.filter((po) => po.supplier).length) },
+        { label: "Top Supplier", value: purchaseOrders[0]?.supplier || suppliers[0]?.name || "—" },
+        { label: "Compliance Docs", value: "Live" },
+      ],
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -154,10 +183,10 @@ export function ProcurementReportsPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-sm font-semibold text-gray-900">Monthly Procurement Spend (₦M)</h2>
-              <p className="text-xs text-gray-400 mt-0.5">Nov 2025 — Apr 2026</p>
+              <p className="text-xs text-gray-400 mt-0.5">Live purchase order totals</p>
             </div>
             <span className="flex items-center gap-1 text-xs text-green-700 bg-green-100 px-2 py-1 rounded font-medium">
-              <ArrowUpRight className="w-3 h-3" /> +16.7% vs last month
+              <ArrowUpRight className="w-3 h-3" /> Backend data
             </span>
           </div>
           <div className="flex items-end gap-4 h-40">
@@ -177,6 +206,9 @@ export function ProcurementReportsPage() {
         <div className="col-span-2 bg-white rounded-lg border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Spend by Category — {dateRange}</h2>
           <div className="space-y-3.5">
+            {categorySpend.length === 0 && (
+              <p className="text-sm text-gray-400">No category spend data available.</p>
+            )}
             {categorySpend.map(c => (
               <div key={c.cat}>
                 <div className="flex items-center justify-between mb-1">
@@ -197,7 +229,7 @@ export function ProcurementReportsPage() {
           </div>
           <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm">
             <span className="text-gray-500">Total</span>
-            <span className="font-bold text-gray-900">₦42.0M</span>
+            <span className="font-bold text-gray-900">₦{(categoryTotal / 1_000_000).toFixed(1)}M</span>
           </div>
         </div>
       </div>

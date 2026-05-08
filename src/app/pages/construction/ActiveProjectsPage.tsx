@@ -25,8 +25,6 @@ export function ActiveProjectsPage() {
       .catch(console.error);
   }, []);
 
-  // Legacy hardcoded data removed — data loaded from API
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "On Track":

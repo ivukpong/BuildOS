@@ -27,3 +27,8 @@ export async function fetchEmployees(params?: { status?: string; departmentId?: 
     const data = await apiFetch<any[]>(`/employees${query}`);
     return data.map(mapEmployee);
 }
+
+export async function fetchEmployee(id: string) {
+    const data = await apiFetch<any>(`/employees/${id}`);
+    return mapEmployee(data);
+}

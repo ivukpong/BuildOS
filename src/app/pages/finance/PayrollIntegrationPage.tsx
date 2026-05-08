@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import {
+  getPayrollEntries,
   getPayrollRuns,
   PayrollRun as ApiPayrollRun,
 } from "../../api/hr-extras";
@@ -36,14 +37,11 @@ interface PayrollRun {
 
 interface PayrollEmployee {
   name: string;
-  role: string;
   department: string;
-  basicSalary: number;
+  grossPay: number;
   allowances: number;
   deductions: number;
-  net: number;
-  bank: string;
-  accountNo: string;
+  netPay: number;
 }
 
 const statusConfig: Record<
@@ -75,65 +73,6 @@ const STATUS_FLOW: PayrollStatus[] = [
   "Paid",
 ];
 
-// Static employee breakdown sample (bank details not available from API)
-const SAMPLE_EMPLOYEES: PayrollEmployee[] = [
-  {
-    name: "Amaka Osei",
-    role: "Admin",
-    department: "IT",
-    basicSalary: 450000,
-    allowances: 80000,
-    deductions: 82000,
-    net: 448000,
-    bank: "GTBank",
-    accountNo: "****8821",
-  },
-  {
-    name: "Chukwudi Eze",
-    role: "Construction Manager",
-    department: "Construction",
-    basicSalary: 380000,
-    allowances: 60000,
-    deductions: 68000,
-    net: 372000,
-    bank: "Access Bank",
-    accountNo: "****4432",
-  },
-  {
-    name: "Sola Adeleke",
-    role: "Accountant",
-    department: "Finance",
-    basicSalary: 320000,
-    allowances: 50000,
-    deductions: 58000,
-    net: 312000,
-    bank: "Zenith Bank",
-    accountNo: "****7715",
-  },
-  {
-    name: "Musa Ibrahim",
-    role: "Store Manager",
-    department: "Procurement",
-    basicSalary: 280000,
-    allowances: 40000,
-    deductions: 48000,
-    net: 272000,
-    bank: "First Bank",
-    accountNo: "****2290",
-  },
-  {
-    name: "Ngozi Okafor",
-    role: "HR Manager",
-    department: "HR",
-    basicSalary: 360000,
-    allowances: 55000,
-    deductions: 62000,
-    net: 353000,
-    bank: "UBA",
-    accountNo: "****6643",
-  },
-];
-
 export function PayrollIntegrationPage() {
   const [payrolls, setPayrolls] = useState<PayrollRun[]>([]);
   const [search, setSearch] = useState("");
@@ -141,6 +80,7 @@ export function PayrollIntegrationPage() {
     "All",
   );
   const [activeRun, setActiveRun] = useState<PayrollRun | null>(null);
+  const [employees, setEmployees] = useState<PayrollEmployee[]>([]);
 
   useEffect(() => {
     getPayrollRuns()
@@ -166,7 +106,29 @@ export function PayrollIntegrationPage() {
       .catch(console.error);
   }, []);
 
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+
+  useEffect(() => {
+    if (!activeRun) {
+      setEmployees([]);
+      return;
+    }
+    getPayrollEntries(activeRun.id)
+      .then((entries) =>
+        setEmployees(
+          entries.map((e) => ({
+            name: e.employeeName,
+            department: e.department ?? "",
+            grossPay: e.grossPay,
+            allowances: e.allowances,
+            deductions: e.deductions,
+            netPay: e.netPay,
+          })),
+        ),
+      )
+      .catch(() => setEmployees([]));
+  }, [activeRun?.id]);
+
+  const fmt = (n: number) => `₦${n.toLocaleString()}`;
 
   const filtered = payrolls.filter((p) => {
     if (statusFilter !== "All" && p.status !== statusFilter) return false;
@@ -458,7 +420,7 @@ export function PayrollIntegrationPage() {
             <div className="px-5 py-3 border-b border-gray-100 flex items-center gap-2">
               <Users className="w-4 h-4 text-gray-400" />
               <h3 className="text-sm font-semibold text-gray-900">
-                Employee Pay Breakdown (Sample)
+                Employee Pay Breakdown
               </h3>
             </div>
             <table className="w-full">
@@ -485,16 +447,16 @@ export function PayrollIntegrationPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {SAMPLE_EMPLOYEES.map((e) => (
+                {employees.map((e) => (
                   <tr key={e.name} className="hover:bg-gray-50">
                     <td className="px-5 py-2.5">
                       <p className="text-sm font-medium text-gray-900">
                         {e.name}
                       </p>
-                      <p className="text-xs text-gray-400">{e.role}</p>
+                      <p className="text-xs text-gray-400">{e.department || "—"}</p>
                     </td>
                     <td className="px-5 py-2.5 text-sm text-gray-700">
-                      {fmt(e.basicSalary)}
+                      {fmt(e.grossPay - e.allowances)}
                     </td>
                     <td className="px-5 py-2.5 text-sm text-emerald-600">
                       +{fmt(e.allowances)}
@@ -503,10 +465,10 @@ export function PayrollIntegrationPage() {
                       −{fmt(e.deductions)}
                     </td>
                     <td className="px-5 py-2.5 text-sm font-semibold text-gray-900">
-                      {fmt(e.net)}
+                      {fmt(e.netPay)}
                     </td>
                     <td className="px-5 py-2.5 text-xs text-gray-500">
-                      {e.bank} {e.accountNo}
+                      Not available
                     </td>
                   </tr>
                 ))}

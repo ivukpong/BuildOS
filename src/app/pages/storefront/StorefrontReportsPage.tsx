@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
   TrendingDown,
@@ -7,6 +7,12 @@ import {
   Download,
   Package,
 } from "lucide-react";
+import {
+  getMaterialReturns,
+  getMaterials,
+  getStockMovements,
+  getStockTransfers,
+} from "../../api/materials";
 
 type ReportType = "Stock Levels" | "Movement" | "Transfer" | "Return";
 
@@ -41,8 +47,7 @@ const REPORT_CARDS = [
   },
 ];
 
-// ── Stock Levels data ──────────────────────────────────────────────────────────
-const STOCK_DATA: {
+interface StockReportRow {
   material: string;
   category: string;
   store: string;
@@ -50,10 +55,9 @@ const STOCK_DATA: {
   reorder: number;
   value: number;
   status: string;
-}[] = [];
+}
 
-// ── Transfer summary data ──────────────────────────────────────────────────────
-const TRANSFER_DATA: {
+interface TransferReportRow {
   ref: string;
   from: string;
   to: string;
@@ -62,10 +66,9 @@ const TRANSFER_DATA: {
   date: string;
   status: string;
   value: number;
-}[] = [];
+}
 
-// ── Return summary data ────────────────────────────────────────────────────────
-const RETURN_DATA: {
+interface ReturnReportRow {
   ref: string;
   material: string;
   qty: number;
@@ -75,10 +78,9 @@ const RETURN_DATA: {
   condition: string;
   status: string;
   date: string;
-}[] = [];
+}
 
-// ── Movement summary (same as StockMovementPage but aggregated) ────────────────
-const MOVEMENT_DATA: {
+interface MovementReportRow {
   id: string;
   date: string;
   material: string;
@@ -86,7 +88,7 @@ const MOVEMENT_DATA: {
   to: string;
   qty: number;
   type: string;
-}[] = [];
+}
 
 const STATUS_STYLE: Record<string, string> = {
   "In Stock": "bg-green-50 text-green-700",
@@ -110,6 +112,117 @@ const MOVEMENT_TYPE_STYLE: Record<string, string> = {
 
 export function StorefrontReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportType>("Stock Levels");
+  const [stockData, setStockData] = useState<StockReportRow[]>([]);
+  const [movementData, setMovementData] = useState<MovementReportRow[]>([]);
+  const [transferData, setTransferData] = useState<TransferReportRow[]>([]);
+  const [returnData, setReturnData] = useState<ReturnReportRow[]>([]);
+
+  useEffect(() => {
+    getMaterials()
+      .then((materials) =>
+        setStockData(
+          materials.map((m) => {
+            const qty = m.availableQty ?? m.totalQty ?? 0;
+            const status =
+              qty <= 0
+                ? "Out of Stock"
+                : qty <= (m.reorderLevel ?? 0)
+                  ? "Low Stock"
+                  : "In Stock";
+            return {
+              material: m.name,
+              category: m.category,
+              store: m.allocatedProject || m.allocatedTo || "General Store",
+              qty,
+              reorder: m.reorderLevel ?? 0,
+              value: qty * (m.unitCost ?? 0),
+              status,
+            };
+          }),
+        ),
+      )
+      .catch(() => setStockData([]));
+
+    getStockMovements()
+      .then((movements) =>
+        setMovementData(
+          movements.map((m) => ({
+            id: m.reference || m.id,
+            date: m.date
+              ? new Date(m.date).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "",
+            material: m.materialName,
+            from: m.type === "Receipt" ? "Supplier" : m.storeName,
+            to: m.type === "Issue" ? m.projectName || "Project" : m.storeName,
+            qty: m.qty,
+            type: m.type,
+          })),
+        ),
+      )
+      .catch(() => setMovementData([]));
+
+    getStockTransfers()
+      .then((transfers) =>
+        setTransferData(
+          transfers.map((t) => {
+            const qty = (t.items ?? []).reduce(
+              (sum: number, item: any) => sum + (Number(item.qty) || 0),
+              0,
+            );
+            const value = (t.items ?? []).reduce(
+              (sum: number, item: any) =>
+                sum + (Number(item.qty) || 0) * (Number(item.unitCost) || 0),
+              0,
+            );
+            return {
+              ref: t.reference || t.id,
+              from: t.fromStoreName,
+              to: t.toStoreName,
+              items: t.items?.length ?? 0,
+              qty,
+              date: t.requestDate
+                ? new Date(t.requestDate).toLocaleDateString("en-GB", {
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                  })
+                : "",
+              status: t.status,
+              value,
+            };
+          }),
+        ),
+      )
+      .catch(() => setTransferData([]));
+
+    getMaterialReturns()
+      .then((returns) =>
+        setReturnData(
+          returns.map((r) => ({
+            ref: r.reference || r.id,
+            material: r.materialName,
+            qty: r.qty,
+            unit: r.unit,
+            from: r.fromStoreName,
+            to: r.toStoreName,
+            condition: r.condition || "Not specified",
+            status: r.status,
+            date: r.requestDate
+              ? new Date(r.requestDate).toLocaleDateString("en-GB", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                })
+              : "",
+          })),
+        ),
+      )
+      .catch(() => setReturnData([]));
+  }, []);
 
   function exportCSV(data: Record<string, unknown>[], filename: string) {
     if (data.length === 0) return;
@@ -162,7 +275,7 @@ export function StorefrontReportsPage() {
             <button
               onClick={() =>
                 exportCSV(
-                  STOCK_DATA as unknown as Record<string, unknown>[],
+                  stockData as unknown as Record<string, unknown>[],
                   "stock_levels.csv",
                 )
               }
@@ -174,19 +287,19 @@ export function StorefrontReportsPage() {
           {/* KPIs */}
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: "Total Materials", value: STOCK_DATA.length },
+              { label: "Total Materials", value: stockData.length },
               {
                 label: "In Stock",
-                value: STOCK_DATA.filter((s) => s.status === "In Stock").length,
+                value: stockData.filter((s) => s.status === "In Stock").length,
               },
               {
                 label: "Low Stock",
-                value: STOCK_DATA.filter((s) => s.status === "Low Stock")
+                value: stockData.filter((s) => s.status === "Low Stock")
                   .length,
               },
               {
                 label: "Out of Stock",
-                value: STOCK_DATA.filter((s) => s.status === "Out of Stock")
+                value: stockData.filter((s) => s.status === "Out of Stock")
                   .length,
               },
             ].map((k) => (
@@ -219,7 +332,7 @@ export function StorefrontReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {STOCK_DATA.map((s, i) => (
+                {stockData.map((s, i) => (
                   <tr key={i} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-medium text-gray-900">
                       {s.material}
@@ -255,7 +368,7 @@ export function StorefrontReportsPage() {
             </p>
             <p className="text-2xl font-bold text-teal-900 mt-1">
               ₦
-              {STOCK_DATA.reduce((sum, s) => sum + s.value, 0).toLocaleString()}
+              {stockData.reduce((sum, s) => sum + s.value, 0).toLocaleString()}
             </p>
           </div>
         </div>
@@ -271,7 +384,7 @@ export function StorefrontReportsPage() {
             <button
               onClick={() =>
                 exportCSV(
-                  MOVEMENT_DATA as unknown as Record<string, unknown>[],
+                  movementData as unknown as Record<string, unknown>[],
                   "movement_report.csv",
                 )
               }
@@ -287,7 +400,7 @@ export function StorefrontReportsPage() {
                 className="bg-white border border-gray-200 rounded-xl p-4"
               >
                 <p className="text-2xl font-bold text-gray-900">
-                  {MOVEMENT_DATA.filter((m) => m.type === t).length}
+                  {movementData.filter((m) => m.type === t).length}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">{t}s</p>
               </div>
@@ -307,7 +420,7 @@ export function StorefrontReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {MOVEMENT_DATA.map((m) => (
+                {movementData.map((m) => (
                   <tr key={m.id} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">
                       {m.id}
@@ -350,7 +463,7 @@ export function StorefrontReportsPage() {
             <button
               onClick={() =>
                 exportCSV(
-                  TRANSFER_DATA as unknown as Record<string, unknown>[],
+                  transferData as unknown as Record<string, unknown>[],
                   "transfer_report.csv",
                 )
               }
@@ -361,20 +474,20 @@ export function StorefrontReportsPage() {
           </div>
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: "Total Transfers", value: TRANSFER_DATA.length },
+              { label: "Total Transfers", value: transferData.length },
               {
                 label: "Completed",
-                value: TRANSFER_DATA.filter((t) => t.status === "Completed")
+                value: transferData.filter((t) => t.status === "Completed")
                   .length,
               },
               {
                 label: "In Transit",
-                value: TRANSFER_DATA.filter((t) => t.status === "In Transit")
+                value: transferData.filter((t) => t.status === "In Transit")
                   .length,
               },
               {
                 label: "Pending",
-                value: TRANSFER_DATA.filter((t) => t.status === "Pending")
+                value: transferData.filter((t) => t.status === "Pending")
                   .length,
               },
             ].map((k) => (
@@ -408,7 +521,7 @@ export function StorefrontReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {TRANSFER_DATA.map((t) => (
+                {transferData.map((t) => (
                   <tr key={t.ref} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">
                       {t.ref}
@@ -444,7 +557,7 @@ export function StorefrontReportsPage() {
               Total Transfer Value
             </p>
             <p className="text-2xl font-bold text-purple-900 mt-1">
-              ₦{TRANSFER_DATA.reduce((s, t) => s + t.value, 0).toLocaleString()}
+              ₦{transferData.reduce((s, t) => s + t.value, 0).toLocaleString()}
             </p>
           </div>
         </div>
@@ -460,7 +573,7 @@ export function StorefrontReportsPage() {
             <button
               onClick={() =>
                 exportCSV(
-                  RETURN_DATA as unknown as Record<string, unknown>[],
+                  returnData as unknown as Record<string, unknown>[],
                   "return_report.csv",
                 )
               }
@@ -471,21 +584,21 @@ export function StorefrontReportsPage() {
           </div>
           <div className="grid grid-cols-4 gap-3">
             {[
-              { label: "Total Returns", value: RETURN_DATA.length },
+              { label: "Total Returns", value: returnData.length },
               {
                 label: "Received",
-                value: RETURN_DATA.filter((r) => r.status === "Received")
+                value: returnData.filter((r) => r.status === "Received")
                   .length,
               },
               {
                 label: "Pending Approval",
-                value: RETURN_DATA.filter(
+                value: returnData.filter(
                   (r) => r.status === "Pending Approval",
                 ).length,
               },
               {
                 label: "Rejected",
-                value: RETURN_DATA.filter((r) => r.status === "Rejected")
+                value: returnData.filter((r) => r.status === "Rejected")
                   .length,
               },
             ].map((k) => (
@@ -519,7 +632,7 @@ export function StorefrontReportsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
-                {RETURN_DATA.map((r) => (
+                {returnData.map((r) => (
                   <tr key={r.ref} className="hover:bg-gray-50">
                     <td className="px-4 py-3 font-mono text-xs text-gray-500">
                       {r.ref}

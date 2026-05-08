@@ -10,6 +10,11 @@ export class BudgetsController {
         return this.budgetsService.findAll(status, scope);
     }
 
+    @Get('breakdown')
+    breakdown(@Query('projectId') projectId?: string) {
+        return this.budgetsService.breakdown(projectId);
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.budgetsService.findOne(id);

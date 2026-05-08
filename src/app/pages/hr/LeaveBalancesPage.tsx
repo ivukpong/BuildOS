@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Search, Download, Filter } from "lucide-react";
+import { fetchEmployees } from "../../api/employees";
+import { fetchLeaveRequests } from "../../api/leave-requests";
 
 interface EmployeeBalance {
   id: string;
@@ -12,119 +14,7 @@ interface EmployeeBalance {
   study: { total: number; used: number };
 }
 
-// TODO: No leave balances/entitlements API endpoint — using placeholder data
-const BALANCES: EmployeeBalance[] = [
-  {
-    id: "e1",
-    name: "Chukwudi Eze",
-    department: "Engineering",
-    employeeId: "EMP-001",
-    annual: { total: 21, used: 6 },
-    sick: { total: 10, used: 2 },
-    emergency: { total: 3, used: 0 },
-    study: { total: 5, used: 0 },
-  },
-  {
-    id: "e2",
-    name: "Aisha Bello",
-    department: "Operations",
-    employeeId: "EMP-002",
-    annual: { total: 21, used: 14 },
-    sick: { total: 10, used: 3 },
-    emergency: { total: 3, used: 1 },
-    study: { total: 5, used: 0 },
-  },
-  {
-    id: "e3",
-    name: "Robert Lee",
-    department: "Engineering",
-    employeeId: "EMP-003",
-    annual: { total: 21, used: 0 },
-    sick: { total: 10, used: 0 },
-    emergency: { total: 3, used: 0 },
-    study: { total: 5, used: 0 },
-  },
-  {
-    id: "e4",
-    name: "Sarah Johnson",
-    department: "Finance",
-    employeeId: "EMP-004",
-    annual: { total: 21, used: 7 },
-    sick: { total: 10, used: 5 },
-    emergency: { total: 3, used: 0 },
-    study: { total: 5, used: 5 },
-  },
-  {
-    id: "e5",
-    name: "Mike Davis",
-    department: "Engineering",
-    employeeId: "EMP-005",
-    annual: { total: 21, used: 3 },
-    sick: { total: 10, used: 1 },
-    emergency: { total: 3, used: 1 },
-    study: { total: 5, used: 0 },
-  },
-  {
-    id: "e6",
-    name: "Alice Ware",
-    department: "Human Resources",
-    employeeId: "EMP-006",
-    annual: { total: 21, used: 21 },
-    sick: { total: 10, used: 0 },
-    emergency: { total: 3, used: 0 },
-    study: { total: 5, used: 0 },
-  },
-  {
-    id: "e7",
-    name: "Tom Fox",
-    department: "Procurement",
-    employeeId: "EMP-007",
-    annual: { total: 21, used: 9 },
-    sick: { total: 10, used: 4 },
-    emergency: { total: 3, used: 3 },
-    study: { total: 5, used: 0 },
-  },
-  {
-    id: "e8",
-    name: "Ngozi Eze",
-    department: "Engineering",
-    employeeId: "EMP-008",
-    annual: { total: 21, used: 2 },
-    sick: { total: 10, used: 0 },
-    emergency: { total: 3, used: 0 },
-    study: { total: 5, used: 0 },
-  },
-  {
-    id: "e9",
-    name: "Fatima Aliyu",
-    department: "Engineering",
-    employeeId: "EMP-009",
-    annual: { total: 21, used: 0 },
-    sick: { total: 10, used: 0 },
-    emergency: { total: 3, used: 0 },
-    study: { total: 5, used: 0 },
-  },
-  {
-    id: "e10",
-    name: "Funke Adeyemi",
-    department: "Finance",
-    employeeId: "EMP-010",
-    annual: { total: 21, used: 5 },
-    sick: { total: 10, used: 2 },
-    emergency: { total: 3, used: 0 },
-    study: { total: 5, used: 0 },
-  },
-];
-
-const DEPTS = [
-  "All",
-  "Engineering",
-  "Operations",
-  "Finance",
-  "Human Resources",
-  "Procurement",
-  "Health & Safety",
-];
+const LEAVE_TOTALS = { annual: 0, sick: 0, emergency: 0, study: 0 };
 
 interface BalanceCellProps {
   total: number;
@@ -156,8 +46,43 @@ function BalanceCell({ total, used }: BalanceCellProps) {
 export function LeaveBalancesPage() {
   const [search, setSearch] = useState("");
   const [dept, setDept] = useState("All");
+  const [balances, setBalances] = useState<EmployeeBalance[]>([]);
 
-  const displayed = BALANCES.filter((e) => {
+  useEffect(() => {
+    Promise.all([fetchEmployees(), fetchLeaveRequests()])
+      .then(([employees, requests]) => {
+        const usedByEmployee = new Map<string, EmployeeBalance>();
+        employees.forEach((e: any) => {
+          usedByEmployee.set(`${e.firstName} ${e.lastName}`, {
+            id: e.id,
+            name: `${e.firstName} ${e.lastName}`,
+            department: e.department,
+            employeeId: e.id,
+            annual: { total: LEAVE_TOTALS.annual, used: 0 },
+            sick: { total: LEAVE_TOTALS.sick, used: 0 },
+            emergency: { total: LEAVE_TOTALS.emergency, used: 0 },
+            study: { total: LEAVE_TOTALS.study, used: 0 },
+          });
+        });
+        requests
+          .filter((r: any) => String(r.status).toLowerCase() === "approved")
+          .forEach((r: any) => {
+            const row = usedByEmployee.get(r.employee);
+            if (!row) return;
+            const type = String(r.leaveType).toLowerCase();
+            const days = Number(r.days) || 0;
+            if (type.includes("sick")) row.sick.used += days;
+            else if (type.includes("emergency")) row.emergency.used += days;
+            else if (type.includes("study")) row.study.used += days;
+            else row.annual.used += days;
+          });
+        setBalances(Array.from(usedByEmployee.values()));
+      })
+      .catch(() => setBalances([]));
+  }, []);
+
+  const depts = ["All", ...Array.from(new Set(balances.map((e) => e.department).filter(Boolean)))];
+  const displayed = balances.filter((e) => {
     if (
       search &&
       !e.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -201,7 +126,7 @@ export function LeaveBalancesPage() {
             onChange={(e) => setDept(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
           >
-            {DEPTS.map((d) => (
+            {depts.map((d) => (
               <option key={d}>{d}</option>
             ))}
           </select>

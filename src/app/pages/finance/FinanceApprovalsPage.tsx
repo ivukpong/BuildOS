@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -8,12 +8,9 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
+import { getApprovals } from "../../api/approvals";
 
-type FinApprovalType =
-  | "Expense Claim"
-  | "Budget Override"
-  | "Payment Request"
-  | "Vendor Invoice";
+type FinApprovalType = string;
 type ApprovalStatus = "pending" | "approved" | "rejected";
 
 interface FinApproval {
@@ -28,8 +25,6 @@ interface FinApproval {
   urgency: "normal" | "urgent";
   description: string;
 }
-
-// TODO: No finance approvals endpoint — using placeholder data
 
 const statusConfig: Record<
   ApprovalStatus,
@@ -52,7 +47,7 @@ const statusConfig: Record<
   },
 };
 
-const typeColors: Record<FinApprovalType, string> = {
+const typeColors: Record<string, string> = {
   "Expense Claim": "bg-blue-50 text-blue-700",
   "Budget Override": "bg-red-50 text-red-700",
   "Payment Request": "bg-emerald-50 text-emerald-700",
@@ -78,6 +73,12 @@ export function FinanceApprovalsPage() {
   const [requestInfoFor, setRequestInfoFor] = useState<string | null>(null);
   const [infoNote, setInfoNote] = useState("");
   const [sentInfoFor, setSentInfoFor] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    getApprovals("finance")
+      .then((items) => setApprovals(items as FinApproval[]))
+      .catch(() => setApprovals([]));
+  }, []);
 
   function getStatus(a: FinApproval): ApprovalStatus {
     return approvalStates[a.id] ?? a.status;

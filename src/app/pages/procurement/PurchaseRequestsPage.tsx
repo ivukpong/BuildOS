@@ -24,6 +24,7 @@ import {
   type ActiveFilters,
   type SortConfig,
 } from "../../components/AdvancedFilter";
+import { getReferenceData } from "../../api/reference-data";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type PRStatus =
@@ -219,13 +220,6 @@ const PR_FILTER_FIELDS: FilterFieldDef[] = [
   },
 ];
 
-const PR_PROJECTS = [
-  "Industrial Warehouse",
-  "Downtown Office Complex",
-  "Riverside Residential",
-  "Highway Interchange",
-  "University Science Block",
-];
 const PR_UNITS = [
   "Tonnes",
   "Bags",
@@ -236,18 +230,6 @@ const PR_UNITS = [
   "Cartons",
   "Litres",
 ];
-const ALL_SUPPLIERS = [
-  "Alpha Aggregates",
-  "SteelMart Int'l",
-  "CemCo Nigeria Ltd",
-  "ElectraHub",
-  "PlumbTech Ltd",
-  "DangCem Enterprises",
-  "BuildPlus Supplies",
-  "BetaCo Supplies",
-  "UniTrade Ltd",
-];
-
 // ── Supplier pipeline row ─────────────────────────────────────────────────────
 function SupplierPipelineRow({
   sup,
@@ -346,16 +328,29 @@ function NewPRModal({
     return fmtDate(d2);
   };
 
-  const [project, setProject] = useState(PR_PROJECTS[0]);
+  const [projects, setProjects] = useState<string[]>([]);
+  const [suppliers, setSuppliers] = useState<string[]>([]);
+  const [project, setProject] = useState("");
   const [mrRef, setMrRef] = useState("MR-0041");
   const [procType, setProcType] = useState<"direct" | "rfq">("direct");
-  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([
-    ALL_SUPPLIERS[0],
-  ]);
+  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
   const [daysToDeliver, setDaysToDeliver] = useState("7");
   const [items, setItems] = useState<NewPRItemForm[]>([
     { material: "", qty: "", unit: PR_UNITS[0], estimatedUnitCost: "" },
   ]);
+
+  useEffect(() => {
+    getReferenceData()
+      .then((data) => {
+        const projectNames = data.projects.map((p) => p.name);
+        const supplierNames = data.suppliers.map((s) => s.name);
+        setProjects(projectNames);
+        setSuppliers(supplierNames);
+        setProject((prev) => prev || projectNames[0] || "");
+        setSelectedSuppliers((prev) => prev.length ? prev : supplierNames.slice(0, 1));
+      })
+      .catch(() => {});
+  }, []);
 
   function toggleSupplier(s: string) {
     if (procType === "direct") {
@@ -430,7 +425,7 @@ function NewPRModal({
                 onChange={(e) => setProject(e.target.value)}
                 className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {PR_PROJECTS.map((p) => (
+                {projects.map((p) => (
                   <option key={p}>{p}</option>
                 ))}
               </select>
@@ -475,7 +470,7 @@ function NewPRModal({
                     setProcType(t);
                     if (t === "direct")
                       setSelectedSuppliers([
-                        selectedSuppliers[0] ?? ALL_SUPPLIERS[0],
+                        selectedSuppliers[0] ?? suppliers[0] ?? "",
                       ]);
                   }}
                   className={`p-3 rounded-xl border text-left ${procType === t ? "border-blue-500 bg-blue-50" : "border-gray-200 hover:border-gray-300"}`}
@@ -504,7 +499,7 @@ function NewPRModal({
                 : "Select Suppliers for RFQ"}
             </p>
             <div className="border border-gray-200 rounded-xl overflow-hidden max-h-44 overflow-y-auto">
-              {ALL_SUPPLIERS.map((s) => {
+              {suppliers.map((s) => {
                 const sel = selectedSuppliers.includes(s);
                 return (
                   <button

@@ -13,8 +13,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 
-// TODO: No reports endpoint — using placeholder data
-const seedReports: {
+interface ReportCard {
   id: string;
   title: string;
   description: string;
@@ -23,16 +22,15 @@ const seedReports: {
   lastRun: string;
   frequency: string;
   status: string;
-}[] = [];
+}
 
-// TODO: No report runs endpoint — using placeholder data
-const recentRuns: {
+interface RecentRun {
+  id: string;
   title: string;
-  project: string;
   generatedBy: string;
   date: string;
   format: string;
-}[] = [];
+}
 
 function typeIcon(type: string) {
   switch (type?.toLowerCase()) {
@@ -61,7 +59,8 @@ function typeColor(type: string) {
 
 export function ReportsPage() {
   const navigate = useNavigate();
-  const [reports, setReports] = useState(seedReports);
+  const [reports, setReports] = useState<ReportCard[]>([]);
+  const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
   const [runningIds, setRunningIds] = useState<Set<string>>(new Set());
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
   const [exportedIds, setExportedIds] = useState<Set<string>>(new Set());
@@ -71,7 +70,7 @@ export function ReportsPage() {
 
   useEffect(() => {
     getReports("construction")
-      .then((items) =>
+      .then((items) => {
         setReports(
           items.map((r) => ({
             id: r.id,
@@ -83,8 +82,19 @@ export function ReportsPage() {
             frequency: r.schedule ?? "On demand",
             status: "deployed",
           })),
-        ),
-      )
+        );
+        setRecentRuns(
+          items.flatMap((r) =>
+            (r.runs ?? []).map((run) => ({
+              id: run.id,
+              title: r.name,
+              generatedBy: r.createdBy || "System",
+              date: run.startedAt?.slice(0, 10) ?? "—",
+              format: run.outputUrl ? run.outputUrl.split(".").pop()?.toUpperCase() ?? "FILE" : run.status,
+            })),
+          ),
+        );
+      })
       .catch(() => {});
   }, []);
 
@@ -237,7 +247,7 @@ export function ReportsPage() {
         <div className="divide-y divide-gray-100">
           {(showAllRuns ? recentRuns : recentRuns.slice(0, 3)).map((run, i) => (
             <div
-              key={i}
+              key={run.id}
               className="flex items-center gap-4 px-5 py-3 hover:bg-gray-50"
             >
               <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">

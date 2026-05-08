@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
 import { Users, Shield, Settings, Activity, ArrowUpRight, Info } from "lucide-react";
 import { NavLink } from "react-router";
-import { getUsers } from "../../api/admin-extras";
-import { getAppRoles } from "../../api/admin-extras";
+import {
+  getAdminActivityLog,
+  getAdminSystemSummary,
+  type AdminActivity,
+  type AdminSystemSummary,
+} from "../../api/admin-extras";
 
 export function AdminDashboardPage() {
-  const [userCount, setUserCount] = useState<number | null>(null);
-  const [roleCount, setRoleCount] = useState<number | null>(null);
+  const [summary, setSummary] = useState<AdminSystemSummary | null>(null);
+  const [activityLog, setActivityLog] = useState<AdminActivity[]>([]);
 
   useEffect(() => {
-    getUsers().then((users) => setUserCount(users.length)).catch(() => setUserCount(0));
-    getAppRoles().then((roles) => setRoleCount(roles.length)).catch(() => setRoleCount(0));
+    getAdminSystemSummary().then(setSummary).catch(console.error);
+    getAdminActivityLog().then(setActivityLog).catch(console.error);
   }, []);
 
   const fmt = (n: number | null) => (n === null ? "…" : String(n));
@@ -18,8 +22,8 @@ export function AdminDashboardPage() {
   const metrics = [
     {
       label: "Total Users",
-      value: fmt(userCount),
-      delta: userCount !== null ? `${userCount} registered` : null,
+      value: fmt(summary?.users ?? null),
+      delta: summary ? `${summary.users} registered` : null,
       deltaPositive: true,
       icon: Users,
       iconBg: "bg-indigo-100",
@@ -27,8 +31,8 @@ export function AdminDashboardPage() {
     },
     {
       label: "Active Roles",
-      value: fmt(roleCount),
-      delta: roleCount !== null ? "Configured roles" : null,
+      value: fmt(summary?.roles ?? null),
+      delta: summary ? "Configured roles" : null,
       deltaPositive: null,
       icon: Shield,
       iconBg: "bg-violet-100",
@@ -36,8 +40,8 @@ export function AdminDashboardPage() {
     },
     {
       label: "Active Sessions",
-      value: "—",
-      delta: "No session endpoint",
+      value: fmt(summary?.activeSessions ?? null),
+      delta: summary ? "Current sessions" : null,
       deltaPositive: null,
       icon: Activity,
       iconBg: "bg-emerald-100",
@@ -45,8 +49,8 @@ export function AdminDashboardPage() {
     },
     {
       label: "System Health",
-      value: "—",
-      delta: "No health endpoint",
+      value: summary?.health.status ?? "…",
+      delta: summary ? `Uptime ${Math.round(summary.health.uptimeSeconds / 60)}m` : null,
       deltaPositive: null,
       icon: Settings,
       iconBg: "bg-blue-100",
@@ -88,14 +92,16 @@ export function AdminDashboardPage() {
         {/* User Activity */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">User Activity</h2>
-          {userCount === null ? (
+          {summary === null ? (
             <p className="text-sm text-gray-400">Loading…</p>
-          ) : userCount === 0 ? (
+          ) : summary.users === 0 ? (
             <p className="text-sm text-gray-400">No users found.</p>
           ) : (
             <div className="space-y-4">
               {[
-                { label: "Registered Users", value: userCount, max: userCount },
+                { label: "Registered Users", value: summary.users, max: summary.users },
+                { label: "Configured Roles", value: summary.roles, max: Math.max(summary.users, summary.roles) },
+                { label: "Pending Approvals", value: summary.pendingApprovals, max: Math.max(summary.users, summary.pendingApprovals, 1) },
               ].map((item) => (
                 <div key={item.label}>
                   <div className="flex items-center justify-between mb-1.5">
@@ -110,7 +116,6 @@ export function AdminDashboardPage() {
                   </div>
                 </div>
               ))}
-              <p className="text-xs text-gray-400 mt-2">Session analytics not yet available.</p>
             </div>
           )}
         </div>
@@ -118,9 +123,17 @@ export function AdminDashboardPage() {
         {/* Recent Activity */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-900 mb-4">Recent Activity</h2>
-          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-            <Activity className="w-8 h-8 mb-2 opacity-30" />
-            <p className="text-sm">No activity log endpoint available.</p>
+          <div className="space-y-3">
+            {activityLog.map((item) => (
+              <div key={item.id} className="flex items-start gap-3 rounded-lg bg-gray-50 border border-gray-100 p-3">
+                <Activity className="w-4 h-4 text-indigo-500 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{item.action}</p>
+                  <p className="text-xs text-gray-500 truncate">{item.actor} · {item.subject}</p>
+                </div>
+              </div>
+            ))}
+            {activityLog.length === 0 && <p className="text-sm text-gray-400">No recent activity.</p>}
           </div>
         </div>
       </div>
@@ -128,7 +141,9 @@ export function AdminDashboardPage() {
       {/* System Status */}
       <div className="bg-white rounded-xl border border-gray-200 p-5">
         <h2 className="text-sm font-semibold text-gray-900 mb-4">System Status</h2>
-        <p className="text-sm text-gray-400">No system health endpoint available. Configure a health-check API to display service status.</p>
+        <p className="text-sm text-gray-600">
+          {summary ? `System is ${summary.health.status}; last checked ${new Date(summary.health.checkedAt).toLocaleString()}.` : "Loading system status…"}
+        </p>
       </div>
 
       {/* Quick Actions */}

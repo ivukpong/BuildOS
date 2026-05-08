@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useNavigate } from "react-router";
 import {
   ArrowLeft,
@@ -31,115 +31,26 @@ import {
   Filter,
   Eye,
 } from "lucide-react";
+import { fetchProjects } from "../../api/projects";
 
 // ─── Shared data ────────────────────────────────────────────────────────────
 
-// TODO: No project details endpoint — using placeholder data
-const projects: Record<
-  string,
-  {
-    id: string;
-    name: string;
-    client: string;
-    location: string;
-    status: string;
-    type: string;
-    budget: number;
-    spent: number;
-    progress: number;
-    startDate: string;
-    endDate: string;
-    manager: string;
-    team: number;
-    description: string;
-  }
-> = {
-  "1": {
-    id: "1",
-    name: "Downtown Office Complex",
-    client: "Zenith Properties",
-    location: "New York, NY",
-    status: "Active",
-    type: "Commercial",
-    budget: 12500000,
-    spent: 8125000,
-    progress: 65,
-    startDate: "2026-01-15",
-    endDate: "2026-12-31",
-    manager: "John Smith",
-    team: 24,
-    description:
-      "A 22-storey commercial office tower in the heart of Manhattan's business district, inclusive of underground parking, retail spaces, and a rooftop garden terrace.",
-  },
-  "2": {
-    id: "2",
-    name: "Riverside Residential",
-    client: "HomeKey Developers",
-    location: "Austin, TX",
-    status: "Active",
-    type: "Residential",
-    budget: 8200000,
-    spent: 4100000,
-    progress: 42,
-    startDate: "2026-02-01",
-    endDate: "2026-09-30",
-    manager: "Sarah Johnson",
-    team: 18,
-    description:
-      "A 120-unit residential complex along Riverside Drive featuring modern amenities, a community pool, and landscaped green areas.",
-  },
-  "3": {
-    id: "3",
-    name: "Industrial Warehouse",
-    client: "LogiPark Ltd",
-    location: "Chicago, IL",
-    status: "Planning",
-    type: "Industrial",
-    budget: 5800000,
-    spent: 870000,
-    progress: 15,
-    startDate: "2026-03-10",
-    endDate: "2027-02-28",
-    manager: "Mike Davis",
-    team: 12,
-    description:
-      "A 50,000 sqft logistics warehouse with dock-level loading bays, cold-storage rooms, and an integrated ERP loading management system.",
-  },
-  "4": {
-    id: "4",
-    name: "Shopping Mall Renovation",
-    client: "Apex Retail Group",
-    location: "Los Angeles, CA",
-    status: "On Hold",
-    type: "Renovation",
-    budget: 18400000,
-    spent: 16560000,
-    progress: 78,
-    startDate: "2025-11-20",
-    endDate: "2026-06-30",
-    manager: "Emily Chen",
-    team: 32,
-    description:
-      "Full internal and facade renovation of the Apex Centre Mall including new anchor stores, food court expansion, HVAC upgrade, and LED lighting conversion.",
-  },
-  "5": {
-    id: "5",
-    name: "Highway Interchange",
-    client: "State DOT",
-    location: "Dallas, TX",
-    status: "Active",
-    type: "Infrastructure",
-    budget: 32000000,
-    spent: 11200000,
-    progress: 33,
-    startDate: "2026-01-01",
-    endDate: "2027-03-31",
-    manager: "Robert Lee",
-    team: 45,
-    description:
-      "Construction of a 3-level highway interchange at the intersection of I-35 and I-635 to reduce traffic congestion and improve transit times.",
-  },
-};
+interface ProjectDetail {
+  id: string;
+  name: string;
+  client: string;
+  location: string;
+  status: string;
+  type: string;
+  budget: number;
+  spent: number;
+  progress: number;
+  startDate: string;
+  endDate: string;
+  manager: string;
+  team: number;
+  description: string;
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -225,339 +136,17 @@ const milestones: Milestone[] = [];
 const tasks: Task[] = [];
 
 
-const workers: Worker[] = [
-  {
-    id: "w1",
-    name: "James Okafor",
-    role: "Site Engineer",
-    phone: "+1 555-0101",
-    attendance: "present",
-    hoursThisWeek: 40,
-  },
-  {
-    id: "w2",
-    name: "Carlos Rivera",
-    role: "Foreman",
-    phone: "+1 555-0102",
-    attendance: "present",
-    hoursThisWeek: 42,
-  },
-  {
-    id: "w3",
-    name: "Aisha Bello",
-    role: "Quantity Surveyor",
-    phone: "+1 555-0103",
-    attendance: "present",
-    hoursThisWeek: 38,
-  },
-  {
-    id: "w4",
-    name: "Tom Hughes",
-    role: "Laborer",
-    phone: "+1 555-0104",
-    attendance: "absent",
-    hoursThisWeek: 24,
-  },
-  {
-    id: "w5",
-    name: "Diana Park",
-    role: "Safety Officer",
-    phone: "+1 555-0105",
-    attendance: "present",
-    hoursThisWeek: 40,
-  },
-  {
-    id: "w6",
-    name: "Samuel Adams",
-    role: "Electrician",
-    phone: "+1 555-0106",
-    attendance: "leave",
-    hoursThisWeek: 0,
-  },
-  {
-    id: "w7",
-    name: "Linda Chukwu",
-    role: "Laborer",
-    phone: "+1 555-0107",
-    attendance: "present",
-    hoursThisWeek: 36,
-  },
-  {
-    id: "w8",
-    name: "Kevin Tran",
-    role: "Steel Fixer",
-    phone: "+1 555-0108",
-    attendance: "present",
-    hoursThisWeek: 40,
-  },
-];
+const workers: Worker[] = [];
 
-const materials: Material[] = [
-  {
-    id: "mat1",
-    name: "Ordinary Portland Cement",
-    unit: "Bags",
-    required: 8000,
-    used: 5200,
-    ordered: 8000,
-    status: "in-stock",
-  },
-  {
-    id: "mat2",
-    name: "Steel Rebars (Y16)",
-    unit: "Tonnes",
-    required: 120,
-    used: 78,
-    ordered: 120,
-    status: "in-stock",
-  },
-  {
-    id: "mat3",
-    name: "Concrete Blocks",
-    unit: "Units",
-    required: 45000,
-    used: 28000,
-    ordered: 45000,
-    status: "low-stock",
-  },
-  {
-    id: "mat4",
-    name: "Structural Steel (I-beams)",
-    unit: "Metres",
-    required: 3200,
-    used: 0,
-    ordered: 1200,
-    status: "ordered",
-  },
-  {
-    id: "mat5",
-    name: "Plywood Formwork",
-    unit: "Sheets",
-    required: 900,
-    used: 620,
-    ordered: 900,
-    status: "in-stock",
-  },
-  {
-    id: "mat6",
-    name: "Electrical Conduit (25mm)",
-    unit: "Metres",
-    required: 5000,
-    used: 0,
-    ordered: 0,
-    status: "out-of-stock",
-  },
-];
+const materials: Material[] = [];
 
-const equipment: Equipment[] = [
-  {
-    id: "eq1",
-    name: "Tower Crane TC-450",
-    type: "Crane",
-    status: "active",
-    assignedFrom: "2026-01-15",
-    assignedTo: "2026-12-31",
-  },
-  {
-    id: "eq2",
-    name: "Excavator CAT 320",
-    type: "Earthworks",
-    status: "idle",
-    assignedFrom: "2026-01-20",
-    assignedTo: "2026-03-01",
-  },
-  {
-    id: "eq3",
-    name: "Concrete Mixer Truck x3",
-    type: "Concrete",
-    status: "active",
-    assignedFrom: "2026-02-06",
-    assignedTo: "2026-08-31",
-  },
-  {
-    id: "eq4",
-    name: "Hydraulic Platform",
-    type: "Access",
-    status: "maintenance",
-    assignedFrom: "2026-03-01",
-    assignedTo: "2026-08-31",
-  },
-  {
-    id: "eq5",
-    name: "Dump Truck x2",
-    type: "Transport",
-    status: "active",
-    assignedFrom: "2026-01-15",
-    assignedTo: "2026-06-30",
-  },
-];
+const equipment: Equipment[] = [];
 
-const expenses: Expense[] = [
-  {
-    id: "ex1",
-    category: "Materials",
-    description: "Cement batch #4 — 2,000 bags",
-    amount: 48000,
-    date: "2026-03-15",
-    status: "approved",
-  },
-  {
-    id: "ex2",
-    category: "Labour",
-    description: "Fortnightly payroll — Wk 12–13",
-    amount: 126000,
-    date: "2026-03-28",
-    status: "approved",
-  },
-  {
-    id: "ex3",
-    category: "Equipment",
-    description: "Tower Crane monthly rental",
-    amount: 24500,
-    date: "2026-04-01",
-    status: "approved",
-  },
-  {
-    id: "ex4",
-    category: "Materials",
-    description: "Steel rebars Y16 — 20 tonnes",
-    amount: 67400,
-    date: "2026-04-05",
-    status: "pending",
-  },
-  {
-    id: "ex5",
-    category: "Subcontract",
-    description: "Electrical rough-in advance payment",
-    amount: 85000,
-    date: "2026-04-08",
-    status: "pending",
-  },
-  {
-    id: "ex6",
-    category: "Misc",
-    description: "Safety equipment restock",
-    amount: 3200,
-    date: "2026-04-09",
-    status: "rejected",
-  },
-];
+const expenses: Expense[] = [];
 
-const docs: Document[] = [
-  {
-    id: "d1",
-    name: "Architectural Drawings v3.2",
-    type: "PDF",
-    size: "18.4 MB",
-    uploadedBy: "John Smith",
-    date: "2026-03-01",
-    version: "v3.2",
-  },
-  {
-    id: "d2",
-    name: "Structural Engineering Report",
-    type: "PDF",
-    size: "8.9 MB",
-    uploadedBy: "Aisha Bello",
-    date: "2026-02-14",
-    version: "v1.0",
-  },
-  {
-    id: "d3",
-    name: "Client Contract — Zenith Properties",
-    type: "PDF",
-    size: "2.1 MB",
-    uploadedBy: "Admin",
-    date: "2026-01-10",
-    version: "v1.0",
-  },
-  {
-    id: "d4",
-    name: "Material Specification Sheet",
-    type: "XLSX",
-    size: "1.3 MB",
-    uploadedBy: "Aisha Bello",
-    date: "2026-02-20",
-    version: "v2.1",
-  },
-  {
-    id: "d5",
-    name: "Site Safety Plan",
-    type: "PDF",
-    size: "5.6 MB",
-    uploadedBy: "Diana Park",
-    date: "2026-01-25",
-    version: "v1.0",
-  },
-  {
-    id: "d6",
-    name: "Progress Photos — March 2026",
-    type: "ZIP",
-    size: "247 MB",
-    uploadedBy: "Carlos Rivera",
-    date: "2026-04-01",
-    version: "v1.0",
-  },
-];
+const docs: Document[] = [];
 
-const activityLog: ActivityItem[] = [
-  {
-    id: "a1",
-    action: "Foundation milestone updated to 72% complete",
-    user: "John Smith",
-    time: "2 hours ago",
-    category: "milestone",
-  },
-  {
-    id: "a2",
-    action: "Task 'Raft Foundation Pour' status changed to In Progress",
-    user: "John Smith",
-    time: "3 hours ago",
-    category: "task",
-  },
-  {
-    id: "a3",
-    action: "Expense ₦48,000 approved for Cement batch #4",
-    user: "Finance Team",
-    time: "5 hours ago",
-    category: "expense",
-  },
-  {
-    id: "a4",
-    action: "Progress Photos March 2026 uploaded (247MB)",
-    user: "Carlos Rivera",
-    time: "1 day ago",
-    category: "document",
-  },
-  {
-    id: "a5",
-    action: "Samuel Adams marked as Leave for current week",
-    user: "HR Module",
-    time: "1 day ago",
-    category: "workforce",
-  },
-  {
-    id: "a6",
-    action: "Material request: Structural Steel 1200m approved",
-    user: "Procurement",
-    time: "2 days ago",
-    category: "material",
-  },
-  {
-    id: "a7",
-    action: "Hydraulic Platform moved to Maintenance status",
-    user: "Equipment Team",
-    time: "3 days ago",
-    category: "equipment",
-  },
-  {
-    id: "a8",
-    action: "Budget utilization reached 65%",
-    user: "System",
-    time: "4 days ago",
-    category: "finance",
-  },
-];
+const activityLog: ActivityItem[] = [];
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -618,7 +207,7 @@ const catLogColor: Record<string, string> = {
 
 // ─── Tab Panels ───────────────────────────────────────────────────────────────
 
-function OverviewTab({ p }: { p: (typeof projects)[string] }) {
+function OverviewTab({ p }: { p: ProjectDetail }) {
   const budgetPct = Math.round((p.spent / p.budget) * 100);
   return (
     <div className="space-y-5">
@@ -1679,7 +1268,45 @@ export function ProjectDetailsPage() {
     manager: string;
   } | null>(null);
 
-  const p = projects[id ?? "1"] ?? projects["1"];
+  const [project, setProject] = useState<ProjectDetail | null>(null);
+
+  useEffect(() => {
+    fetchProjects()
+      .then((items) => {
+        const found = items.find((item: any) => item.id === id) ?? items[0];
+        setProject(
+          found
+            ? {
+                id: found.id,
+                name: found.name,
+                client: found.client,
+                location: found.location,
+                status: found.status,
+                type: found.type,
+                budget: found.budget,
+                spent: found.spent,
+                progress: found.progress,
+                startDate: found.startDate,
+                endDate: found.endDate,
+                manager: found.manager,
+                team: Array.isArray(found.team) ? found.team.length : 0,
+                description: found.description ?? "",
+              }
+            : null,
+        );
+      })
+      .catch(() => setProject(null));
+  }, [id]);
+
+  if (!project) {
+    return (
+      <div className="py-16 text-center text-sm text-gray-400">
+        Project details are not available.
+      </div>
+    );
+  }
+
+  const p = project;
   const pDisplay = pOverride ? { ...p, ...pOverride } : p;
 
   return (

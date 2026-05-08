@@ -1,42 +1,47 @@
+import { useEffect, useState } from "react";
+import { fetchBudgets } from "../../api/budgets";
+
 export function BudgetTrackingPage() {
-  const projects = [
-    {
-      name: "Downtown Office Complex",
-      budget: 12500000,
-      spent: 8125000,
-      remaining: 4375000,
-    },
-    {
-      name: "Riverside Residential",
-      budget: 8200000,
-      spent: 3444000,
-      remaining: 4756000,
-    },
-    {
-      name: "Shopping Mall Renovation",
-      budget: 18400000,
-      spent: 14352000,
-      remaining: 4048000,
-    },
-    {
-      name: "Industrial Warehouse",
-      budget: 5800000,
-      spent: 870000,
-      remaining: 4930000,
-    },
-  ];
+  const [projects, setProjects] = useState<
+    { name: string; budget: number; spent: number; remaining: number }[]
+  >([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchBudgets()
+      .then((budgets) =>
+        setProjects(
+          budgets.map((b) => ({
+            name: b.name,
+            budget: b.totalBudget,
+            spent: b.spent,
+            remaining: Math.max(b.totalBudget - b.spent, 0),
+          })),
+        ),
+      )
+      .catch(() => setProjects([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat("en-NG", {
       style: "currency",
-      currency: "USD",
+      currency: "NGN",
       minimumFractionDigits: 0,
     }).format(amount);
   };
 
   const getPercentage = (spent: number, budget: number) => {
+    if (!budget) return 0;
     return Math.round((spent / budget) * 100);
   };
+
+  const totalBudget = projects.reduce((sum, project) => sum + project.budget, 0);
+  const totalSpent = projects.reduce((sum, project) => sum + project.spent, 0);
+  const totalRemaining = projects.reduce(
+    (sum, project) => sum + project.remaining,
+    0,
+  );
 
   return (
     <div>
@@ -48,20 +53,34 @@ export function BudgetTrackingPage() {
       <div className="grid grid-cols-3 gap-6 mb-6">
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <p className="text-sm text-gray-600 mb-1">Total Budget</p>
-          <p className="text-3xl text-gray-900">$44.9M</p>
+          <p className="text-3xl text-gray-900">
+            {formatCurrency(totalBudget)}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <p className="text-sm text-gray-600 mb-1">Total Spent</p>
-          <p className="text-3xl text-gray-900">$26.8M</p>
+          <p className="text-3xl text-gray-900">
+            {formatCurrency(totalSpent)}
+          </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <p className="text-sm text-gray-600 mb-1">Remaining</p>
-          <p className="text-3xl text-green-600">$18.1M</p>
+          <p className="text-3xl text-green-600">
+            {formatCurrency(totalRemaining)}
+          </p>
         </div>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <h2 className="text-lg text-gray-900 mb-6">Project Budgets</h2>
+        {loading && (
+          <p className="text-sm text-gray-500">Loading budget data...</p>
+        )}
+        {!loading && projects.length === 0 && (
+          <p className="text-sm text-gray-500">
+            No budget records are available yet.
+          </p>
+        )}
         <div className="space-y-6">
           {projects.map((project, idx) => {
             const percentage = getPercentage(project.spent, project.budget);

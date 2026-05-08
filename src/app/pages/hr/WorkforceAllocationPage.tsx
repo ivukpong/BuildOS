@@ -27,248 +27,6 @@ interface Allocation {
   totalAlloc: number;
 }
 
-// TODO: No workforce allocation endpoint — using placeholder data
-const allocations: Allocation[] = [
-  {
-    empId: "EMP-001",
-    empName: "Chukwudi Eze",
-    role: "Site Engineer",
-    department: "Engineering",
-    projects: [
-      {
-        name: "Downtown Office Complex",
-        allocPct: 50,
-        role: "Lead Site Engineer",
-        startDate: "Feb 2023",
-      },
-      {
-        name: "Highway Interchange",
-        allocPct: 30,
-        role: "Support Engineer",
-        startDate: "Jun 2023",
-      },
-      {
-        name: "Industrial Warehouse",
-        allocPct: 20,
-        role: "Inspection Lead",
-        startDate: "Jan 2024",
-      },
-    ],
-    totalAlloc: 100,
-  },
-  {
-    empId: "EMP-002",
-    empName: "Aisha Bello",
-    role: "Project Manager",
-    department: "Operations",
-    projects: [
-      {
-        name: "Downtown Office Complex",
-        allocPct: 40,
-        role: "Project Manager",
-        startDate: "Mar 2022",
-      },
-      {
-        name: "Riverside Residential",
-        allocPct: 35,
-        role: "Project Manager",
-        startDate: "Jan 2023",
-      },
-      {
-        name: "University Science Block",
-        allocPct: 35,
-        role: "Project Manager",
-        startDate: "Apr 2024",
-      },
-    ],
-    totalAlloc: 110,
-  },
-  {
-    empId: "EMP-003",
-    empName: "Robert Lee",
-    role: "Structural Engineer",
-    department: "Engineering",
-    projects: [
-      {
-        name: "Highway Interchange",
-        allocPct: 35,
-        role: "Lead Structural Engineer",
-        startDate: "Feb 2023",
-      },
-      {
-        name: "Downtown Office Complex",
-        allocPct: 30,
-        role: "Structural Lead",
-        startDate: "Mar 2022",
-      },
-      {
-        name: "Industrial Warehouse",
-        allocPct: 25,
-        role: "Structural Review",
-        startDate: "Nov 2023",
-      },
-      {
-        name: "Riverside Residential",
-        allocPct: 20,
-        role: "Support Engineer",
-        startDate: "Jan 2023",
-      },
-    ],
-    totalAlloc: 110,
-  },
-  {
-    empId: "EMP-007",
-    empName: "Tom Fox",
-    role: "Quantity Surveyor",
-    department: "Procurement",
-    projects: [
-      {
-        name: "Riverside Residential",
-        allocPct: 40,
-        role: "QS Lead",
-        startDate: "Jan 2023",
-      },
-      {
-        name: "University Science Block",
-        allocPct: 35,
-        role: "Cost Consultant",
-        startDate: "Apr 2024",
-      },
-      {
-        name: "Highway Interchange",
-        allocPct: 25,
-        role: "Cost Lead",
-        startDate: "Jun 2023",
-      },
-    ],
-    totalAlloc: 100,
-  },
-  {
-    empId: "EMP-008",
-    empName: "Ngozi Eze",
-    role: "Site Supervisor",
-    department: "Engineering",
-    projects: [
-      {
-        name: "Downtown Office Complex",
-        allocPct: 60,
-        role: "Supervising Engineer",
-        startDate: "Jun 2023",
-      },
-      {
-        name: "Riverside Residential",
-        allocPct: 40,
-        role: "Site Supervisor",
-        startDate: "Jan 2023",
-      },
-    ],
-    totalAlloc: 100,
-  },
-  {
-    empId: "EMP-009",
-    empName: "Kwame Asante",
-    role: "Civil Engineer",
-    department: "Engineering",
-    projects: [
-      {
-        name: "Highway Interchange",
-        allocPct: 55,
-        role: "Civil Lead",
-        startDate: "Mar 2024",
-      },
-      {
-        name: "University Science Block",
-        allocPct: 45,
-        role: "Civil Specialist",
-        startDate: "Apr 2024",
-      },
-    ],
-    totalAlloc: 100,
-  },
-  {
-    empId: "EMP-010",
-    empName: "Emeka Nwosu",
-    role: "HSE Officer",
-    department: "Health & Safety",
-    projects: [
-      {
-        name: "Downtown Office Complex",
-        allocPct: 30,
-        role: "HSE Lead",
-        startDate: "Mar 2022",
-      },
-      {
-        name: "Highway Interchange",
-        allocPct: 25,
-        role: "HSE Officer",
-        startDate: "Jun 2023",
-      },
-      {
-        name: "Industrial Warehouse",
-        allocPct: 25,
-        role: "Safety Inspector",
-        startDate: "Nov 2023",
-      },
-      {
-        name: "Riverside Residential",
-        allocPct: 20,
-        role: "HSE Consultant",
-        startDate: "Jan 2023",
-      },
-    ],
-    totalAlloc: 100,
-  },
-  {
-    empId: "EMP-015",
-    empName: "Yemi Olusegun",
-    role: "Project Manager",
-    department: "Operations",
-    projects: [
-      {
-        name: "University Science Block",
-        allocPct: 100,
-        role: "Project Manager",
-        startDate: "Apr 2024",
-      },
-    ],
-    totalAlloc: 100,
-  },
-];
-
-// TODO: No user-scoped projects endpoint — using placeholder data
-const projects = [
-  {
-    name: "Downtown Office Complex",
-    headcount: 4,
-    budget: "₦2.8B",
-    status: "active",
-  },
-  {
-    name: "Highway Interchange",
-    headcount: 5,
-    budget: "₦4.1B",
-    status: "active",
-  },
-  {
-    name: "Industrial Warehouse",
-    headcount: 3,
-    budget: "₦980M",
-    status: "active",
-  },
-  {
-    name: "Riverside Residential",
-    headcount: 4,
-    budget: "₦1.6B",
-    status: "active",
-  },
-  {
-    name: "University Science Block",
-    headcount: 3,
-    budget: "₦1.2B",
-    status: "active",
-  },
-];
-
 const allocColor = (pct: number) => {
   if (pct > 100) return "bg-red-500";
   if (pct >= 90) return "bg-amber-400";
@@ -342,6 +100,16 @@ export function WorkforceAllocationPage() {
 
   const overAllocated = allocs.filter((a) => a.totalAlloc > 100).length;
 
+  const projectMap = new Map<string, number>();
+  allocs.forEach((a) => {
+    a.projects.forEach((p) => {
+      projectMap.set(p.name, (projectMap.get(p.name) ?? 0) + 1);
+    });
+  });
+  const activeProjects = Array.from(projectMap.entries()).map(
+    ([name, headcount]) => ({ name, headcount }),
+  );
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -380,7 +148,7 @@ export function WorkforceAllocationPage() {
           Active Projects
         </h3>
         <div className="grid grid-cols-5 gap-3">
-          {projects
+          {activeProjects
             .filter((p) =>
               p.name.toLowerCase().includes(projectSearch.toLowerCase()),
             )
@@ -401,10 +169,6 @@ export function WorkforceAllocationPage() {
                     {p.headcount} people
                   </span>
                 </div>
-                <p className="text-xs text-gray-400 mt-0.5">{p.budget}</p>
-                <span className="text-xs bg-green-100 text-green-700 px-1.5 py-0.5 rounded mt-1.5 inline-block capitalize">
-                  {p.status}
-                </span>
               </div>
             ))}
         </div>
@@ -584,7 +348,7 @@ export function WorkforceAllocationPage() {
                 </label>
                 <select className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500">
                   <option value="">Select project...</option>
-                  {projects.map((p) => (
+                  {activeProjects.map((p) => (
                     <option key={p.name}>{p.name}</option>
                   ))}
                 </select>

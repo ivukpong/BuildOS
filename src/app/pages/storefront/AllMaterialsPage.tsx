@@ -5,6 +5,7 @@ import {
   updateMaterial,
   deleteMaterial,
 } from "../../api/materials";
+import { getReferenceData } from "../../api/reference-data";
 import {
   Plus,
   Search,
@@ -42,29 +43,9 @@ interface Material {
   condition?: string;
 }
 
-const CATEGORIES = [
-  "All",
-  "Concrete",
-  "Steel",
-  "Electrical",
-  "Plumbing",
-  "Aggregates",
-  "Timber",
-  "Finishes",
-  "Equipment",
-  "Safety",
-];
-const PROJECTS = [
-  "Industrial Warehouse",
-  "Downtown Office Complex",
-  "Riverside Residential",
-  "Highway Interchange",
-  "University Science Block",
-];
-
 const BLANK: Omit<Material, "id"> = {
   name: "",
-  category: "Concrete",
+  category: "",
   unit: "Units",
   totalQty: 0,
   availableQty: 0,
@@ -95,10 +76,12 @@ const ALLOC_STYLE: Record<AllocationStatus, string> = {
 // ── Allocation Tracking Modal ─────────────────────────────────────────────────
 function TrackModal({
   material,
+  projectOptions,
   onClose,
   onSave,
 }: {
   material: Material;
+  projectOptions: string[];
   onClose: () => void;
   onSave: (updated: Partial<Material>) => void;
 }) {
@@ -176,7 +159,7 @@ function TrackModal({
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                 >
                   <option value="">— None —</option>
-                  {PROJECTS.map((p) => (
+                  {projectOptions.map((p) => (
                     <option key={p}>{p}</option>
                   ))}
                 </select>
@@ -264,10 +247,14 @@ export function AllMaterialsPage() {
     new Set(),
   );
   const [trackTarget, setTrackTarget] = useState<Material | null>(null);
+  const [projectOptions, setProjectOptions] = useState<string[]>([]);
 
   useEffect(() => {
-    getMaterials()
-      .then(setMaterials)
+    Promise.all([getMaterials(), getReferenceData()])
+      .then(([materialData, refs]) => {
+        setMaterials(materialData);
+        setProjectOptions(refs.projects.map((p) => p.name));
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -362,6 +349,11 @@ export function AllMaterialsPage() {
   const allocated = reusable.filter(
     (m) => m.allocationStatus === "Allocated",
   ).length;
+  const categories = [
+    "All",
+    ...Array.from(new Set(materials.map((m) => m.category).filter(Boolean))),
+  ];
+  const editableCategories = categories.filter((c) => c !== "All");
 
   return (
     <div className="space-y-5">
@@ -454,7 +446,7 @@ export function AllMaterialsPage() {
         </div>
         <div className="flex items-center gap-1 flex-wrap">
           <Filter className="w-4 h-4 text-gray-400" />
-          {CATEGORIES.map((c) => (
+          {categories.map((c) => (
             <button
               key={c}
               onClick={() => setCatFilter(c)}
@@ -650,7 +642,8 @@ export function AllMaterialsPage() {
                     }
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                   >
-                    {CATEGORIES.filter((c) => c !== "All").map((c) => (
+                    <option value="">Select category</option>
+                    {editableCategories.map((c) => (
                       <option key={c}>{c}</option>
                     ))}
                   </select>
@@ -845,6 +838,7 @@ export function AllMaterialsPage() {
       {trackTarget && (
         <TrackModal
           material={trackTarget}
+          projectOptions={projectOptions}
           onClose={() => setTrackTarget(null)}
           onSave={(updated) => {
             setMaterials((prev) =>

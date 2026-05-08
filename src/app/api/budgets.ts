@@ -25,3 +25,14 @@ export async function fetchBudgets(params?: { status?: string; scope?: string })
     const data = await apiFetch<any[]>(`/budgets${query}`);
     return data.map(mapBudget);
 }
+
+export interface BudgetBreakdown {
+    category: string;
+    budgeted: number;
+    actual: number;
+}
+
+export async function fetchBudgetBreakdown(projectId?: string) {
+    const query = projectId ? `?projectId=${encodeURIComponent(projectId)}` : '';
+    return apiFetch<BudgetBreakdown[]>(`/budgets/breakdown${query}`);
+}

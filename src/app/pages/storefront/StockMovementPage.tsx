@@ -11,6 +11,7 @@ import {
 import {
   getStockMovements,
   createStockMovement,
+  getMaterials,
   getStores,
 } from "../../api/materials";
 
@@ -47,22 +48,9 @@ const TYPES: (MovementType | "All")[] = [
   "Adjustment",
 ];
 
-const MATERIALS = [
-  "Cement (50kg bag)",
-  "Steel Rebar Y16",
-  "Steel Rebar Y12",
-  "Binding Wire",
-  "Concrete Block 9 Inch",
-  "Formwork Plywood",
-  "PVC Pipes 2 Inch",
-  "Sand",
-  "Flush Doors",
-  "2.5mm Twin Cable",
-];
-
 const BLANK_FORM = {
-  material: MATERIALS[0],
-  category: "Concrete",
+  material: "",
+  category: "",
   fromStore: "",
   toStore: "",
   quantity: 1,
@@ -75,6 +63,7 @@ const BLANK_FORM = {
 export function StockMovementPage() {
   const [movements, setMovements] = useState<Movement[]>([]);
   const [stores, setStores] = useState<string[]>([]);
+  const [materials, setMaterials] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"material" | "store">("material");
   const [search, setSearch] = useState("");
@@ -84,8 +73,8 @@ export function StockMovementPage() {
   const [form, setForm] = useState<typeof BLANK_FORM>({ ...BLANK_FORM });
 
   useEffect(() => {
-    Promise.all([getStockMovements(), getStores()])
-      .then(([movs, strs]) => {
+    Promise.all([getStockMovements(), getStores(), getMaterials()])
+      .then(([movs, strs, mats]) => {
         setMovements(
           movs.map((m) => ({
             id: m.id,
@@ -106,6 +95,9 @@ export function StockMovementPage() {
           })),
         );
         setStores(strs.map((s) => s.name));
+        const materialNames = mats.map((m) => m.name);
+        setMaterials(materialNames);
+        setForm((prev) => ({ ...prev, material: prev.material || materialNames[0] || "" }));
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -510,7 +502,7 @@ export function StockMovementPage() {
                   }
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  {MATERIALS.map((m) => (
+                  {materials.map((m) => (
                     <option key={m}>{m}</option>
                   ))}
                 </select>

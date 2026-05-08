@@ -13,6 +13,7 @@ import {
   FolderOpen,
 } from "lucide-react";
 import { getStores, Store as ApiStore } from "../../api/materials";
+import { getReferenceData } from "../../api/reference-data";
 
 // ─── Store Level Configuration ────────────────────────────────────────────────
 
@@ -285,16 +286,9 @@ function storeFromApi(s: ApiStore): StoreRecord {
   };
 }
 
-const STORE_PROJECTS = [
-  "Industrial Warehouse",
-  "Downtown Office Complex",
-  "Riverside Residential",
-  "Highway Interchange",
-  "University Science Block",
-];
-
 function StoresPanel() {
   const [stores, setStores] = useState<StoreRecord[]>([]);
+  const [projects, setProjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [levelFilter, setLevelFilter] = useState<StoreLevel | 0>(0);
   const [showModal, setShowModal] = useState(false);
@@ -307,8 +301,11 @@ function StoresPanel() {
   });
 
   useEffect(() => {
-    getStores()
-      .then((data) => setStores(data.map(storeFromApi)))
+    Promise.all([getStores(), getReferenceData()])
+      .then(([storeData, refs]) => {
+        setStores(storeData.map(storeFromApi));
+        setProjects(refs.projects.map((p) => p.name));
+      })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -614,7 +611,7 @@ function StoresPanel() {
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500 bg-white"
                   >
                     <option value="">— Select project (optional) —</option>
-                    {STORE_PROJECTS.map((p) => (
+                    {projects.map((p) => (
                       <option key={p}>{p}</option>
                     ))}
                   </select>

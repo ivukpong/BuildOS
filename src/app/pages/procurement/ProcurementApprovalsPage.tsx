@@ -1,5 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
-import { getPurchaseRequests } from "../../api/procurement-requests";
+import { getApprovals, type ApprovalItem } from "../../api/approvals";
 import {
   CheckCircle,
   XCircle,
@@ -10,11 +10,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 
-type ProcApprovalType =
-  | "Material Request"
-  | "Purchase Request"
-  | "Purchase Order"
-  | "Supplier Onboarding";
+type ProcApprovalType = string;
 type ApprovalStatus = "pending" | "approved" | "rejected";
 
 interface ProcApproval {
@@ -30,116 +26,20 @@ interface ProcApproval {
   description: string;
 }
 
-const _APPROVALS_PLACEHOLDER: ProcApproval[] = [
-  {
-    id: "pr1",
-    type: "Material Request",
-    title: "Structural Steel I-Beams — 150 tonnes",
-    project: "Downtown Office Complex",
-    requestedBy: "Site Supervisor",
-    date: "2026-04-09",
-    amount: 185000,
-    status: "pending",
-    urgency: "urgent",
-    description:
-      "Critical for Phase 2 structural framing scheduled April 16. Site works will halt without this delivery.",
-  },
-  {
-    id: "pr2",
-    type: "Purchase Request",
-    title: "Tower Crane Rental Extension — 3 Months",
-    project: "Riverside Residential",
-    requestedBy: "Project Manager",
-    date: "2026-04-09",
-    amount: 270000,
-    status: "pending",
-    urgency: "urgent",
-    description:
-      "Crane lease expires April 12. Extension needed through July to complete structural floor pours on schedule.",
-  },
-  {
-    id: "pr3",
-    type: "Purchase Order",
-    title: "Electrical Cable Bundle — Phase 2",
-    project: "Highway Interchange",
-    requestedBy: "Procurement Officer",
-    date: "2026-04-08",
-    amount: 58000,
-    status: "pending",
-    urgency: "normal",
-    description:
-      "Phase 2 electrical works start April 20. PO covers LV cable, conduit, and trunking from approved supplier.",
-  },
-  {
-    id: "pr4",
-    type: "Supplier Onboarding",
-    title: "SteelMart Nigeria Ltd — New Vendor",
-    project: "—",
-    requestedBy: "Procurement Lead",
-    date: "2026-04-07",
-    status: "pending",
-    urgency: "normal",
-    description:
-      "SteelMart passed vendor evaluation. Proposed for primary steel supply. CAC docs and tax clearance attached.",
-  },
-  {
-    id: "pr5",
-    type: "Material Request",
-    title: "Ceramic Floor Tiles — 5,000 sqm",
-    project: "Shopping Mall Renovation",
-    requestedBy: "Interior Contractor",
-    date: "2026-04-06",
-    amount: 93000,
-    status: "approved",
-    urgency: "normal",
-    description:
-      "Interior fit-out materials. Approved — within budget. Delivery scheduled April 18.",
-  },
-  {
-    id: "pr6",
-    type: "Purchase Order",
-    title: "Concrete Mixer — 2 Units",
-    project: "Industrial Warehouse",
-    requestedBy: "Equipment Manager",
-    date: "2026-04-05",
-    amount: 145000,
-    status: "rejected",
-    urgency: "normal",
-    description:
-      "Rejected — rental of equivalent capacity equipment is $28K per month, preferred over capital purchase at this stage.",
-  },
-  {
-    id: "pr7",
-    type: "Purchase Request",
-    title: "Safety Harnesses & PPE — 50 Sets",
-    project: "All Sites",
-    requestedBy: "HSE Officer",
-    date: "2026-04-04",
-    amount: 18500,
-    status: "approved",
-    urgency: "normal",
-    description:
-      "Routine PPE replenishment across all active sites. ISO 45001 compliance requirement.",
-  },
-];
-void _APPROVALS_PLACEHOLDER;
-
-function fromApiApproval(
-  r: Awaited<ReturnType<typeof getPurchaseRequests>>[0],
-): ProcApproval {
+function fromApiApproval(r: ApprovalItem): ProcApproval {
   return {
     id: r.id,
-    type: "Purchase Request",
+    type: r.type,
     title: r.title,
-    project: r.projectName ?? "—",
+    project: r.project ?? "—",
     requestedBy: r.requestedBy ?? "",
-    date: r.createdAt.slice(0, 10),
-    amount: undefined,
+    date: r.date,
+    amount: r.amount,
     status: (r.status === "approved" || r.status === "rejected"
       ? r.status
       : "pending") as ApprovalStatus,
-    urgency: r.priority === "urgent" ? "urgent" : "normal",
-    description: r.notes ?? "",
+    urgency: r.urgency === "urgent" ? "urgent" : "normal",
+    description: r.description ?? "",
   };
 }
 
@@ -164,7 +64,7 @@ const statusConfig: Record<
   },
 };
 
-const typeColors: Record<ProcApprovalType, string> = {
+const typeColors: Record<string, string> = {
   "Material Request": "bg-blue-50 text-blue-700",
   "Purchase Request": "bg-purple-50 text-purple-700",
   "Purchase Order": "bg-orange-50 text-orange-700",
@@ -193,7 +93,7 @@ export function ProcurementApprovalsPage() {
   const [sentInfoFor, setSentInfoFor] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    getPurchaseRequests()
+    getApprovals("procurement")
       .then((data) => setApprovals(data.map(fromApiApproval)))
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -233,6 +133,7 @@ export function ProcurementApprovalsPage() {
     approved: approvals.filter((a) => getStatus(a) === "approved").length,
     rejected: approvals.filter((a) => getStatus(a) === "rejected").length,
   };
+  const approvalTypes = Array.from(new Set(approvals.map((a) => a.type)));
 
   if (loading) return null;
 
@@ -288,14 +189,7 @@ export function ProcurementApprovalsPage() {
           className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           <option value="all">All Types</option>
-          {(
-            [
-              "Material Request",
-              "Purchase Request",
-              "Purchase Order",
-              "Supplier Onboarding",
-            ] as const
-          ).map((t) => (
+          {approvalTypes.map((t) => (
             <option key={t} value={t}>
               {t}
             </option>

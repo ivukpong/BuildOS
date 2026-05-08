@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getPayrollRuns, getPayrollEntries } from "../../api/hr-extras";
 import {
   CheckCircle,
   AlertCircle,
@@ -36,189 +37,7 @@ interface ProcessEntry {
   note: string;
 }
 
-// TODO: No payroll processing endpoint — using placeholder data
-const processData: ProcessEntry[] = [
-  {
-    id: "EMP-001",
-    name: "Chukwudi Eze",
-    department: "Engineering",
-    gradeLevel: "Level 7",
-    basicSalary: 320000,
-    allowances: 103000,
-    deductions: 48000,
-    netPay: 375000,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-002",
-    name: "Aisha Bello",
-    department: "Operations",
-    gradeLevel: "Level 9",
-    basicSalary: 580000,
-    allowances: 174000,
-    deductions: 87000,
-    netPay: 667000,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-003",
-    name: "Robert Lee",
-    department: "Engineering",
-    gradeLevel: "Level 8",
-    basicSalary: 420000,
-    allowances: 126000,
-    deductions: 63000,
-    netPay: 483000,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-004",
-    name: "Sarah Johnson",
-    department: "Finance",
-    gradeLevel: "Level 7",
-    basicSalary: 290000,
-    allowances: 87000,
-    deductions: 43500,
-    netPay: 333500,
-    status: "on_hold",
-    note: "Missing bank details",
-  },
-  {
-    id: "EMP-005",
-    name: "Mike Davis",
-    department: "Engineering",
-    gradeLevel: "Level 5",
-    basicSalary: 195000,
-    allowances: 63000,
-    deductions: 29250,
-    netPay: 228750,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-006",
-    name: "Alice Ware",
-    department: "Human Resources",
-    gradeLevel: "Level 6",
-    basicSalary: 245000,
-    allowances: 73500,
-    deductions: 36750,
-    netPay: 281750,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-007",
-    name: "Tom Fox",
-    department: "Procurement",
-    gradeLevel: "Level 7",
-    basicSalary: 310000,
-    allowances: 93000,
-    deductions: 46500,
-    netPay: 356500,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-008",
-    name: "Ngozi Eze",
-    department: "Engineering",
-    gradeLevel: "Level 6",
-    basicSalary: 255000,
-    allowances: 76500,
-    deductions: 38250,
-    netPay: 293250,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-009",
-    name: "Kwame Asante",
-    department: "Engineering",
-    gradeLevel: "Level 7",
-    basicSalary: 315000,
-    allowances: 94500,
-    deductions: 47250,
-    netPay: 362250,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-010",
-    name: "Emeka Nwosu",
-    department: "Health & Safety",
-    gradeLevel: "Level 6",
-    basicSalary: 250000,
-    allowances: 75000,
-    deductions: 37500,
-    netPay: 287500,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-011",
-    name: "Bisi Akinola",
-    department: "Administration",
-    gradeLevel: "Level 5",
-    basicSalary: 175000,
-    allowances: 63000,
-    deductions: 26250,
-    netPay: 211750,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-012",
-    name: "Lawal Musa",
-    department: "Engineering",
-    gradeLevel: "Level 7",
-    basicSalary: 320000,
-    allowances: 96000,
-    deductions: 48000,
-    netPay: 368000,
-    status: "excluded",
-    note: "Resigned – last day Apr 10",
-  },
-  {
-    id: "EMP-013",
-    name: "Funke Adeyemi",
-    department: "Finance",
-    gradeLevel: "Level 6",
-    basicSalary: 260000,
-    allowances: 78000,
-    deductions: 39000,
-    netPay: 299000,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-014",
-    name: "David Obi",
-    department: "IT & Systems",
-    gradeLevel: "Level 6",
-    basicSalary: 255000,
-    allowances: 76500,
-    deductions: 38250,
-    netPay: 293250,
-    status: "included",
-    note: "",
-  },
-  {
-    id: "EMP-015",
-    name: "Yemi Olusegun",
-    department: "Operations",
-    gradeLevel: "Level 9",
-    basicSalary: 560000,
-    allowances: 168000,
-    deductions: 84000,
-    netPay: 644000,
-    status: "included",
-    note: "",
-  },
-];
+// depts and grades computed inside component from state
 
 const statusConfig: Record<EmpPayStatus, { label: string; badge: string }> = {
   included: { label: "Included", badge: "bg-green-100 text-green-700" },
@@ -235,7 +54,34 @@ export function PayrollProcessingPage() {
     Partial<Record<ApprovalStage, string>>
   >({});
   const [month, setMonth] = useState("April 2025");
-  const [entries, setEntries] = useState<ProcessEntry[]>(processData);
+  const [entries, setEntries] = useState<ProcessEntry[]>([]);
+
+  useEffect(() => {
+    getPayrollRuns()
+      .then((runs) => {
+        const latest = runs[0];
+        if (!latest) return Promise.resolve(undefined);
+        return getPayrollEntries(latest.id);
+      })
+      .then((ents) => {
+        if (!ents) return;
+        setEntries(
+          ents.map((e) => ({
+            id: e.employeeId,
+            name: e.employeeName,
+            department: e.department ?? "",
+            gradeLevel: "",
+            basicSalary: e.grossPay - e.allowances,
+            allowances: e.allowances,
+            deductions: e.deductions,
+            netPay: e.netPay,
+            status: "included" as EmpPayStatus,
+            note: "",
+          })),
+        );
+      })
+      .catch(() => {});
+  }, []);
   const [showPreview, setShowPreview] = useState(false);
   const [expanded, setExpanded] = useState<string | null>(null);
 

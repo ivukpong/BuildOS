@@ -18,106 +18,12 @@ import {
 } from "lucide-react";
 import { fetchEmployees } from "../../api/employees";
 import { fetchDepartments } from "../../api/departments";
-import { getAttendance } from "../../api/hr-extras";
-
-// NOTE: placeholder data — replaced by API in component
-const _todayAttendance = [
-  {
-    name: "Chukwudi Eze",
-    role: "Site Engineer",
-    dept: "Engineering",
-    status: "present",
-    time: "07:48",
-  },
-  {
-    name: "Aisha Bello",
-    role: "Project Manager",
-    dept: "Operations",
-    status: "present",
-    time: "08:02",
-  },
-  {
-    name: "Robert Lee",
-    role: "Structural Engineer",
-    dept: "Engineering",
-    status: "late",
-    time: "09:31",
-  },
-  {
-    name: "Sarah Johnson",
-    role: "Accountant",
-    dept: "Finance",
-    status: "present",
-    time: "07:55",
-  },
-  {
-    name: "Mike Davis",
-    role: "Site Foreman",
-    dept: "Engineering",
-    status: "absent",
-    time: "—",
-  },
-  {
-    name: "Alice Ware",
-    role: "HR Officer",
-    dept: "Human Resources",
-    status: "present",
-    time: "08:10",
-  },
-  {
-    name: "Tom Fox",
-    role: "Quantity Surveyor",
-    dept: "Procurement",
-    status: "present",
-    time: "08:20",
-  },
-  {
-    name: "Ngozi Eze",
-    role: "Site Supervisor",
-    dept: "Engineering",
-    status: "late",
-    time: "09:15",
-  },
-];
-
-// TODO: No workforce allocation endpoint — using placeholder data
-const projectAllocation = [
-  { project: "Downtown Office Complex", employees: 18, allocation: 91 },
-  { project: "Riverside Residential", employees: 12, allocation: 75 },
-  { project: "Highway Interchange", employees: 22, allocation: 100 },
-  { project: "Industrial Warehouse", employees: 9, allocation: 56 },
-  { project: "University Science Block", employees: 14, allocation: 82 },
-];
-
-// TODO: No allocation endpoint — using placeholder data
-const allocationAlerts = [
-  {
-    name: "Robert Lee",
-    role: "Structural Engineer",
-    projects: 4,
-    alert: "Over-allocated",
-  },
-  {
-    name: "Aisha Bello",
-    role: "Project Manager",
-    projects: 3,
-    alert: "High load",
-  },
-  {
-    name: "Tom Fox",
-    role: "Quantity Surveyor",
-    projects: 3,
-    alert: "High load",
-  },
-];
-
-// TODO: No payroll endpoint — using placeholder data
-const payrollSummary = [
-  { label: "Base Salaries", amount: 22400000 },
-  { label: "Allowances", amount: 3820000 },
-  { label: "Deductions", amount: -1580000 },
-  { label: "Employer PAYE", amount: 3760000 },
-];
+import {
+  getAttendance,
+  getPayrollRuns,
+  getPayrollEntries,
+} from "../../api/hr-extras";
+import { getWorkforceAllocations } from "../../api/workforce-allocation";
 
 const attConfig: Record<string, { badge: string; icon: React.ReactNode }> = {
   present: {
@@ -147,6 +53,11 @@ export function HRDashboardPage() {
   const [allEmployees, setAllEmployees] = useState<any[]>([]);
   const [allDepartments, setAllDepartments] = useState<any[]>([]);
   const [todayAttendance, setTodayAttendance] = useState<any[]>([]);
+  const [allAllocs, setAllAllocs] = useState<any[]>([]);
+  const [payrollSummary, setPayrollSummary] = useState<
+    { label: string; amount: number }[]
+  >([]);
+  const [netPayroll, setNetPayroll] = useState(0);
 
   useEffect(() => {
     fetchEmployees()
@@ -157,6 +68,28 @@ export function HRDashboardPage() {
       .catch(() => {});
     getAttendance()
       .then(setTodayAttendance)
+      .catch(() => {});
+    getWorkforceAllocations()
+      .then(setAllAllocs)
+      .catch(() => {});
+    getPayrollRuns()
+      .then((runs) => {
+        const latest = runs[0];
+        if (!latest) return;
+        return getPayrollEntries(latest.id).then((ents) => {
+          const gross = ents.reduce((s, e) => s + e.grossPay, 0);
+          const allowances = ents.reduce((s, e) => s + e.allowances, 0);
+          const deductions = ents.reduce((s, e) => s + e.deductions, 0);
+          const tax = ents.reduce((s, e) => s + e.tax, 0);
+          setPayrollSummary([
+            { label: "Base Salaries", amount: gross - allowances },
+            { label: "Allowances", amount: allowances },
+            { label: "Deductions", amount: -deductions },
+            { label: "Employer PAYE", amount: tax },
+          ]);
+          setNetPayroll(gross - deductions);
+        });
+      })
       .catch(() => {});
   }, []);
 
@@ -184,6 +117,52 @@ export function HRDashboardPage() {
   const absentCount = todayAttendance.filter(
     (a) => a.status === "absent",
   ).length;
+
+  const projectMap = new Map<
+    string,
+    { employees: number; totalAlloc: number }
+  >();
+  allAllocs.forEach((a) => {
+    const proj = a.projectName ?? "Unknown";
+    const cur = projectMap.get(proj) ?? { employees: 0, totalAlloc: 0 };
+    projectMap.set(proj, {
+      employees: cur.employees + 1,
+      totalAlloc: cur.totalAlloc + (a.allocPct ?? 0),
+    });
+  });
+  const projectAllocation = Array.from(projectMap.entries()).map(
+    ([project, v]) => ({
+      project,
+      employees: v.employees,
+      allocation: Math.min(
+        Math.round(v.totalAlloc / Math.max(v.employees, 1)),
+        100,
+      ),
+    }),
+  );
+
+  const employeeAllocMap = new Map<
+    string,
+    { role: string; projects: number }
+  >();
+  allAllocs.forEach((a) => {
+    const cur = employeeAllocMap.get(a.employeeName) ?? {
+      role: a.role ?? "",
+      projects: 0,
+    };
+    employeeAllocMap.set(a.employeeName, {
+      role: cur.role,
+      projects: cur.projects + 1,
+    });
+  });
+  const allocationAlerts = Array.from(employeeAllocMap.entries())
+    .filter(([, v]) => v.projects >= 2)
+    .map(([name, v]) => ({
+      name,
+      role: v.role,
+      projects: v.projects,
+      alert: v.projects >= 3 ? "Over-allocated" : "High load",
+    }));
 
   const kpis = [
     {
@@ -214,19 +193,20 @@ export function HRDashboardPage() {
       icon: <TrendingUp className="w-5 h-5" />,
       color: "text-blue-600 bg-blue-100",
     },
-    // TODO: No attendance endpoint — present count is from placeholder data
     {
       label: "Present Today",
       value: String(presentCount),
-      sub: "Out of active (sample)",
+      sub: "From attendance records",
       icon: <CheckCircle className="w-5 h-5" />,
       color: "text-emerald-600 bg-emerald-100",
     },
-    // TODO: No payroll endpoint — payroll value is placeholder data
     {
       label: "Payroll (This Month)",
-      value: "₦28.4M",
-      sub: "April 2026 cycle",
+      value: fmt(netPayroll || 0),
+      sub: new Date().toLocaleString("default", {
+        month: "long",
+        year: "numeric",
+      }),
       icon: <DollarSign className="w-5 h-5" />,
       color: "text-purple-600 bg-purple-100",
     },
@@ -265,7 +245,7 @@ export function HRDashboardPage() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">HR Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Workforce overview — April 9, 2026
+            Workforce overview — {new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}
           </p>
         </div>
         <div className="flex gap-2">
@@ -535,7 +515,9 @@ export function HRDashboardPage() {
           <span className="text-sm font-medium text-indigo-700">
             Net Payroll Liability
           </span>
-          <span className="text-xl font-bold text-indigo-800">₦28.4M</span>
+          <span className="text-xl font-bold text-indigo-800">
+            {fmt(netPayroll || 0)}
+          </span>
         </div>
       </div>
     </div>

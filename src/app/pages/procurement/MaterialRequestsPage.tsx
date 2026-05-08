@@ -28,6 +28,7 @@ import {
   type ActiveFilters,
   type SortConfig,
 } from "../../components/AdvancedFilter";
+import { getReferenceData } from "../../api/reference-data";
 
 type ReqStatus =
   | "pending"
@@ -101,214 +102,6 @@ function fromApiMR(r: ApiMR): LocalMR {
   };
 }
 
-const _REQUESTS_PLACEHOLDER: LocalMR[] = [
-  {
-    id: "MR-0041",
-    project: "Downtown Office Complex",
-    requestedBy: "Aisha Bello",
-    department: "Site Operations",
-    status: "pending",
-    priority: "urgent",
-    submittedDate: "Apr 9, 2026",
-    neededBy: "Apr 11, 2026",
-    totalItems: 3,
-    justification:
-      "Urgent — Level 5 slab pour scheduled Apr 11, cannot proceed without materials.",
-    items: [
-      {
-        material: "Steel Rebar Y16",
-        qty: 10,
-        unit: "Tonnes",
-        available: 12,
-        notes: "For slab reinforcement",
-      },
-      {
-        material: "Cement (50kg bags)",
-        qty: 200,
-        unit: "Bags",
-        available: 320,
-        notes: "Pre-mixed concrete ratio 1:2:4",
-      },
-      {
-        material: "Binding Wire",
-        qty: 50,
-        unit: "Rolls",
-        available: 450,
-        notes: "Tying rebars",
-      },
-    ],
-  },
-  {
-    id: "MR-0040",
-    project: "Riverside Residential",
-    requestedBy: "Sarah Johnson",
-    department: "Structural",
-    status: "approved",
-    priority: "normal",
-    submittedDate: "Apr 8, 2026",
-    neededBy: "Apr 14, 2026",
-    totalItems: 5,
-    justification: "Finishing phase materials for Block B units.",
-    items: [
-      {
-        material: "Ceramic Tiles 600x600",
-        qty: 80,
-        unit: "Cartons",
-        available: 280,
-        notes: "Floor tiling",
-      },
-      {
-        material: "2.5mm Twin Cable",
-        qty: 300,
-        unit: "Metres",
-        available: 1800,
-        notes: "Unit electrics",
-      },
-      {
-        material: "PVC Pipe 110mm",
-        qty: 40,
-        unit: "Metres",
-        available: 40,
-        notes: "Wet rooms",
-      },
-      {
-        material: "Plywood Formwork 18mm",
-        qty: 40,
-        unit: "Sheets",
-        available: 180,
-        notes: "Door frames",
-      },
-      {
-        material: "Concrete Block 9 Inch",
-        qty: 500,
-        unit: "Units",
-        available: 8500,
-        notes: "Partition walls",
-      },
-    ],
-  },
-  {
-    id: "MR-0039",
-    project: "Highway Interchange",
-    requestedBy: "Robert Lee",
-    department: "Civil Works",
-    status: "pending",
-    priority: "urgent",
-    submittedDate: "Apr 8, 2026",
-    neededBy: "Apr 10, 2026",
-    totalItems: 2,
-    justification: "Road slab segment 4 pour — critical path activity.",
-    items: [
-      {
-        material: "BRC Mesh A193",
-        qty: 60,
-        unit: "Sheets",
-        available: 220,
-        notes: "Road slab base",
-      },
-      {
-        material: "Granite 3/4 Inch",
-        qty: 30,
-        unit: "Tonnes",
-        available: 95,
-        notes: "Sub-base layer",
-      },
-    ],
-  },
-  {
-    id: "MR-0038",
-    project: "Industrial Warehouse",
-    requestedBy: "Mike Davis",
-    department: "Foundation",
-    status: "in_procurement",
-    priority: "high",
-    submittedDate: "Apr 7, 2026",
-    neededBy: "Apr 12, 2026",
-    totalItems: 4,
-    justification: "Foundation pad casting for column grids A1-A6.",
-    items: [
-      {
-        material: "Sand (River)",
-        qty: 60,
-        unit: "Tonnes",
-        available: 0,
-        notes: "Fine aggregate",
-      },
-      {
-        material: "Granite 3/4 Inch",
-        qty: 40,
-        unit: "Tonnes",
-        available: 95,
-        notes: "Coarse aggregate",
-      },
-      {
-        material: "Cement (50kg bags)",
-        qty: 120,
-        unit: "Bags",
-        available: 320,
-        notes: "Binding",
-      },
-      {
-        material: "Binding Wire",
-        qty: 30,
-        unit: "Rolls",
-        available: 450,
-        notes: "Reinforcement tying",
-      },
-    ],
-  },
-  {
-    id: "MR-0037",
-    project: "University Science Block",
-    requestedBy: "Alice Ware",
-    department: "Finishing",
-    status: "rejected",
-    priority: "normal",
-    submittedDate: "Apr 7, 2026",
-    neededBy: "Apr 16, 2026",
-    totalItems: 1,
-    justification: "Paint works for labs. However, item not in approved list.",
-    items: [
-      {
-        material: "Emulsion Paint (20L)",
-        qty: 40,
-        unit: "Buckets",
-        available: 0,
-        notes: "Wall paint — labs",
-      },
-    ],
-  },
-  {
-    id: "MR-0036",
-    project: "Downtown Office Complex",
-    requestedBy: "Tom Fox",
-    department: "Structural",
-    status: "fulfilled",
-    priority: "normal",
-    submittedDate: "Apr 6, 2026",
-    neededBy: "Apr 8, 2026",
-    totalItems: 2,
-    justification: "Column work Level 4 complete.",
-    items: [
-      {
-        material: "Steel Rebar Y16",
-        qty: 15,
-        unit: "Tonnes",
-        available: 27,
-        notes: "Column caging",
-      },
-      {
-        material: "Steel Rebar Y12",
-        qty: 5,
-        unit: "Tonnes",
-        available: 33,
-        notes: "Links and stirrups",
-      },
-    ],
-  },
-];
-void _REQUESTS_PLACEHOLDER;
-
 const statusConfig: Record<
   ReqStatus,
   { label: string; badge: string; icon: React.ReactNode }
@@ -373,22 +166,6 @@ const MR_FILTER_FIELDS: FilterFieldDef[] = [
   },
 ];
 
-const MR_PROJECTS = [
-  "Industrial Warehouse",
-  "Downtown Office Complex",
-  "Riverside Residential",
-  "Highway Interchange",
-  "University Science Block",
-];
-const MR_DEPARTMENTS = [
-  "Site Operations",
-  "Structural",
-  "Civil Works",
-  "Foundation",
-  "Finishing",
-  "MEP",
-  "Logistics",
-];
 const MR_UNITS = [
   "Tonnes",
   "Bags",
@@ -429,8 +206,10 @@ function NewMRModal({
     return fmtDate(d2);
   };
 
-  const [project, setProject] = useState(MR_PROJECTS[0]);
-  const [department, setDepartment] = useState(MR_DEPARTMENTS[0]);
+  const [projects, setProjects] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [project, setProject] = useState("");
+  const [department, setDepartment] = useState("");
   const [neededDays, setNeededDays] = useState("5");
   const [priority, setPriority] = useState<"urgent" | "high" | "normal">(
     "normal",
@@ -439,6 +218,19 @@ function NewMRModal({
   const [items, setItems] = useState<MRItem[]>([
     { material: "", qty: "", unit: MR_UNITS[0], available: "", notes: "" },
   ]);
+
+  useEffect(() => {
+    getReferenceData()
+      .then((data) => {
+        const projectNames = data.projects.map((p) => p.name);
+        const departmentNames = data.departments.map((d) => d.name);
+        setProjects(projectNames);
+        setDepartments(departmentNames);
+        setProject((prev) => prev || projectNames[0] || "");
+        setDepartment((prev) => prev || departmentNames[0] || "");
+      })
+      .catch(() => {});
+  }, []);
 
   const addItem = () =>
     setItems((p) => [
@@ -503,7 +295,7 @@ function NewMRModal({
                 onChange={(e) => setProject(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {MR_PROJECTS.map((p) => (
+                {projects.map((p) => (
                   <option key={p}>{p}</option>
                 ))}
               </select>
@@ -517,7 +309,7 @@ function NewMRModal({
                 onChange={(e) => setDepartment(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {MR_DEPARTMENTS.map((d) => (
+                {departments.map((d) => (
                   <option key={d}>{d}</option>
                 ))}
               </select>
@@ -712,18 +504,6 @@ function RejectMRModal({
   );
 }
 
-const ALL_SUPPLIERS = [
-  "Alpha Aggregates",
-  "SteelMart Int'l",
-  "CemCo Nigeria Ltd",
-  "ElectraHub",
-  "PlumbTech Ltd",
-  "DangCem Enterprises",
-  "BuildPlus Supplies",
-  "BetaCo Supplies",
-  "UniTrade Ltd",
-];
-
 function RaisePRModal({
   req,
   onClose,
@@ -734,7 +514,18 @@ function RaisePRModal({
   onDone: (prId: string, type: "direct" | "rfq", suppliers: string[]) => void;
 }) {
   const [procType, setProcType] = useState<"direct" | "rfq">("direct");
-  const [selected, setSelected] = useState<string[]>([ALL_SUPPLIERS[0]]);
+  const [suppliers, setSuppliers] = useState<string[]>([]);
+  const [selected, setSelected] = useState<string[]>([]);
+
+  useEffect(() => {
+    getReferenceData()
+      .then((data) => {
+        const supplierNames = data.suppliers.map((s) => s.name);
+        setSuppliers(supplierNames);
+        setSelected((prev) => prev.length ? prev : supplierNames.slice(0, 1));
+      })
+      .catch(() => {});
+  }, []);
 
   function toggleSupplier(s: string) {
     if (procType === "direct") {
@@ -793,7 +584,7 @@ function RaisePRModal({
                   onClick={() => {
                     setProcType(t);
                     if (t === "direct")
-                      setSelected([selected[0] ?? ALL_SUPPLIERS[0]]);
+                      setSelected([selected[0] ?? suppliers[0] ?? ""]);
                   }}
                   className={`p-3 rounded-xl border text-left transition-colors ${
                     procType === t
@@ -826,7 +617,7 @@ function RaisePRModal({
                 : "Select Suppliers (RFQ will be sent to all)"}
             </p>
             <div className="border border-gray-200 rounded-xl overflow-hidden max-h-48 overflow-y-auto">
-              {ALL_SUPPLIERS.map((s) => {
+              {suppliers.map((s) => {
                 const isSelected = selected.includes(s);
                 return (
                   <button

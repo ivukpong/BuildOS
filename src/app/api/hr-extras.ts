@@ -26,6 +26,9 @@ export interface Payslip {
     deductions: number; netPay: number; tax: number; pension: number;
     allowances: number; status: string; issuedAt?: string; createdAt: string;
 }
+export interface DepartmentPayrollSummary {
+    department: string; employees: number; grossPay: number; netPay: number;
+}
 export interface Appraisal {
     id: string; employeeId: string; employeeName: string; department?: string;
     period: string; score?: number; rating?: string; reviewer?: string;
@@ -77,6 +80,8 @@ export const updatePayrollRun = (id: string, data: Partial<PayrollRun>) =>
 // Payroll Entries
 export const getPayrollEntries = (runId: string) =>
     apiFetch<PayrollEntry[]>(`/payroll-runs/${runId}/entries`);
+export const getDepartmentPayrollSummary = () =>
+    apiFetch<DepartmentPayrollSummary[]>('/payroll-summary/departments');
 export const updatePayrollEntry = (id: string, data: Partial<PayrollEntry>) =>
     apiFetch<PayrollEntry>(`/payroll-entries/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 

@@ -73,6 +73,23 @@ export class HrExtrasService {
     findEntriesByRun(runId: string) {
         return this.prisma.payrollEntry.findMany({ where: { runId } });
     }
+    async departmentPayrollSummary() {
+        const latest = await this.prisma.payrollRun.findFirst({
+            orderBy: { createdAt: 'desc' },
+            include: { entries: true },
+        });
+        if (!latest) return [];
+        const map = new Map<string, { department: string; employees: number; grossPay: number; netPay: number }>();
+        latest.entries.forEach((entry) => {
+            const department = entry.department || 'Unassigned';
+            const current = map.get(department) ?? { department, employees: 0, grossPay: 0, netPay: 0 };
+            current.employees += 1;
+            current.grossPay += entry.grossPay;
+            current.netPay += entry.netPay;
+            map.set(department, current);
+        });
+        return Array.from(map.values());
+    }
     updateEntry(id: string, data: any) {
         return this.prisma.payrollEntry.update({ where: { id }, data });
     }

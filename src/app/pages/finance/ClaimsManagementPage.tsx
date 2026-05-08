@@ -62,15 +62,6 @@ const statusConfig: Record<
   },
 };
 
-const CLAIM_TYPES = [
-  "Medical",
-  "Travel",
-  "Meal Allowance",
-  "Professional Development",
-  "Equipment",
-  "Accommodation",
-  "Other",
-];
 const STATUS_OPTS: Array<ClaimStatus | "All"> = [
   "All",
   "Submitted",

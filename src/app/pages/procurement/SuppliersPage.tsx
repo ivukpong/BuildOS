@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchSuppliers } from "../../api/suppliers";
+import { fetchPurchaseOrders } from "../../api/purchase-orders";
 import {
   Building,
   Plus,
@@ -21,16 +22,10 @@ import {
 } from "lucide-react";
 
 type SupplierCity = "Lagos" | "Abuja" | "Ibadan" | "Port Harcourt" | "Kano";
-type Category =
-  | "Concrete & Masonry"
-  | "Steel & Ironmongery"
-  | "Electrical"
-  | "Plumbing & MEP"
-  | "Timber & Formwork"
-  | "Finishes"
-  | "Aggregates";
+type Category = string;
 
 type Supplier = Awaited<ReturnType<typeof fetchSuppliers>>[number];
+type PurchaseOrder = Awaited<ReturnType<typeof fetchPurchaseOrders>>[number];
 
 function renderStars(rating: number) {
   return (
@@ -92,7 +87,6 @@ export function SuppliersPage() {
     ...BLANK_MODAL_DOCS,
   });
 
-  // Document upload mock state: supplierId → docName → { name, uploaded }
   type DocEntry = { fileName: string | null };
   const REQUIRED_DOCS = [
     "TIN Certificate",
@@ -104,6 +98,17 @@ export function SuppliersPage() {
   const [uploadedDocs, setUploadedDocs] = useState<
     Record<string, Record<string, DocEntry>>
   >({});
+  const [profileOrders, setProfileOrders] = useState<PurchaseOrder[]>([]);
+
+  useEffect(() => {
+    if (!profileTarget) {
+      setProfileOrders([]);
+      return;
+    }
+    fetchPurchaseOrders({ supplierId: profileTarget.id })
+      .then(setProfileOrders)
+      .catch(console.error);
+  }, [profileTarget]);
 
   function handleDocUpload(
     supplierId: string,
@@ -205,13 +210,7 @@ export function SuppliersPage() {
 
   const allCategories = [
     "All",
-    "Concrete & Masonry",
-    "Steel & Ironmongery",
-    "Electrical",
-    "Plumbing & MEP",
-    "Timber & Formwork",
-    "Finishes",
-    "Aggregates",
+    ...Array.from(new Set(supplierList.flatMap((s) => s.category))),
   ];
 
   const filtered = supplierList.filter((s) => {
@@ -830,12 +829,12 @@ export function SuppliersPage() {
                 </div>
               </div>
 
-              {/* Purchase Orders — mocked */}
+              {/* Purchase Orders */}
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">
                   Recent Purchase Orders
                 </p>
-                {profileTarget.activePOs > 0 ? (
+                {profileOrders.length > 0 ? (
                   <div className="rounded-xl border overflow-hidden">
                     <table className="w-full text-sm">
                       <thead className="bg-gray-50 border-b">
@@ -855,26 +854,24 @@ export function SuppliersPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        <tr className="hover:bg-gray-50">
-                          <td className="px-4 py-2.5 font-mono text-blue-700">
-                            PO-2026-0134
-                          </td>
-                          <td className="px-4 py-2.5 text-gray-500">
-                            {profileTarget.lastOrder}
-                          </td>
-                          <td className="px-4 py-2.5 text-right text-gray-800">
-                            ₦
-                            {(profileTarget.totalSpend * 0.12).toLocaleString(
-                              undefined,
-                              { maximumFractionDigits: 0 },
-                            )}
-                          </td>
-                          <td className="px-4 py-2.5">
-                            <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                              Open
-                            </span>
-                          </td>
-                        </tr>
+                        {profileOrders.map((order) => (
+                          <tr key={order.id} className="hover:bg-gray-50">
+                            <td className="px-4 py-2.5 font-mono text-blue-700">
+                              {order.id}
+                            </td>
+                            <td className="px-4 py-2.5 text-gray-500">
+                              {order.createdDate}
+                            </td>
+                            <td className="px-4 py-2.5 text-right text-gray-800">
+                              ₦{order.totalValue.toLocaleString()}
+                            </td>
+                            <td className="px-4 py-2.5">
+                              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                                {order.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
                       </tbody>
                     </table>
                   </div>

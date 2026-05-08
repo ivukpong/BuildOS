@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { fetchExpenses } from "../../api/expenses";
 import { fetchProjects } from "../../api/projects";
+import { getChartAccounts } from "../../api/finance-extras";
 import {
   Plus,
   Search,
@@ -76,17 +77,6 @@ const statusConfig: Record<
   },
 };
 
-const CATEGORIES = [
-  "Materials",
-  "Equipment",
-  "Labour",
-  "Safety",
-  "Transport",
-  "Professional Fees",
-  "Maintenance",
-  "Other",
-];
-
 const STATUS_OPTIONS: Array<ExpenseStatus | "All"> = [
   "All",
   "Draft",
@@ -108,11 +98,22 @@ const emptyForm = {
 export function ExpenseManagementPage() {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [projectNames, setProjectNames] = useState<string[]>([]);
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   useEffect(() => {
-    fetchExpenses().then(setExpenses);
-    fetchProjects()
-      .then((ps) => setProjectNames(ps.map((p) => p.name)))
-      .catch(() => {});
+    Promise.all([fetchExpenses(), fetchProjects(), getChartAccounts("Expense")])
+      .then(([expenseData, projects, accounts]) => {
+        setExpenses(expenseData);
+        setProjectNames(projects.map((p) => p.name));
+        setCategoryOptions(
+          Array.from(
+            new Set([
+              ...expenseData.map((e) => e.category).filter(Boolean),
+              ...accounts.map((a) => a.name).filter(Boolean),
+            ]),
+          ),
+        );
+      })
+      .catch(console.error);
   }, []);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ExpenseStatus | "All">(
@@ -481,7 +482,7 @@ export function ExpenseManagementPage() {
                     className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="">Select category</option>
-                    {CATEGORIES.map((c) => (
+                    {categoryOptions.map((c) => (
                       <option key={c} value={c}>
                         {c}
                       </option>

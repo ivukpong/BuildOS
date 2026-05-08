@@ -19,13 +19,15 @@ import { NavLink } from "react-router";
 import { fetchExpenses } from "../../api/expenses";
 import { fetchIncome } from "../../api/income";
 import { fetchBudgets } from "../../api/budgets";
-import { fetchPayments } from "../../api/payments";
+import { getTransactions } from "../../api/finance-extras";
+import { getApprovals, type ApprovalItem } from "../../api/approvals";
 
 export function FinanceDashboardPage() {
   const [allExpenses, setAllExpenses] = useState<any[]>([]);
   const [allIncome, setAllIncome] = useState<any[]>([]);
   const [allBudgets, setAllBudgets] = useState<any[]>([]);
-  const [allPayments, setAllPayments] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [approvals, setApprovals] = useState<ApprovalItem[]>([]);
 
   useEffect(() => {
     fetchExpenses()
@@ -37,8 +39,11 @@ export function FinanceDashboardPage() {
     fetchBudgets()
       .then(setAllBudgets)
       .catch(() => {});
-    fetchPayments()
-      .then(setAllPayments)
+    getTransactions()
+      .then(setTransactions)
+      .catch(() => {});
+    getApprovals("finance")
+      .then(setApprovals)
       .catch(() => {});
   }, []);
 
@@ -109,16 +114,13 @@ export function FinanceDashboardPage() {
     },
   ];
 
-  // TODO: No unified transactions endpoint — showing recent payments
-  const recentTransactions = allPayments.slice(0, 5).map((p) => ({
-    id: p.reference || p.id?.slice(0, 8).toUpperCase() || "—",
-    type: p.type || "Payment",
-    description: p.recipient
-      ? `${p.type || "Payment"} — ${p.recipient}`
-      : p.note || p.type || "Payment",
-    amount: -(p.amount || 0),
-    date: p.date,
-    status: p.status,
+  const recentTransactions = transactions.slice(0, 5).map((t) => ({
+    id: t.reference || t.id?.slice(0, 8).toUpperCase() || "—",
+    type: t.type || "Transaction",
+    description: t.description || t.category || t.type || "Transaction",
+    amount: t.type === "Income" ? t.amount || 0 : -(t.amount || 0),
+    date: t.date,
+    status: t.status,
   }));
 
   const budgetSummary = allBudgets.slice(0, 4).map((b) => ({
@@ -127,8 +129,17 @@ export function FinanceDashboardPage() {
     spent: b.spent,
   }));
 
-  // No approvals endpoint — empty until backend provides one
-  const pendingApprovals: Array<{ id: string; type: string; title: string; requestedBy: string; amount: number; urgency: string }> = [];
+  const pendingApprovals = approvals
+    .filter((a) => a.status === "pending")
+    .slice(0, 5)
+    .map((a) => ({
+      id: a.id,
+      type: a.type,
+      title: a.title,
+      requestedBy: a.requestedBy,
+      amount: a.amount ?? 0,
+      urgency: a.urgency,
+    }));
 
   return (
     <div className="space-y-6">

@@ -9,6 +9,26 @@ export interface AppRole {
     id: string; name: string; description?: string;
     permissions: string[]; isSystem: boolean; createdAt: string;
 }
+export interface AdminSystemSummary {
+    users: number;
+    roles: number;
+    activeSessions: number;
+    pendingApprovals: number;
+    health: { status: string; uptimeSeconds: number; checkedAt: string };
+}
+export interface AdminActivity {
+    id: string;
+    actor: string;
+    action: string;
+    subject: string;
+    status: string;
+    date: string;
+}
+
+export const getAdminSystemSummary = () =>
+    apiFetch<AdminSystemSummary>('/admin/system-summary');
+export const getAdminActivityLog = () =>
+    apiFetch<AdminActivity[]>('/admin/activity-log');
 
 // Users
 export const getUsers = (search?: string) =>

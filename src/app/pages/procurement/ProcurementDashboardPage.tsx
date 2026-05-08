@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { fetchPurchaseOrders } from "../../api/purchase-orders";
+import { getMaterialRequests, getMaterials } from "../../api/materials";
 
 const reqStatusBadge: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
@@ -38,10 +39,18 @@ function fmt(n: number) {
 export function ProcurementDashboardPage() {
   const navigate = useNavigate();
   const [allPOs, setAllPOs] = useState<any[]>([]);
+  const [materials, setMaterials] = useState<any[]>([]);
+  const [requests, setRequests] = useState<any[]>([]);
 
   useEffect(() => {
     fetchPurchaseOrders()
       .then(setAllPOs)
+      .catch(() => {});
+    getMaterials()
+      .then(setMaterials)
+      .catch(() => {});
+    getMaterialRequests()
+      .then(setRequests)
       .catch(() => {});
   }, []);
 
@@ -49,34 +58,40 @@ export function ProcurementDashboardPage() {
     (po) => !["Completed", "Received"].includes(po.status),
   ).length;
   const totalSpend = allPOs.reduce((sum, po) => sum + (po.totalValue || 0), 0);
+  const lowStock = materials.filter(
+    (m) => (m.availableQty ?? m.totalQty ?? 0) > 0 && (m.availableQty ?? m.totalQty ?? 0) <= (m.reorderLevel ?? 0),
+  );
+  const outOfStock = materials.filter((m) => (m.availableQty ?? m.totalQty ?? 0) <= 0);
+  const pendingRequests = requests.filter((r) =>
+    ["pending", "submitted", "pending approval"].includes(String(r.status).toLowerCase()),
+  );
 
-  // TODO: No inventory/material requests endpoint — first 4 KPIs use placeholder data
   const kpis = [
     {
       label: "Total Materials",
-      value: "—",
-      sub: "No inventory data",
+      value: String(materials.length),
+      sub: "Inventory catalogue",
       icon: <Package className="w-5 h-5" />,
       color: "text-blue-600 bg-blue-100",
     },
     {
       label: "Low Stock Items",
-      value: "—",
-      sub: "No inventory data",
+      value: String(lowStock.length),
+      sub: "At or below reorder level",
       icon: <AlertTriangle className="w-5 h-5" />,
       color: "text-amber-600 bg-amber-100",
     },
     {
       label: "Out of Stock",
-      value: "—",
-      sub: "No inventory data",
+      value: String(outOfStock.length),
+      sub: "Unavailable materials",
       icon: <TrendingDown className="w-5 h-5" />,
       color: "text-red-600 bg-red-100",
     },
     {
       label: "Pending Requests",
-      value: "—",
-      sub: "No requests data",
+      value: String(pendingRequests.length),
+      sub: "Awaiting action",
       icon: <Clock className="w-5 h-5" />,
       color: "text-purple-600 bg-purple-100",
     },
@@ -106,6 +121,7 @@ export function ProcurementDashboardPage() {
       status: po.status?.toLowerCase() || "draft",
       eta: po.expectedDate || "TBD",
     }));
+  const recentRequests = requests.slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -166,11 +182,27 @@ export function ProcurementDashboardPage() {
             View all <ArrowUpRight className="w-3 h-3" />
           </button>
         </div>
-        <div className="flex flex-col items-center justify-center py-6 text-gray-400">
-          <PackageCheck className="w-8 h-8 mb-2 opacity-30" />
-          <p className="text-sm">No inventory data available.</p>
-          <p className="text-xs mt-1">Connect an inventory endpoint to display low stock alerts.</p>
-        </div>
+        {lowStock.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+            <PackageCheck className="w-8 h-8 mb-2 opacity-30" />
+            <p className="text-sm">No low stock alerts.</p>
+            <p className="text-xs mt-1">All tracked materials are above reorder level.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {lowStock.slice(0, 5).map((m) => (
+              <div key={m.id} className="flex items-center justify-between py-3">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{m.name}</p>
+                  <p className="text-xs text-gray-400">{m.category}</p>
+                </div>
+                <p className="text-sm text-amber-700 font-semibold">
+                  {(m.availableQty ?? m.totalQty ?? 0).toLocaleString()} {m.unit}
+                </p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-5 gap-6">
@@ -185,11 +217,31 @@ export function ProcurementDashboardPage() {
               View all <ChevronRight className="w-3 h-3" />
             </button>
           </div>
-          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
-            <ShoppingCart className="w-8 h-8 mb-2 opacity-30" />
-            <p className="text-sm">No material requests available.</p>
-            <p className="text-xs mt-1">A material requests endpoint is not yet configured.</p>
-          </div>
+          {recentRequests.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+              <ShoppingCart className="w-8 h-8 mb-2 opacity-30" />
+              <p className="text-sm">No material requests available.</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {recentRequests.map((req) => (
+                <div key={req.id} className="flex items-center gap-3 px-5 py-3 hover:bg-gray-50">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900">{req.reference}</p>
+                    <p className="text-xs text-gray-400 truncate">
+                      {req.materialName} · {req.projectName || req.storeName || "Unassigned"}
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {req.qty?.toLocaleString?.() ?? req.qty} {req.unit}
+                  </p>
+                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium capitalize ${reqStatusBadge[String(req.status).toLowerCase()] ?? "bg-gray-100 text-gray-600"}`}>
+                    {req.status}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Right column */}

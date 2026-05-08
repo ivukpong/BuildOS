@@ -5,9 +5,12 @@ import { PrismaService } from '../prisma/prisma.service';
 export class PurchaseOrdersService {
     constructor(private prisma: PrismaService) { }
 
-    findAll(status?: string) {
+    findAll(status?: string, supplierId?: string) {
         return this.prisma.purchaseOrder.findMany({
-            where: status ? { status: status as any } : {},
+            where: {
+                ...(status ? { status: status as any } : {}),
+                ...(supplierId ? { supplierId } : {}),
+            },
             include: { supplier: true, items: true },
             orderBy: { createdAt: 'desc' },
         });

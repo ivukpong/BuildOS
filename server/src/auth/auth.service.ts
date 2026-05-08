@@ -52,4 +52,16 @@ export class AuthService {
         }
         return { verified: true };
     }
+
+    async getMe(userId: string) {
+        const user = await this.prisma.user.findUniqueOrThrow({
+            where: { id: userId },
+            select: { id: true, name: true, email: true, role: true, department: true, phone: true },
+        });
+        const employee = await this.prisma.employee.findUnique({
+            where: { email: user.email },
+            include: { department: true },
+        });
+        return { user, employee };
+    }
 }

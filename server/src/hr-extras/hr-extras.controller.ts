@@ -45,6 +45,9 @@ export class HrExtrasController {
     updateRun(@Param('id') id: string, @Body() body: any) { return this.svc.updateRun(id, body); }
 
     // ── Payroll Entries ──
+    @Get('payroll-summary/departments')
+    getDepartmentPayrollSummary() { return this.svc.departmentPayrollSummary(); }
+
     @Get('payroll-runs/:runId/entries')
     getEntries(@Param('runId') runId: string) { return this.svc.findEntriesByRun(runId); }
     @Patch('payroll-entries/:id')

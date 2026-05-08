@@ -1,0 +1,3622 @@
+{
+  "info": {
+    "name": "BuildOS API",
+    "_postman_id": "buildos-api-collection",
+    "description": "Complete API collection for BuildOS – Construction Management Platform. Base URL: http://localhost:3001/api",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    },
+    { "key": "token", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@buildos.com\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john.doe@buildos.com\",\n  \"password\": \"password123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/auth/verify-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "verify-email"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"verification-token-here\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "Get All Projects",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects"],
+              "query": [
+                { "key": "status", "value": "Active", "disabled": true },
+                { "key": "type", "value": "Commercial", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Project by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/projects/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":id"],
+              "variable": [{ "key": "id", "value": "project-id-here" }]
+            }
+          }
+        },
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/projects",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lekki Phase 2 Development\",\n  \"client\": \"Ocean View Properties\",\n  \"location\": \"Lekki, Lagos\",\n  \"state\": \"Lagos\",\n  \"city\": \"Lekki\",\n  \"status\": \"Planning\",\n  \"type\": \"Residential\",\n  \"budget\": 15000000,\n  \"startDate\": \"2026-07-01T00:00:00.000Z\",\n  \"endDate\": \"2027-12-31T00:00:00.000Z\",\n  \"manager\": \"Emeka Okafor\",\n  \"teamSize\": 12\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/projects/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":id"],
+              "variable": [{ "key": "id", "value": "project-id-here" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Active\",\n  \"progress\": 25\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Project",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/projects/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["projects", ":id"],
+              "variable": [{ "key": "id", "value": "project-id-here" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Departments",
+      "item": [
+        {
+          "name": "Get All Departments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/departments",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments"]
+            }
+          }
+        },
+        {
+          "name": "Get Department by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/departments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Department",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/departments",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Civil Engineering\",\n  \"description\": \"Handles structural and civil works\",\n  \"location\": \"Block A, 2nd Floor\",\n  \"budget\": \"5000000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Department",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/departments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"budget\": \"6000000\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Department",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/departments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["departments", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Employees",
+      "item": [
+        {
+          "name": "Get All Employees",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees"],
+              "query": [
+                { "key": "status", "value": "active", "disabled": true },
+                { "key": "departmentId", "value": "", "disabled": true }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Employee by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/employees/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Employee",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/employees",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Amara\",\n  \"lastName\": \"Nwosu\",\n  \"role\": \"Site Engineer\",\n  \"email\": \"amara.nwosu@buildos.com\",\n  \"phone\": \"+2348012345678\",\n  \"dateHired\": \"2025-01-15T00:00:00.000Z\",\n  \"status\": \"active\",\n  \"employmentType\": \"FullTime\",\n  \"departmentId\": \"department-id-here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Employee",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/employees/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"on_leave\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Employee",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/employees/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["employees", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "HR Extras",
+      "item": [
+        {
+          "name": "Attendance",
+          "item": [
+            {
+              "name": "Get All Attendance",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/attendance",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["attendance"],
+                  "query": [
+                    { "key": "employeeId", "value": "", "disabled": true },
+                    { "key": "date", "value": "2026-05-01", "disabled": true }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Attendance by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/attendance/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["attendance", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Attendance",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/attendance",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["attendance"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeName\": \"Amara Nwosu\",\n  \"department\": \"Civil Engineering\",\n  \"date\": \"2026-06-01T00:00:00.000Z\",\n  \"clockIn\": \"08:00\",\n  \"clockOut\": \"17:00\",\n  \"hoursWorked\": 8,\n  \"status\": \"Present\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Attendance",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/attendance/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["attendance", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"clockOut\": \"18:00\",\n  \"hoursWorked\": 9\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Attendance",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/attendance/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["attendance", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payroll Periods",
+          "item": [
+            {
+              "name": "Get All Payroll Periods",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-periods",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-periods"]
+                }
+              }
+            },
+            {
+              "name": "Get Payroll Period by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-periods/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-periods", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Payroll Period",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-periods",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-periods"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"June 2026\",\n  \"startDate\": \"2026-06-01T00:00:00.000Z\",\n  \"endDate\": \"2026-06-30T00:00:00.000Z\",\n  \"status\": \"Open\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Payroll Period",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-periods/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-periods", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Closed\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Payroll Period",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-periods/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-periods", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payroll Runs",
+          "item": [
+            {
+              "name": "Get All Payroll Runs",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-runs",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-runs"],
+                  "query": [
+                    { "key": "periodId", "value": "", "disabled": true }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Payroll Run by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-runs/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-runs", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Payroll Run",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-runs",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-runs"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"periodId\": \"period-id-here\",\n  \"periodName\": \"June 2026\",\n  \"month\": 6,\n  \"year\": 2026,\n  \"status\": \"Draft\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Payroll Run",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-runs/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-runs", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Approved\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Get Payroll Run Entries",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-runs/:runId/entries",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-runs", ":runId", "entries"],
+                  "variable": [{ "key": "runId", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payroll Entries",
+          "item": [
+            {
+              "name": "Update Payroll Entry",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payroll-entries/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payroll-entries", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"allowances\": 50000,\n  \"deductions\": 10000\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Payslips",
+          "item": [
+            {
+              "name": "Get All Payslips",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/payslips",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payslips"],
+                  "query": [
+                    { "key": "employeeId", "value": "", "disabled": true }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Payslip by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/payslips/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payslips", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Payslip",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payslips",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payslips"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeName\": \"Amara Nwosu\",\n  \"department\": \"Civil Engineering\",\n  \"period\": \"June 2026\",\n  \"month\": 6,\n  \"year\": 2026,\n  \"grossPay\": 500000,\n  \"deductions\": 50000,\n  \"netPay\": 450000,\n  \"tax\": 30000,\n  \"pension\": 20000,\n  \"allowances\": 80000\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Payslip",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/payslips/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["payslips", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Issued\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Appraisals",
+          "item": [
+            {
+              "name": "Get All Appraisals",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/appraisals",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["appraisals"],
+                  "query": [
+                    { "key": "employeeId", "value": "", "disabled": true }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Appraisal by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/appraisals/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["appraisals", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Appraisal",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/appraisals",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["appraisals"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeName\": \"Amara Nwosu\",\n  \"department\": \"Civil Engineering\",\n  \"period\": \"H1 2026\",\n  \"score\": 82,\n  \"rating\": \"Good\",\n  \"reviewer\": \"Emeka Okafor\",\n  \"reviewDate\": \"2026-06-30T00:00:00.000Z\",\n  \"goals\": \"Complete bridge section A\",\n  \"achievements\": \"Delivered on time, under budget\",\n  \"comments\": \"Excellent performance\",\n  \"status\": \"Completed\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Appraisal",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/appraisals/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["appraisals", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"score\": 88,\n  \"comments\": \"Outstanding contribution to project completion\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Appraisal",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/appraisals/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["appraisals", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Issues",
+          "item": [
+            {
+              "name": "Get All Issues",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/issues",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["issues"],
+                  "query": [
+                    { "key": "status", "value": "Open", "disabled": true },
+                    { "key": "projectId", "value": "", "disabled": true }
+                  ]
+                }
+              }
+            },
+            {
+              "name": "Get Issue by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/issues/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["issues", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Issue",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/issues",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["issues"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Concrete curing delay\",\n  \"category\": \"Construction\",\n  \"priority\": \"High\",\n  \"description\": \"Concrete at section B not curing properly\",\n  \"reportedBy\": \"Site Supervisor\",\n  \"projectId\": \"project-id-here\",\n  \"projectName\": \"Lekki Phase 2\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Issue",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/issues/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["issues", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Resolved\",\n  \"resolution\": \"Used rapid-cure additive\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Issue",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/issues/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["issues", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Leave",
+      "item": [
+        {
+          "name": "Leave Types",
+          "item": [
+            {
+              "name": "Get All Leave Types",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/leave-types",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-types"]
+                }
+              }
+            },
+            {
+              "name": "Get Leave Type by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/leave-types/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-types", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Leave Type",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/leave-types",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-types"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Annual Leave\",\n  \"daysAllowed\": 20,\n  \"carryOver\": true,\n  \"maxCarryOver\": 5,\n  \"paid\": true,\n  \"approvalsRequired\": 2,\n  \"color\": \"#4CAF50\",\n  \"gender\": \"All\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Leave Type",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/leave-types/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-types", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": { "mode": "raw", "raw": "{\n  \"daysAllowed\": 22\n}" }
+              }
+            },
+            {
+              "name": "Delete Leave Type",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/leave-types/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-types", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Leave Requests",
+          "item": [
+            {
+              "name": "Get All Leave Requests",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/leave-requests",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-requests"]
+                }
+              }
+            },
+            {
+              "name": "Get Leave Request by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/leave-requests/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-requests", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Leave Request",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/leave-requests",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-requests"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": \"employee-id-here\",\n  \"leaveTypeId\": \"leave-type-id-here\",\n  \"days\": 5,\n  \"startDate\": \"2026-07-14T00:00:00.000Z\",\n  \"endDate\": \"2026-07-18T00:00:00.000Z\",\n  \"notes\": \"Family vacation\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Leave Request",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/leave-requests/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-requests", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"approved\",\n  \"approvedBy\": \"HR Manager\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Leave Request",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/leave-requests/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["leave-requests", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Claims",
+      "item": [
+        {
+          "name": "Claim Types",
+          "item": [
+            {
+              "name": "Get All Claim Types",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/claim-types",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claim-types"]
+                }
+              }
+            },
+            {
+              "name": "Get Claim Type by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/claim-types/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claim-types", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Claim Type",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/claim-types",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claim-types"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Medical\",\n  \"description\": \"Medical expense reimbursement\",\n  \"isProjectBased\": false\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Claim Type",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/claim-types/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claim-types", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"description\": \"Medical and dental reimbursement\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Claim Type",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/claim-types/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claim-types", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Claims",
+          "item": [
+            {
+              "name": "Get All Claims",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claims"]
+                }
+              }
+            },
+            {
+              "name": "Get Claim by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/claims/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claims", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Claim",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/claims",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claims"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"employeeId\": \"employee-id-here\",\n  \"claimTypeId\": \"claim-type-id-here\",\n  \"amount\": 45000,\n  \"description\": \"Hospital visit reimbursement\",\n  \"date\": \"2026-06-10T00:00:00.000Z\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Claim",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/claims/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claims", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Approved\",\n  \"reviewedBy\": \"HR Manager\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Claim",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/claims/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["claims", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Expenses",
+      "item": [
+        {
+          "name": "Get All Expenses",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses"]
+            }
+          }
+        },
+        {
+          "name": "Get Expense by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/expenses/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Expense",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/expenses",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"category\": \"Materials\",\n  \"amount\": 250000,\n  \"description\": \"Cement purchase for Block C\",\n  \"createdBy\": \"Procurement Officer\",\n  \"date\": \"2026-06-05T00:00:00.000Z\",\n  \"projectId\": \"project-id-here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Expense",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/expenses/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Approved\",\n  \"approvedBy\": \"Finance Manager\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Expense",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/expenses/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["expenses", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Income",
+      "item": [
+        {
+          "name": "Get All Income",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/income",
+              "host": ["{{baseUrl}}"],
+              "path": ["income"]
+            }
+          }
+        },
+        {
+          "name": "Get Income by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/income/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["income", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Income",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/income",
+              "host": ["{{baseUrl}}"],
+              "path": ["income"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"source\": \"Contract Payment\",\n  \"amount\": 5000000,\n  \"description\": \"Phase 1 completion milestone payment\",\n  \"date\": \"2026-06-15T00:00:00.000Z\",\n  \"projectId\": \"project-id-here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Income",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/income/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["income", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"Received\",\n  \"receivedBy\": \"Finance Manager\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Income",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/income/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["income", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Budgets",
+      "item": [
+        {
+          "name": "Get All Budgets",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/budgets",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets"]
+            }
+          }
+        },
+        {
+          "name": "Get Budget by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/budgets/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Budget",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/budgets",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Q3 2026 Construction Budget\",\n  \"scope\": \"Project\",\n  \"totalBudget\": 8000000,\n  \"period\": \"Q3 2026\",\n  \"projectId\": \"project-id-here\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Budget",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/budgets/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"AtRisk\",\n  \"spent\": 5500000\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Budget",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/budgets/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["budgets", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Get All Payments",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            }
+          }
+        },
+        {
+          "name": "Get Payment by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/payments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Payment",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/payments",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"Vendor\",\n  \"reference\": \"PAY-2026-0089\",\n  \"recipient\": \"Lagos Steel Ltd\",\n  \"amount\": 1200000,\n  \"method\": \"Bank Transfer\",\n  \"bank\": \"First Bank\",\n  \"date\": \"2026-06-20T00:00:00.000Z\",\n  \"note\": \"PO #PO-2026-044 settlement\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Payment",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/payments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"PaymentCompleted\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Payment",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/payments/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["payments", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Suppliers",
+      "item": [
+        {
+          "name": "Get All Suppliers",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/suppliers",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers"]
+            }
+          }
+        },
+        {
+          "name": "Get Supplier by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Supplier",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/suppliers",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Lagos Steel Ltd\",\n  \"contactPerson\": \"Mr. Adeyemi\",\n  \"phone\": \"+2348023456789\",\n  \"email\": \"sales@lagossteel.com\",\n  \"city\": \"Ikeja, Lagos\",\n  \"categories\": [\"Steel\", \"Structural\"],\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Supplier",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rating\": 4.5,\n  \"notes\": \"Reliable delivery, good quality\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Supplier",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/suppliers/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["suppliers", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Purchase Orders",
+      "item": [
+        {
+          "name": "Get All Purchase Orders",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders"]
+            }
+          }
+        },
+        {
+          "name": "Get Purchase Order by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Purchase Order",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"supplierId\": \"supplier-id-here\",\n  \"expectedDate\": \"2026-07-10T00:00:00.000Z\",\n  \"createdBy\": \"Procurement Officer\",\n  \"items\": [\n    {\n      \"material\": \"Reinforcement Rod 12mm\",\n      \"qty\": 100,\n      \"unit\": \"Length\",\n      \"unitCost\": 8500\n    }\n  ]\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Purchase Order",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"confirmed\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Purchase Order",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/purchase-orders/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["purchase-orders", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Materials & Inventory",
+      "item": [
+        {
+          "name": "Materials",
+          "item": [
+            {
+              "name": "Get All Materials",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/materials",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["materials"]
+                }
+              }
+            },
+            {
+              "name": "Get Material by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/materials/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["materials", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Material",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/materials",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["materials"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Portland Cement\",\n  \"category\": \"Binders\",\n  \"unit\": \"Bag\",\n  \"totalQty\": 500,\n  \"availableQty\": 500,\n  \"unitCost\": 7500,\n  \"reorderLevel\": 50,\n  \"materialType\": \"Consumable\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Material",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/materials/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["materials", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": { "mode": "raw", "raw": "{\n  \"unitCost\": 8000\n}" }
+              }
+            },
+            {
+              "name": "Delete Material",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/materials/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["materials", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stores",
+          "item": [
+            {
+              "name": "Get All Stores",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/stores",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stores"]
+                }
+              }
+            },
+            {
+              "name": "Get Store by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/stores/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stores", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Get Store Items",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/stores/:storeId/items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stores", ":storeId", "items"],
+                  "variable": [{ "key": "storeId", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Store",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/stores",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stores"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Main Site Store\",\n  \"type\": \"Site\",\n  \"projectId\": \"project-id-here\",\n  \"projectName\": \"Lekki Phase 2\",\n  \"manager\": \"Store Keeper\",\n  \"location\": \"Site Office, Block A\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Store",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/stores/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stores", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"manager\": \"New Store Manager\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Store",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/stores/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stores", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Store Items",
+          "item": [
+            {
+              "name": "Create Store Item",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/store-items",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["store-items"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"storeId\": \"store-id-here\",\n  \"materialName\": \"Portland Cement\",\n  \"category\": \"Binders\",\n  \"unit\": \"Bag\",\n  \"qty\": 200,\n  \"reorderLevel\": 30,\n  \"unitCost\": 7500\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Store Item",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/store-items/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["store-items", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"qty\": 180,\n  \"bin\": \"A3\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Store Item",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/store-items/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["store-items", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stock Movements",
+          "item": [
+            {
+              "name": "Get All Stock Movements",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/stock-movements",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stock-movements"]
+                }
+              }
+            },
+            {
+              "name": "Create Stock Movement",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/stock-movements",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stock-movements"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"Issue\",\n  \"materialName\": \"Portland Cement\",\n  \"unit\": \"Bag\",\n  \"qty\": 50,\n  \"storeName\": \"Main Site Store\",\n  \"storeId\": \"store-id-here\",\n  \"projectName\": \"Lekki Phase 2\",\n  \"reference\": \"MR-2026-001\",\n  \"createdBy\": \"Store Keeper\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Stock Transfers",
+          "item": [
+            {
+              "name": "Get All Stock Transfers",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/stock-transfers",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stock-transfers"]
+                }
+              }
+            },
+            {
+              "name": "Get Stock Transfer by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/stock-transfers/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stock-transfers", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Stock Transfer",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/stock-transfers",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stock-transfers"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"fromStoreName\": \"Main Warehouse\",\n  \"toStoreName\": \"Main Site Store\",\n  \"items\": [{\"materialName\": \"Reinforcement Rod\", \"qty\": 20, \"unit\": \"Length\"}],\n  \"requestedBy\": \"Site Manager\",\n  \"notes\": \"Urgent transfer for foundation work\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Stock Transfer",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/stock-transfers/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["stock-transfers", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Completed\",\n  \"approvedBy\": \"Warehouse Manager\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Material Requests",
+          "item": [
+            {
+              "name": "Get All Material Requests",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/material-requests",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["material-requests"]
+                }
+              }
+            },
+            {
+              "name": "Get Material Request by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/material-requests/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["material-requests", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Material Request",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/material-requests",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["material-requests"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"materialName\": \"Portland Cement\",\n  \"unit\": \"Bag\",\n  \"qty\": 100,\n  \"storeName\": \"Main Site Store\",\n  \"projectName\": \"Lekki Phase 2\",\n  \"purpose\": \"Foundation casting\",\n  \"priority\": \"High\",\n  \"requestedBy\": \"Site Engineer\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Material Request",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/material-requests/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["material-requests", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Approved\",\n  \"approvedBy\": \"Store Manager\"\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Material Returns",
+          "item": [
+            {
+              "name": "Get All Material Returns",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/material-returns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["material-returns"]
+                }
+              }
+            },
+            {
+              "name": "Get Material Return by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/material-returns/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["material-returns", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Material Return",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/material-returns",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["material-returns"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"materialName\": \"Portland Cement\",\n  \"unit\": \"Bag\",\n  \"qty\": 15,\n  \"fromStoreName\": \"Main Site Store\",\n  \"toStoreName\": \"Main Warehouse\",\n  \"condition\": \"Good\",\n  \"reason\": \"Project phase completed, excess materials\",\n  \"requestedBy\": \"Site Manager\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Material Return",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/material-returns/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["material-returns", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Approved\",\n  \"approvedBy\": \"Warehouse Manager\"\n}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Procurement",
+      "item": [
+        {
+          "name": "Purchase Requests",
+          "item": [
+            {
+              "name": "Get All Purchase Requests",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-requests",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-requests"]
+                }
+              }
+            },
+            {
+              "name": "Get Purchase Request by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-requests/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-requests", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Purchase Request",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-requests",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-requests"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Structural Steel for Block D\",\n  \"projectName\": \"Lekki Phase 2\",\n  \"priority\": \"High\",\n  \"requestedBy\": \"Site Engineer\",\n  \"daysToDeliver\": 7,\n  \"items\": [\n    {\"description\": \"Steel Column 200x200\", \"qty\": 20, \"unit\": \"Pcs\", \"estimatedCost\": 45000}\n  ],\n  \"notes\": \"Required before next milestone\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Purchase Request",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-requests/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-requests", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Approved\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Purchase Request",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-requests/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-requests", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Purchase Invoices",
+          "item": [
+            {
+              "name": "Get All Purchase Invoices",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-invoices",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-invoices"]
+                }
+              }
+            },
+            {
+              "name": "Get Purchase Invoice by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-invoices/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-invoices", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Purchase Invoice",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-invoices",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-invoices"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"supplierName\": \"Lagos Steel Ltd\",\n  \"invoiceDate\": \"2026-06-18T00:00:00.000Z\",\n  \"dueDate\": \"2026-07-18T00:00:00.000Z\",\n  \"lines\": [\n    {\"description\": \"Reinforcement Rod 12mm\", \"qty\": 100, \"unitPrice\": 8500, \"vatPct\": 7.5}\n  ],\n  \"subtotal\": 850000,\n  \"vatTotal\": 63750,\n  \"total\": 913750,\n  \"status\": \"Pending\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Purchase Invoice",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-invoices/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-invoices", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Approved\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Purchase Invoice",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/purchase-invoices/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["purchase-invoices", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sent RFQs",
+          "item": [
+            {
+              "name": "Get All Sent RFQs",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/sent-rfqs",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sent-rfqs"]
+                }
+              }
+            },
+            {
+              "name": "Get Sent RFQ by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/sent-rfqs/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sent-rfqs", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Sent RFQ",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sent-rfqs",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sent-rfqs"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"supplierName\": \"Lagos Steel Ltd\",\n  \"supplierId\": \"supplier-id-here\",\n  \"items\": [{\"description\": \"Reinforcement Rod 12mm\", \"qty\": 100, \"unit\": \"Length\"}],\n  \"expiryDate\": \"2026-07-01T00:00:00.000Z\",\n  \"notes\": \"Please quote best price\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Sent RFQ",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/sent-rfqs/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sent-rfqs", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Expired\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Sent RFQ",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/sent-rfqs/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["sent-rfqs", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Received Quotes",
+          "item": [
+            {
+              "name": "Get All Received Quotes",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/received-quotes",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["received-quotes"]
+                }
+              }
+            },
+            {
+              "name": "Get Received Quote by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/received-quotes/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["received-quotes", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Received Quote",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/received-quotes",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["received-quotes"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"rfqRef\": \"RFQ-2026-001\",\n  \"supplierName\": \"Lagos Steel Ltd\",\n  \"supplierId\": \"supplier-id-here\",\n  \"items\": [{\"description\": \"Reinforcement Rod 12mm\", \"qty\": 100, \"unit\": \"Length\", \"unitPrice\": 8200}],\n  \"totalValue\": 820000,\n  \"validUntil\": \"2026-07-15T00:00:00.000Z\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Received Quote",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/received-quotes/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["received-quotes", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Accepted\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Received Quote",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/received-quotes/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["received-quotes", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Finance",
+      "item": [
+        {
+          "name": "Transactions",
+          "item": [
+            {
+              "name": "Get All Transactions",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["transactions"]
+                }
+              }
+            },
+            {
+              "name": "Get Transaction by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/transactions/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["transactions", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Transaction",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/transactions",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["transactions"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"date\": \"2026-06-20T00:00:00.000Z\",\n  \"description\": \"Payment to Lagos Steel Ltd\",\n  \"amount\": 913750,\n  \"type\": \"Debit\",\n  \"accountName\": \"Trade Payables\",\n  \"accountCode\": \"2100\",\n  \"reference\": \"PAY-2026-0089\",\n  \"category\": \"Procurement\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Transaction",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/transactions/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["transactions", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Reconciled\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Transaction",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/transactions/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["transactions", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Journal Entries",
+          "item": [
+            {
+              "name": "Get All Journal Entries",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/journal-entries",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["journal-entries"]
+                }
+              }
+            },
+            {
+              "name": "Get Journal Entry by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/journal-entries/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["journal-entries", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Journal Entry",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/journal-entries",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["journal-entries"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"date\": \"2026-06-30T00:00:00.000Z\",\n  \"description\": \"June depreciation\",\n  \"createdBy\": \"Accountant\",\n  \"lines\": [\n    {\"accountCode\": \"6100\", \"accountName\": \"Depreciation Expense\", \"debit\": 50000, \"credit\": 0},\n    {\"accountCode\": \"1500\", \"accountName\": \"Accumulated Depreciation\", \"debit\": 0, \"credit\": 50000}\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Journal Entry",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/journal-entries/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["journal-entries", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Posted\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Journal Entry",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/journal-entries/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["journal-entries", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Chart of Accounts",
+          "item": [
+            {
+              "name": "Get All Accounts",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/chart-accounts",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chart-accounts"]
+                }
+              }
+            },
+            {
+              "name": "Get Account by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/chart-accounts/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chart-accounts", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Account",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/chart-accounts",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chart-accounts"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"1010\",\n  \"name\": \"Cash & Bank\",\n  \"type\": \"Asset\",\n  \"category\": \"Current Assets\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Account",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/chart-accounts/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chart-accounts", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": { "mode": "raw", "raw": "{\n  \"isActive\": false\n}" }
+              }
+            },
+            {
+              "name": "Delete Account",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/chart-accounts/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["chart-accounts", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bank Accounts",
+          "item": [
+            {
+              "name": "Get All Bank Accounts",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/bank-accounts",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["bank-accounts"]
+                }
+              }
+            },
+            {
+              "name": "Get Bank Account by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/bank-accounts/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["bank-accounts", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Bank Account",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/bank-accounts",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["bank-accounts"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"bankName\": \"First Bank\",\n  \"accountNo\": \"2012345678\",\n  \"accountName\": \"BuildOS Construction Ltd\",\n  \"balance\": 10000000,\n  \"currency\": \"NGN\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Bank Account",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/bank-accounts/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["bank-accounts", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": { "mode": "raw", "raw": "{\n  \"balance\": 9086250\n}" }
+              }
+            },
+            {
+              "name": "Delete Bank Account",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/bank-accounts/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["bank-accounts", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tax Configs",
+          "item": [
+            {
+              "name": "Get All Tax Configs",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/tax-configs",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tax-configs"]
+                }
+              }
+            },
+            {
+              "name": "Get Tax Config by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/tax-configs/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tax-configs", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Tax Config",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/tax-configs",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tax-configs"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"VAT\",\n  \"type\": \"Percentage\",\n  \"rate\": 7.5\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Tax Config",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/tax-configs/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tax-configs", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"rate\": 10,\n  \"isActive\": true\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Tax Config",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/tax-configs/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["tax-configs", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Construction",
+      "item": [
+        {
+          "name": "Project Documents",
+          "item": [
+            {
+              "name": "Get All Project Documents",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/project-documents",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["project-documents"]
+                }
+              }
+            },
+            {
+              "name": "Get Project Document by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/project-documents/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["project-documents", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Project Document",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/project-documents",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["project-documents"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Site Plan v2.pdf\",\n  \"type\": \"Drawing\",\n  \"size\": \"2.4 MB\",\n  \"url\": \"https://storage.buildos.com/docs/site-plan-v2.pdf\",\n  \"uploadedBy\": \"Architect\",\n  \"folderName\": \"Drawings\",\n  \"projectId\": \"project-id-here\",\n  \"tags\": [\"site-plan\", \"approved\"]\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Project Document",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/project-documents/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["project-documents", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"tags\": [\"site-plan\", \"approved\", \"revised\"]\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Project Document",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/project-documents/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["project-documents", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Construction Approvals",
+          "item": [
+            {
+              "name": "Get All Construction Approvals",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/construction-approvals",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["construction-approvals"]
+                }
+              }
+            },
+            {
+              "name": "Get Construction Approval by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/construction-approvals/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["construction-approvals", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Construction Approval",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/construction-approvals",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["construction-approvals"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"type\": \"Building Permit\",\n  \"reference\": \"BP-2026-001\",\n  \"description\": \"Building permit for Block D foundation\",\n  \"projectId\": \"project-id-here\",\n  \"projectName\": \"Lekki Phase 2\",\n  \"requestedBy\": \"Project Manager\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Construction Approval",
+              "request": {
+                "method": "PATCH",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/construction-approvals/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["construction-approvals", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"Approved\",\n  \"reviewedBy\": \"DPR Officer\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Construction Approval",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/construction-approvals/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["construction-approvals", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Timelines",
+          "item": [
+            {
+              "name": "Get All Timelines",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/timelines",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["timelines"]
+                }
+              }
+            },
+            {
+              "name": "Get Timeline by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/timelines/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["timelines", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create Timeline",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/timelines",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["timelines"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Lekki Phase 2 Master Schedule\",\n  \"projectId\": \"project-id-here\",\n  \"projectName\": \"Lekki Phase 2\",\n  \"startDate\": \"2026-07-01T00:00:00.000Z\",\n  \"endDate\": \"2027-12-31T00:00:00.000Z\",\n  \"phases\": [\n    {\"name\": \"Foundation\", \"startDate\": \"2026-07-01\", \"endDate\": \"2026-09-30\", \"status\": \"Not Started\"}\n  ]\n}"
+                }
+              }
+            },
+            {
+              "name": "Update Timeline",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/timelines/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["timelines", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"status\": \"In Progress\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete Timeline",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/timelines/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["timelines", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "item": [
+        {
+          "name": "Get All Tasks",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"]
+            }
+          }
+        },
+        {
+          "name": "Get Task by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/tasks/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Survey foundation area\",\n  \"description\": \"Conduct topographic survey before excavation\",\n  \"status\": \"todo\",\n  \"priority\": \"high\",\n  \"assignedTo\": \"Survey Team\",\n  \"projectId\": \"project-id-here\",\n  \"projectName\": \"Lekki Phase 2\",\n  \"dueDate\": \"2026-07-10T00:00:00.000Z\",\n  \"tags\": [\"survey\", \"foundation\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"in-progress\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/tasks/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Job Roles",
+      "item": [
+        {
+          "name": "Get All Job Roles",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/job-roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-roles"]
+            }
+          }
+        },
+        {
+          "name": "Get Job Role by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/job-roles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-roles", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Job Role",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/job-roles",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-roles"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Site Engineer\",\n  \"department\": \"Civil Engineering\",\n  \"gradeLevel\": \"Grade 8\",\n  \"minSalary\": \"600000\",\n  \"maxSalary\": \"900000\",\n  \"headcount\": 3,\n  \"responsibilities\": [\"Supervise construction activities\", \"Ensure quality standards\"],\n  \"skills\": [\"AutoCAD\", \"Project Management\", \"Structural Analysis\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Job Role",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/job-roles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-roles", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"headcount\": 4\n}" }
+          }
+        },
+        {
+          "name": "Delete Job Role",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/job-roles/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["job-roles", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Workforce Allocation",
+      "item": [
+        {
+          "name": "Get All Allocations",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/workforce-allocation",
+              "host": ["{{baseUrl}}"],
+              "path": ["workforce-allocation"]
+            }
+          }
+        },
+        {
+          "name": "Get Allocation by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/workforce-allocation/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["workforce-allocation", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Allocation",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/workforce-allocation",
+              "host": ["{{baseUrl}}"],
+              "path": ["workforce-allocation"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"employeeId\": \"employee-id-here\",\n  \"employeeName\": \"Amara Nwosu\",\n  \"projectId\": \"project-id-here\",\n  \"projectName\": \"Lekki Phase 2\",\n  \"role\": \"Lead Site Engineer\",\n  \"allocPct\": 80,\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2027-06-30\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Allocation",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/workforce-allocation/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["workforce-allocation", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"allocPct\": 100,\n  \"status\": \"active\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Allocation",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/workforce-allocation/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["workforce-allocation", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Resource Planning",
+      "item": [
+        {
+          "name": "Get All Resource Plans",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/resource-planning",
+              "host": ["{{baseUrl}}"],
+              "path": ["resource-planning"]
+            }
+          }
+        },
+        {
+          "name": "Get Resource Plan by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/resource-planning/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["resource-planning", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Resource Plan",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/resource-planning",
+              "host": ["{{baseUrl}}"],
+              "path": ["resource-planning"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Crane Hire - Foundation Phase\",\n  \"projectId\": \"project-id-here\",\n  \"projectName\": \"Lekki Phase 2\",\n  \"resourceType\": \"Equipment\",\n  \"quantity\": 2,\n  \"unit\": \"Unit\",\n  \"startDate\": \"2026-07-01\",\n  \"endDate\": \"2026-09-30\",\n  \"status\": \"planned\",\n  \"cost\": 500000\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Resource Plan",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/resource-planning/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["resource-planning", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"active\"\n}" }
+          }
+        },
+        {
+          "name": "Delete Resource Plan",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/resource-planning/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["resource-planning", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "Get All Reports",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports"]
+            }
+          }
+        },
+        {
+          "name": "Get Report by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Report",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/reports",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Monthly Project Cost Summary\",\n  \"type\": \"Financial\",\n  \"module\": \"Finance\",\n  \"description\": \"Summarises all project costs by month\",\n  \"isScheduled\": false,\n  \"createdBy\": \"Finance Manager\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Report",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/reports/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"isScheduled\": true,\n  \"schedule\": \"0 0 1 * *\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Report",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/reports/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Run Report",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/reports/:id/run",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", ":id", "run"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": { "mode": "raw", "raw": "{}" }
+          }
+        },
+        {
+          "name": "Get Report Runs",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/reports/:id/runs",
+              "host": ["{{baseUrl}}"],
+              "path": ["reports", ":id", "runs"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Compliance Documents",
+      "item": [
+        {
+          "name": "Get All Compliance Documents",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/compliance-documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["compliance-documents"]
+            }
+          }
+        },
+        {
+          "name": "Get Compliance Document by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/compliance-documents/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["compliance-documents", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Compliance Document",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/compliance-documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["compliance-documents"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"HSE Policy 2026\",\n  \"description\": \"Health, Safety and Environment policy document\",\n  \"level\": \"Mandatory\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update Compliance Document",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/compliance-documents/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["compliance-documents", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"level\": \"Recommended\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Compliance Document",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/compliance-documents/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["compliance-documents", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Users",
+          "item": [
+            {
+              "name": "Get All Users",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users"]
+                }
+              }
+            },
+            {
+              "name": "Get User by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/users/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create User",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Finance Manager\",\n  \"email\": \"finance@buildos.com\",\n  \"password\": \"securePassword1!\",\n  \"role\": \"manager\",\n  \"department\": \"Finance\",\n  \"phone\": \"+2348034567890\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Update User",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/users/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"role\": \"admin\",\n  \"status\": \"Active\"\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete User",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/users/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["users", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "App Roles",
+          "item": [
+            {
+              "name": "Get All App Roles",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/app-roles",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["app-roles"]
+                }
+              }
+            },
+            {
+              "name": "Get App Role by ID",
+              "request": {
+                "method": "GET",
+                "url": {
+                  "raw": "{{baseUrl}}/app-roles/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["app-roles", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            },
+            {
+              "name": "Create App Role",
+              "request": {
+                "method": "POST",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/app-roles",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["app-roles"]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Procurement Officer\",\n  \"description\": \"Can manage purchase orders and suppliers\",\n  \"permissions\": {\n    \"procurement\": [\"read\", \"create\", \"update\"],\n    \"suppliers\": [\"read\", \"create\"]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "Update App Role",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  { "key": "Content-Type", "value": "application/json" }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/app-roles/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["app-roles", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"permissions\": {\n    \"procurement\": [\"read\", \"create\", \"update\", \"delete\"],\n    \"suppliers\": [\"read\", \"create\", \"update\"]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "Delete App Role",
+              "request": {
+                "method": "DELETE",
+                "url": {
+                  "raw": "{{baseUrl}}/app-roles/:id",
+                  "host": ["{{baseUrl}}"],
+                  "path": ["app-roles", ":id"],
+                  "variable": [{ "key": "id", "value": "" }]
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Activity History",
+      "item": [
+        {
+          "name": "Get All Activity History",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/activity-history",
+              "host": ["{{baseUrl}}"],
+              "path": ["activity-history"]
+            }
+          }
+        },
+        {
+          "name": "Get Activity Record by ID",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/activity-history/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["activity-history", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        },
+        {
+          "name": "Create Activity Record",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": {
+              "raw": "{{baseUrl}}/activity-history",
+              "host": ["{{baseUrl}}"],
+              "path": ["activity-history"]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userName\": \"Admin User\",\n  \"action\": \"Created\",\n  \"module\": \"Projects\",\n  \"description\": \"Created project Lekki Phase 2\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Delete Activity Record",
+          "request": {
+            "method": "DELETE",
+            "url": {
+              "raw": "{{baseUrl}}/activity-history/:id",
+              "host": ["{{baseUrl}}"],
+              "path": ["activity-history", ":id"],
+              "variable": [{ "key": "id", "value": "" }]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

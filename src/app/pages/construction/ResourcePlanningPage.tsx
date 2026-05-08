@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Users,
   AlertTriangle,
@@ -12,6 +12,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
+import { getResourcePlans } from "../../api/resource-planning";
 
 interface Worker {
   id: string;
@@ -20,114 +21,6 @@ interface Worker {
   projects: { projectId: string; projectName: string; hoursPerWeek: number }[];
   totalCapacity: number;
 }
-
-// TODO: No resource planning endpoint — using placeholder data
-const workers: Worker[] = [
-  {
-    id: "w1",
-    name: "James Okafor",
-    role: "Site Engineer",
-    totalCapacity: 40,
-    projects: [
-      {
-        projectId: "1",
-        projectName: "Downtown Office Complex",
-        hoursPerWeek: 30,
-      },
-      {
-        projectId: "2",
-        projectName: "Riverside Residential",
-        hoursPerWeek: 10,
-      },
-    ],
-  },
-  {
-    id: "w2",
-    name: "Carlos Rivera",
-    role: "Foreman",
-    totalCapacity: 40,
-    projects: [
-      {
-        projectId: "1",
-        projectName: "Downtown Office Complex",
-        hoursPerWeek: 40,
-      },
-    ],
-  },
-  {
-    id: "w3",
-    name: "Aisha Bello",
-    role: "QS",
-    totalCapacity: 40,
-    projects: [
-      {
-        projectId: "2",
-        projectName: "Riverside Residential",
-        hoursPerWeek: 20,
-      },
-      { projectId: "3", projectName: "Industrial Warehouse", hoursPerWeek: 15 },
-    ],
-  },
-  {
-    id: "w4",
-    name: "Tom Hughes",
-    role: "Laborer",
-    totalCapacity: 40,
-    projects: [
-      {
-        projectId: "4",
-        projectName: "Shopping Mall Renovation",
-        hoursPerWeek: 40,
-      },
-    ],
-  },
-  {
-    id: "w5",
-    name: "Diana Park",
-    role: "Safety Officer",
-    totalCapacity: 40,
-    projects: [
-      {
-        projectId: "1",
-        projectName: "Downtown Office Complex",
-        hoursPerWeek: 20,
-      },
-      { projectId: "5", projectName: "Highway Interchange", hoursPerWeek: 20 },
-    ],
-  },
-  {
-    id: "w6",
-    name: "Robert Lee",
-    role: "Project Manager",
-    totalCapacity: 40,
-    projects: [
-      { projectId: "5", projectName: "Highway Interchange", hoursPerWeek: 50 },
-    ],
-  },
-  {
-    id: "w7",
-    name: "Linda Chukwu",
-    role: "Laborer",
-    totalCapacity: 40,
-    projects: [
-      { projectId: "3", projectName: "Industrial Warehouse", hoursPerWeek: 30 },
-    ],
-  },
-  {
-    id: "w8",
-    name: "Kevin Tran",
-    role: "Steel Fixer",
-    totalCapacity: 40,
-    projects: [
-      {
-        projectId: "1",
-        projectName: "Downtown Office Complex",
-        hoursPerWeek: 40,
-      },
-      { projectId: "5", projectName: "Highway Interchange", hoursPerWeek: 10 },
-    ],
-  },
-];
 
 const roleColors: Record<string, string> = {
   "Site Engineer": "bg-blue-50 text-blue-700",
@@ -152,23 +45,8 @@ function getAllocPct(w: Worker) {
   return Math.round((total / w.totalCapacity) * 100);
 }
 
-const allProjectNames = [
-  "Downtown Office Complex",
-  "Riverside Residential",
-  "Industrial Warehouse",
-  "Shopping Mall Renovation",
-  "Highway Interchange",
-];
-const projectIdMap: Record<string, string> = {
-  "Downtown Office Complex": "1",
-  "Riverside Residential": "2",
-  "Industrial Warehouse": "3",
-  "Shopping Mall Renovation": "4",
-  "Highway Interchange": "5",
-};
-
 export function ResourcePlanningPage() {
-  const [workerList, setWorkerList] = useState<Worker[]>(workers);
+  const [workerList, setWorkerList] = useState<Worker[]>([]);
   const [roleFilter, setRoleFilter] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
   const [allocForm, setAllocForm] = useState({
@@ -183,7 +61,40 @@ export function ResourcePlanningPage() {
     "workforce" | "materials" | "equipment"
   >("workforce");
 
+  useEffect(() => {
+    getResourcePlans()
+      .then((plans) => {
+        const grouped = new Map<string, Worker>();
+        plans.forEach((plan) => {
+          const key = plan.name;
+          const current = grouped.get(key) ?? {
+            id: key,
+            name: plan.name,
+            role: plan.resourceType,
+            totalCapacity: 40,
+            projects: [],
+          };
+          current.projects.push({
+            projectId: plan.projectId ?? "",
+            projectName: plan.projectName ?? "Unassigned",
+            hoursPerWeek: plan.quantity ?? 0,
+          });
+          grouped.set(key, current);
+        });
+        setWorkerList(Array.from(grouped.values()));
+      })
+      .catch(() => setWorkerList([]));
+  }, []);
+
   const roles = ["All", ...Array.from(new Set(workerList.map((w) => w.role)))];
+  const allProjectNames = Array.from(
+    new Set(workerList.flatMap((w) => w.projects.map((p) => p.projectName))),
+  );
+  const projectIdMap = Object.fromEntries(
+    workerList.flatMap((w) =>
+      w.projects.map((p) => [p.projectName, p.projectId]),
+    ),
+  );
 
   function handleSortRP(k: "name" | "role" | "alloc") {
     if (sortKey === k) setSortDir((d) => (d === "asc" ? "desc" : "asc"));

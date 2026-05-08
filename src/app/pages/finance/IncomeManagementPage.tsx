@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { fetchIncome } from "../../api/income";
 import { fetchProjects } from "../../api/projects";
+import { getChartAccounts } from "../../api/finance-extras";
 import {
   Plus,
   Search,
@@ -35,15 +36,6 @@ const statusConfig: Record<IncomeStatus, { badge: string }> = {
   Received: { badge: "bg-emerald-100 text-emerald-700" },
 };
 
-const SOURCES = [
-  "Client Payment",
-  "Contract Milestone",
-  "Subcontractor Recovery",
-  "Insurance Claim",
-  "Government Grant",
-  "Other",
-];
-
 const STATUS_OPTS: Array<IncomeStatus | "All"> = [
   "All",
   "Draft",
@@ -63,11 +55,22 @@ const emptyForm = {
 export function IncomeManagementPage() {
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [projectNames, setProjectNames] = useState<string[]>([]);
+  const [sourceOptions, setSourceOptions] = useState<string[]>([]);
   useEffect(() => {
-    fetchIncome().then(setIncomes);
-    fetchProjects()
-      .then((ps) => setProjectNames(ps.map((p) => p.name)))
-      .catch(() => {});
+    Promise.all([fetchIncome(), fetchProjects(), getChartAccounts("Income")])
+      .then(([incomeData, projects, accounts]) => {
+        setIncomes(incomeData);
+        setProjectNames(projects.map((p) => p.name));
+        setSourceOptions(
+          Array.from(
+            new Set([
+              ...incomeData.map((i) => i.source).filter(Boolean),
+              ...accounts.map((a) => a.name).filter(Boolean),
+            ]),
+          ),
+        );
+      })
+      .catch(console.error);
   }, []);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<IncomeStatus | "All">("All");
@@ -365,7 +368,7 @@ export function IncomeManagementPage() {
                   className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="">Select source</option>
-                  {SOURCES.map((s) => (
+                  {sourceOptions.map((s) => (
                     <option key={s} value={s}>
                       {s}
                     </option>

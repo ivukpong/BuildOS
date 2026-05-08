@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -8,12 +8,9 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
+import { getApprovals } from "../../api/approvals";
 
-type AdminApprovalType =
-  | "User Creation"
-  | "Role Assignment"
-  | "Config Change"
-  | "Integration Request";
+type AdminApprovalType = string;
 type ApprovalStatus = "pending" | "approved" | "rejected";
 
 interface AdminApproval {
@@ -27,94 +24,6 @@ interface AdminApproval {
   urgency: "normal" | "urgent";
   description: string;
 }
-
-// TODO: No admin approvals endpoint — using placeholder data
-const approvals: AdminApproval[] = [
-  {
-    id: "adm1",
-    type: "User Creation",
-    title: "New Account — Emeka Nwosu (Finance Analyst)",
-    project: "Finance Dept",
-    requestedBy: "Finance HOD",
-    date: "2026-04-09",
-    status: "pending",
-    urgency: "normal",
-    description:
-      "New hire joining April 14. Requires Finance module access (full) and Procurement (read-only). Background check passed.",
-  },
-  {
-    id: "adm2",
-    type: "Role Assignment",
-    title: "Aisha Bello — Promote to Project Manager",
-    project: "Construction Dept",
-    requestedBy: "Construction HOD",
-    date: "2026-04-09",
-    status: "pending",
-    urgency: "normal",
-    description:
-      "Grant Project Manager role with approval authority up to $500K. Remove existing Site Supervisor permissions. Performance review attached.",
-  },
-  {
-    id: "adm3",
-    type: "Config Change",
-    title: "Add GL Category: Subcontractor Fees",
-    project: "Finance Module",
-    requestedBy: "CFO",
-    date: "2026-04-08",
-    status: "pending",
-    urgency: "normal",
-    description:
-      "Finance requests a dedicated GL expense category for subcontractor payments to improve cost reporting accuracy.",
-  },
-  {
-    id: "adm4",
-    type: "Integration Request",
-    title: "Connect Paystack Payment Gateway",
-    project: "Finance / IT",
-    requestedBy: "IT Department",
-    date: "2026-04-08",
-    status: "pending",
-    urgency: "urgent",
-    description:
-      "Integrate Paystack for automated vendor disbursements. External security assessment completed April 5 with no critical findings.",
-  },
-  {
-    id: "adm5",
-    type: "User Creation",
-    title: "Batch Accounts — 3 Site Engineers",
-    project: "Construction Dept",
-    requestedBy: "HR Department",
-    date: "2026-04-07",
-    status: "approved",
-    urgency: "normal",
-    description:
-      "Accounts for James Oguike, Kenneth Balogun, and Sola Adeniyi. All background verifications complete. Site Engineer role assigned.",
-  },
-  {
-    id: "adm6",
-    type: "Config Change",
-    title: "Update Financial Year End to December 31",
-    project: "System Config",
-    requestedBy: "CFO",
-    date: "2026-04-06",
-    status: "approved",
-    urgency: "normal",
-    description:
-      "Align system FY with revised company policy per board resolution of March 28, 2026.",
-  },
-  {
-    id: "adm7",
-    type: "Role Assignment",
-    title: "Temporary Admin Read-Access for External Audit",
-    project: "IT / Admin",
-    requestedBy: "External Auditor",
-    date: "2026-04-05",
-    status: "rejected",
-    urgency: "urgent",
-    description:
-      "Rejected — external parties cannot be granted admin-level roles. A scoped read-only audit account was issued instead per security policy.",
-  },
-];
 
 const statusConfig: Record<
   ApprovalStatus,
@@ -137,7 +46,7 @@ const statusConfig: Record<
   },
 };
 
-const typeColors: Record<AdminApprovalType, string> = {
+const typeColors: Record<string, string> = {
   "User Creation": "bg-blue-50 text-blue-700",
   "Role Assignment": "bg-purple-50 text-purple-700",
   "Config Change": "bg-orange-50 text-orange-700",
@@ -145,6 +54,7 @@ const typeColors: Record<AdminApprovalType, string> = {
 };
 
 export function AdminApprovalsPage() {
+  const [approvals, setApprovals] = useState<AdminApproval[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "all">(
     "all",
@@ -159,6 +69,12 @@ export function AdminApprovalsPage() {
   const [requestInfoFor, setRequestInfoFor] = useState<string | null>(null);
   const [infoNote, setInfoNote] = useState("");
   const [sentInfoFor, setSentInfoFor] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    getApprovals("admin")
+      .then((items) => setApprovals(items as AdminApproval[]))
+      .catch(() => setApprovals([]));
+  }, []);
 
   function getStatus(a: AdminApproval): ApprovalStatus {
     return approvalStates[a.id] ?? a.status;

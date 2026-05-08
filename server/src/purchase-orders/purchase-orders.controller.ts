@@ -6,8 +6,8 @@ export class PurchaseOrdersController {
     constructor(private readonly purchaseOrdersService: PurchaseOrdersService) { }
 
     @Get()
-    findAll(@Query('status') status?: string) {
-        return this.purchaseOrdersService.findAll(status);
+    findAll(@Query('status') status?: string, @Query('supplierId') supplierId?: string) {
+        return this.purchaseOrdersService.findAll(status, supplierId);
     }
 
     @Get(':id')

@@ -20,6 +20,7 @@ import {
   createSentRFQ,
   SentRFQ as ApiSentRFQ,
 } from "../../api/procurement-requests";
+import { getReferenceData } from "../../api/reference-data";
 
 type SRStatus = "sent" | "viewed" | "quote_received" | "declined" | "expired";
 
@@ -117,22 +118,6 @@ const TABS: { key: SRStatus | "all"; label: string }[] = [
   { key: "expired", label: "Expired" },
 ];
 
-const VENDORS = [
-  "Alpha Aggregates",
-  "SteelMart Int'l",
-  "ElectraHub",
-  "PlumbTech Ltd",
-  "DangCem Enterprises",
-  "BuildPlus Supplies",
-  "CemCo Nigeria Ltd",
-];
-const PROJECTS = [
-  "Industrial Warehouse",
-  "Downtown Office Complex",
-  "Riverside Residential",
-  "Highway Interchange",
-  "University Science Block",
-];
 const UNITS = [
   "Tonnes",
   "Bags",
@@ -172,15 +157,30 @@ function NewRFQModal({
     return fmtDate(d);
   };
 
-  const [vendor, setVendor] = useState(VENDORS[0]);
+  const [vendors, setVendors] = useState<string[]>([]);
+  const [projects, setProjects] = useState<string[]>([]);
+  const [vendor, setVendor] = useState("");
   const [vendorEmail, setVendorEmail] = useState("");
   const [prRef, setPrRef] = useState("");
-  const [project, setProject] = useState(PROJECTS[0]);
+  const [project, setProject] = useState("");
   const [expiryDays, setExpiryDays] = useState("5");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<RFQItem[]>([
     { material: "", qty: "", unit: UNITS[0] },
   ]);
+
+  useEffect(() => {
+    getReferenceData()
+      .then((data) => {
+        const vendorNames = data.suppliers.map((s) => s.name);
+        const projectNames = data.projects.map((p) => p.name);
+        setVendors(vendorNames);
+        setProjects(projectNames);
+        setVendor((prev) => prev || vendorNames[0] || "");
+        setProject((prev) => prev || projectNames[0] || "");
+      })
+      .catch(() => {});
+  }, []);
 
   const addItem = () =>
     setItems((p) => [...p, { material: "", qty: "", unit: UNITS[0] }]);
@@ -240,7 +240,7 @@ function NewRFQModal({
                 onChange={(e) => setVendor(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {VENDORS.map((v) => (
+                {vendors.map((v) => (
                   <option key={v}>{v}</option>
                 ))}
               </select>
@@ -276,7 +276,7 @@ function NewRFQModal({
                 onChange={(e) => setProject(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {PROJECTS.map((p) => (
+                {projects.map((p) => (
                   <option key={p}>{p}</option>
                 ))}
               </select>

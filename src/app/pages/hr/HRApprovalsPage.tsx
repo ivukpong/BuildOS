@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -8,12 +8,9 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
+import { getApprovals } from "../../api/approvals";
 
-type HRApprovalType =
-  | "Leave Request"
-  | "Overtime Request"
-  | "Salary Adjustment"
-  | "Position Change";
+type HRApprovalType = string;
 type ApprovalStatus = "pending" | "approved" | "rejected";
 
 interface HRApproval {
@@ -28,98 +25,6 @@ interface HRApproval {
   urgency: "normal" | "urgent";
   description: string;
 }
-
-// TODO: No HR approvals endpoint — using placeholder data
-const approvals: HRApproval[] = [
-  {
-    id: "hr1",
-    type: "Leave Request",
-    title: "Annual Leave — 14 Days (Chinwe Obi)",
-    project: "Finance Dept",
-    requestedBy: "Chinwe Obi",
-    date: "2026-04-09",
-    status: "pending",
-    urgency: "normal",
-    description:
-      "Annual leave: 21 Apr – 7 May 2026. Leave balance is 18 days. No critical Finance deadlines in this period.",
-  },
-  {
-    id: "hr2",
-    type: "Overtime Request",
-    title: "Weekend Overtime — Site Crew (Week 15)",
-    project: "Construction Dept",
-    requestedBy: "Robert Lee",
-    date: "2026-04-09",
-    amount: 42000,
-    status: "pending",
-    urgency: "urgent",
-    description:
-      "40 crew members, 2 days overtime to recover 3-week schedule slip. Supervisor approval already granted.",
-  },
-  {
-    id: "hr3",
-    type: "Salary Adjustment",
-    title: "Q1 Performance Increment — 12 Staff",
-    project: "All Departments",
-    requestedBy: "HR Manager",
-    date: "2026-04-08",
-    amount: 960000,
-    status: "pending",
-    urgency: "normal",
-    description:
-      "Annual merit increase for 12 employees rated Outstanding in Q1 review. Average increment: 8%. Band-checks completed.",
-  },
-  {
-    id: "hr4",
-    type: "Position Change",
-    title: "Senior → Lead Engineer (James Adeyemi)",
-    project: "Engineering Dept",
-    requestedBy: "Engineering HOD",
-    date: "2026-04-07",
-    status: "pending",
-    urgency: "normal",
-    description:
-      "James completed 3-year tenure as Senior Engineer and meets all competency requirements for Lead Engineer role.",
-  },
-  {
-    id: "hr5",
-    type: "Leave Request",
-    title: "Sick Leave — 5 Days (Amaka Eze)",
-    project: "Procurement Dept",
-    requestedBy: "Amaka Eze",
-    date: "2026-04-06",
-    status: "approved",
-    urgency: "normal",
-    description:
-      "Certified medical leave, 7–11 April 2026. Medical certificate attached. Leave balance: 12 days remaining.",
-  },
-  {
-    id: "hr6",
-    type: "Overtime Request",
-    title: "Payroll Team — Month-End Closing OT",
-    project: "HR Dept",
-    requestedBy: "Payroll Team Lead",
-    date: "2026-04-05",
-    amount: 28000,
-    status: "approved",
-    urgency: "normal",
-    description:
-      "3 payroll staff to work evenings April 14–16 for month-end payroll processing and reconciliation.",
-  },
-  {
-    id: "hr7",
-    type: "Salary Adjustment",
-    title: "Probation Completion Uplift — 4 Employees",
-    project: "Various Departments",
-    requestedBy: "HR Manager",
-    date: "2026-04-04",
-    amount: 210000,
-    status: "rejected",
-    urgency: "normal",
-    description:
-      "Rejected — two of the four employees are still under active performance improvement plans. Resubmit after Q2 review.",
-  },
-];
 
 const statusConfig: Record<
   ApprovalStatus,
@@ -142,7 +47,7 @@ const statusConfig: Record<
   },
 };
 
-const typeColors: Record<HRApprovalType, string> = {
+const typeColors: Record<string, string> = {
   "Leave Request": "bg-green-50 text-green-700",
   "Overtime Request": "bg-amber-50 text-amber-700",
   "Salary Adjustment": "bg-purple-50 text-purple-700",
@@ -155,6 +60,7 @@ function fmt(n: number) {
 }
 
 export function HRApprovalsPage() {
+  const [approvals, setApprovals] = useState<HRApproval[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "all">(
     "all",
@@ -167,6 +73,12 @@ export function HRApprovalsPage() {
   const [requestInfoFor, setRequestInfoFor] = useState<string | null>(null);
   const [infoNote, setInfoNote] = useState("");
   const [sentInfoFor, setSentInfoFor] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    getApprovals("hr")
+      .then((items) => setApprovals(items as HRApproval[]))
+      .catch(() => setApprovals([]));
+  }, []);
 
   function getStatus(a: HRApproval): ApprovalStatus {
     return approvalStates[a.id] ?? a.status;

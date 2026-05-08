@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   PackageCheck,
   Search,
@@ -15,6 +15,7 @@ import {
   Trash2,
   LinkIcon,
 } from "lucide-react";
+import { getReferenceData } from "../../api/reference-data";
 
 type GRNStatus = "pending" | "partial" | "completed" | "over_supply";
 
@@ -39,176 +40,6 @@ type GRNRecord = {
   }[];
 };
 
-const _GRNS_PLACEHOLDER: GRNRecord[] = [
-  {
-    id: "GRN-0031",
-    poRef: "PO-0031",
-    mrRef: "MR-0038",
-    supplier: "CemCo Nigeria Ltd",
-    receivedBy: "Chukwudi Eze",
-    receivedDate: "Apr 9, 2026",
-    status: "pending",
-    warehouse: "Main Store",
-    deliveryNote: "DN-CEM-9042",
-    items: [
-      {
-        material: "Cement (50kg bags)",
-        ordered: 400,
-        received: 0,
-        accepted: 0,
-        rejected: 0,
-        unit: "Bags",
-      },
-      {
-        material: "Concrete Block 9 Inch",
-        ordered: 2000,
-        received: 0,
-        accepted: 0,
-        rejected: 0,
-        unit: "Units",
-      },
-    ],
-  },
-  {
-    id: "GRN-0030",
-    poRef: "PO-0029",
-    mrRef: "MR-0033",
-    supplier: "ElectraHub",
-    receivedBy: "Chukwudi Eze",
-    receivedDate: "Apr 8, 2026",
-    status: "partial",
-    warehouse: "Electrical Store",
-    deliveryNote: "DN-ELEC-7831",
-    items: [
-      {
-        material: "Electrical Conduit 25mm",
-        ordered: 1500,
-        received: 800,
-        accepted: 800,
-        rejected: 0,
-        unit: "Metres",
-      },
-      {
-        material: "2.5mm Twin Cable",
-        ordered: 500,
-        received: 500,
-        accepted: 490,
-        rejected: 10,
-        unit: "Metres",
-        reason: "10m damaged on delivery",
-      },
-    ],
-  },
-  {
-    id: "GRN-0029",
-    poRef: "PO-0028",
-    mrRef: "MR-0031",
-    supplier: "Alpha Aggregates",
-    receivedBy: "Chukwudi Eze",
-    receivedDate: "Apr 8, 2026",
-    status: "completed",
-    warehouse: "Yard B",
-    deliveryNote: "DN-AGG-5512",
-    items: [
-      {
-        material: "Sand (River)",
-        ordered: 60,
-        received: 60,
-        accepted: 60,
-        rejected: 0,
-        unit: "Tonnes",
-      },
-      {
-        material: "Granite 3/4 Inch",
-        ordered: 40,
-        received: 40,
-        accepted: 40,
-        rejected: 0,
-        unit: "Tonnes",
-      },
-    ],
-  },
-  {
-    id: "GRN-0028",
-    poRef: "PO-0026",
-    mrRef: "MR-0028",
-    supplier: "SteelMart International",
-    receivedBy: "Chukwudi Eze",
-    receivedDate: "Apr 7, 2026",
-    status: "over_supply",
-    warehouse: "Shed 1",
-    deliveryNote: "DN-STL-3301",
-    items: [
-      {
-        material: "Binding Wire",
-        ordered: 100,
-        received: 120,
-        accepted: 120,
-        rejected: 0,
-        unit: "Rolls",
-        reason: "Supplier delivered 20 extra rolls",
-      },
-      {
-        material: "BRC Mesh A193",
-        ordered: 50,
-        received: 50,
-        accepted: 50,
-        rejected: 0,
-        unit: "Sheets",
-      },
-    ],
-  },
-  {
-    id: "GRN-0027",
-    poRef: "PO-0025",
-    mrRef: "MR-0026",
-    supplier: "BuildPlus Supplies",
-    receivedBy: "Chukwudi Eze",
-    receivedDate: "Apr 7, 2026",
-    status: "partial",
-    warehouse: "Timber Yard",
-    deliveryNote: "DN-BUILD-2290",
-    items: [
-      {
-        material: "Plywood Formwork 18mm",
-        ordered: 200,
-        received: 120,
-        accepted: 110,
-        rejected: 10,
-        unit: "Sheets",
-        reason: "10 sheets warped/water-damaged",
-      },
-    ],
-  },
-];
-void _GRNS_PLACEHOLDER;
-
-const statusConfig: Record<
-  GRNStatus,
-  { label: string; badge: string; icon: React.ReactNode }
-> = {
-  pending: {
-    label: "Pending Inspection",
-    badge: "bg-amber-100 text-amber-700",
-    icon: <Clock className="w-3.5 h-3.5 text-amber-500" />,
-  },
-  partial: {
-    label: "Partial Delivery",
-    badge: "bg-blue-100 text-blue-700",
-    icon: <Truck className="w-3.5 h-3.5 text-blue-600" />,
-  },
-  completed: {
-    label: "Fully Received",
-    badge: "bg-green-100 text-green-700",
-    icon: <CheckCircle className="w-3.5 h-3.5 text-green-600" />,
-  },
-  over_supply: {
-    label: "Over Supply",
-    badge: "bg-purple-100 text-purple-700",
-    icon: <AlertTriangle className="w-3.5 h-3.5 text-purple-500" />,
-  },
-};
-
 const tabs: { key: GRNStatus | "all"; label: string }[] = [
   { key: "all", label: "All GRNs" },
   { key: "pending", label: "Pending" },
@@ -217,15 +48,6 @@ const tabs: { key: GRNStatus | "all"; label: string }[] = [
   { key: "over_supply", label: "Over Supply" },
 ];
 
-const GRN_WAREHOUSES = [
-  "Main Store",
-  "Electrical Store",
-  "Yard B",
-  "Shed 1",
-  "Timber Yard",
-  "Chemical Store",
-  "Plumbing Store",
-];
 const GRN_PO_REFS: string[] = [];
 const GRN_UNITS = [
   "Bags",
@@ -268,10 +90,20 @@ function RecordDeliveryModal({
 
   const [poRef, setPoRef] = useState(existingGrn?.poRef || GRN_PO_REFS[0]);
   const [supplier, setSupplier] = useState(existingGrn?.supplier || "");
-  const [warehouse, setWarehouse] = useState(
-    existingGrn?.warehouse || GRN_WAREHOUSES[0],
-  );
+  const [warehouses, setWarehouses] = useState<string[]>([]);
+  const [warehouse, setWarehouse] = useState(existingGrn?.warehouse || "");
   const [deliveryNote, setDeliveryNote] = useState("");
+
+  useEffect(() => {
+    getReferenceData()
+      .then((data) => {
+        const storeNames = data.stores.map((s) => s.name);
+        setWarehouses(storeNames);
+        setWarehouse((prev) => prev || existingGrn?.warehouse || storeNames[0] || "");
+      })
+      .catch(() => {});
+  }, [existingGrn?.warehouse]);
+
   const [items, setItems] = useState<GRNItem[]>(
     existingGrn
       ? existingGrn.items
@@ -422,7 +254,7 @@ function RecordDeliveryModal({
                 onChange={(e) => setWarehouse(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {GRN_WAREHOUSES.map((w) => (
+                {warehouses.map((w) => (
                   <option key={w}>{w}</option>
                 ))}
               </select>

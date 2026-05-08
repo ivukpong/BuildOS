@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchLeaveRequests } from "../../api/leave-requests";
+import { fetchLeaveTypes } from "../../api/leave-types";
 import { Search, CheckCircle, XCircle, Clock, Filter } from "lucide-react";
 
 type LeaveStatus = "pending" | "approved" | "rejected";
@@ -41,21 +42,14 @@ const STATUS_CONF: Record<
   },
 };
 
-const LEAVE_TYPES = [
-  "All",
-  "Annual Leave",
-  "Sick Leave",
-  "Emergency Leave",
-  "Maternity Leave",
-  "Paternity Leave",
-  "Study Leave",
-  "Compassionate Leave",
-];
-
 export function LeaveRequestsPage() {
   const [requests, setRequests] = useState<LeaveRequest[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<string[]>(["All"]);
   useEffect(() => {
     fetchLeaveRequests().then(setRequests);
+    fetchLeaveTypes()
+      .then((types) => setLeaveTypes(["All", ...types.map((t) => t.name)]))
+      .catch(console.error);
   }, []);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<LeaveStatus | "All">("All");
@@ -160,7 +154,7 @@ export function LeaveRequestsPage() {
             onChange={(e) => setTypeFilter(e.target.value)}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
           >
-            {LEAVE_TYPES.map((t) => (
+            {leaveTypes.map((t) => (
               <option key={t}>{t}</option>
             ))}
           </select>

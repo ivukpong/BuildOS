@@ -4,6 +4,7 @@ import {
   createReceivedQuote,
   ReceivedQuote as ApiReceivedQuote,
 } from "../../api/procurement-requests";
+import { getReferenceData } from "../../api/reference-data";
 import {
   Inbox,
   Search,
@@ -143,21 +144,6 @@ function fmt(n: number) {
   return `₦${n}`;
 }
 
-const RQ_VENDORS = [
-  "Alpha Aggregates",
-  "SteelMart Int'l",
-  "ElectraHub",
-  "PlumbTech Ltd",
-  "DangCem Enterprises",
-  "BuildPlus Supplies",
-];
-const RQ_PROJECTS = [
-  "Industrial Warehouse",
-  "Downtown Office Complex",
-  "Riverside Residential",
-  "Highway Interchange",
-  "University Science Block",
-];
 const RQ_UNITS = [
   "Tonnes",
   "Bags",
@@ -167,8 +153,6 @@ const RQ_UNITS = [
   "Units",
   "Cartons",
 ];
-const RQ_STORES: { name: string; level: string }[] = [];
-
 interface DocItem {
   material: string;
   qty: string;
@@ -199,16 +183,35 @@ function RecordDocModal({
   };
 
   const docType: VendorDocType = "quote";
-  const [vendor, setVendor] = useState(RQ_VENDORS[0]);
+  const [vendors, setVendors] = useState<string[]>([]);
+  const [projects, setProjects] = useState<string[]>([]);
+  const [stores, setStores] = useState<{ name: string; level: string }[]>([]);
+  const [vendor, setVendor] = useState("");
   const [rfqRef, setRfqRef] = useState("");
   const [prRef, setPrRef] = useState("");
-  const [project, setProject] = useState(RQ_PROJECTS[0]);
+  const [project, setProject] = useState("");
   const [validDays, setValidDays] = useState("10");
   const [notes, setNotes] = useState("");
-  const [destinationStore, setDestinationStore] = useState(RQ_STORES[0].name);
+  const [destinationStore, setDestinationStore] = useState("");
   const [items, setItems] = useState<DocItem[]>([
     { material: "", qty: "", unit: RQ_UNITS[0], unitPrice: "" },
   ]);
+
+  useEffect(() => {
+    getReferenceData()
+      .then((data) => {
+        const vendorNames = data.suppliers.map((s) => s.name);
+        const projectNames = data.projects.map((p) => p.name);
+        const storeOptions = data.stores.map((s) => ({ name: s.name, level: s.type }));
+        setVendors(vendorNames);
+        setProjects(projectNames);
+        setStores(storeOptions);
+        setVendor((prev) => prev || vendorNames[0] || "");
+        setProject((prev) => prev || projectNames[0] || "");
+        setDestinationStore((prev) => prev || storeOptions[0]?.name || "");
+      })
+      .catch(() => {});
+  }, []);
 
   const addItem = () =>
     setItems((p) => [
@@ -234,7 +237,7 @@ function RecordDocModal({
     if (!valid) return;
     const prefix = docType === "quote" ? "QT" : "INV";
     const nextId = `${prefix}-${String(Math.floor(Math.random() * 9000) + 1000)}`;
-    const selectedStore = RQ_STORES.find((s) => s.name === destinationStore);
+    const selectedStore = stores.find((s) => s.name === destinationStore);
     onSave({
       id: nextId,
       rfqRef: rfqRef.trim() || "—",
@@ -292,7 +295,7 @@ function RecordDocModal({
                 onChange={(e) => setVendor(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {RQ_VENDORS.map((v) => (
+                {vendors.map((v) => (
                   <option key={v}>{v}</option>
                 ))}
               </select>
@@ -306,7 +309,7 @@ function RecordDocModal({
                 onChange={(e) => setProject(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {RQ_PROJECTS.map((p) => (
+                {projects.map((p) => (
                   <option key={p}>{p}</option>
                 ))}
               </select>
@@ -361,7 +364,7 @@ function RecordDocModal({
                 onChange={(e) => setDestinationStore(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {RQ_STORES.map((s) => (
+                {stores.map((s) => (
                   <option key={s.name} value={s.name}>
                     {s.name} — {s.level}
                   </option>
@@ -371,7 +374,7 @@ function RecordDocModal({
                 <div className="flex items-center gap-1.5 mt-1">
                   <Layers className="w-3 h-3 text-blue-400" />
                   <p className="text-xs text-blue-600">
-                    {RQ_STORES.find((s) => s.name === destinationStore)?.level}
+                    {stores.find((s) => s.name === destinationStore)?.level}
                   </p>
                 </div>
               )}

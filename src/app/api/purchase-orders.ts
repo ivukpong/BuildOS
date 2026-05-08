@@ -34,9 +34,10 @@ function mapPO(p: any) {
     };
 }
 
-export async function fetchPurchaseOrders(params?: { status?: string }) {
+export async function fetchPurchaseOrders(params?: { status?: string; supplierId?: string }) {
     const qs = new URLSearchParams();
     if (params?.status) qs.set('status', params.status);
+    if (params?.supplierId) qs.set('supplierId', params.supplierId);
     const query = qs.toString() ? `?${qs}` : '';
     const data = await apiFetch<any[]>(`/purchase-orders${query}`);
     return data.map(mapPO);

@@ -48,8 +48,6 @@ const STATUS_STYLE: Record<RequestStatus, string> = {
   "Forwarded to Procurement": "bg-purple-50 text-purple-700",
 };
 
-// TODO: No material requests endpoint — using placeholder data
-
 const STATUSES: (RequestStatus | "All")[] = [
   "All",
   "Pending",

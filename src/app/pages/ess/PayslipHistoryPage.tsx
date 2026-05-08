@@ -41,6 +41,21 @@ export function PayslipHistoryPage() {
       .catch(console.error);
   }, []);
 
+  const sortedSlips = [...payslips].sort((a, b) =>
+    b.paidOn.localeCompare(a.paidOn),
+  );
+  const latestNetPay = sortedSlips[0]?.netPay ?? 0;
+  const latestPeriod = sortedSlips[0]?.period ?? "—";
+  const thisYear = new Date().getFullYear().toString();
+  const ytdSlips = payslips.filter(
+    (p) => p.paidOn.includes(thisYear) || p.period.includes(thisYear),
+  );
+  const ytdGross = ytdSlips.reduce((s, p) => s + p.grossPay, 0);
+  const ytdNet = ytdSlips.reduce((s, p) => s + p.netPay, 0);
+  const ytdRange = ytdSlips.length
+    ? `${ytdSlips[ytdSlips.length - 1]?.period ?? ""} – ${ytdSlips[0]?.period ?? ""}`
+    : thisYear;
+
   const filtered = payslips.filter(
     (p) =>
       p.period.toLowerCase().includes(search.toLowerCase()) ||
@@ -61,9 +76,13 @@ export function PayslipHistoryPage() {
       {/* Summary cards */}
       <div className="grid grid-cols-3 gap-4">
         {[
-          { label: "Latest Net Pay", value: fmt(722500), sub: "May 2025" },
-          { label: "YTD Gross", value: fmt(4220000), sub: "Jan – May 2025" },
-          { label: "YTD Net Pay", value: fmt(3584500), sub: "Jan – May 2025" },
+          {
+            label: "Latest Net Pay",
+            value: fmt(latestNetPay),
+            sub: latestPeriod,
+          },
+          { label: "YTD Gross", value: fmt(ytdGross), sub: ytdRange },
+          { label: "YTD Net Pay", value: fmt(ytdNet), sub: ytdRange },
         ].map((c) => (
           <div
             key={c.label}

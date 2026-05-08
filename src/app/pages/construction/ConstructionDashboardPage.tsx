@@ -18,6 +18,7 @@ import {
 
 import { fetchProjects } from "../../api/projects";
 import { getConstructionApprovals } from "../../api/construction-extras";
+import { getResourcePlans } from "../../api/resource-planning";
 
 const statusConfig: Record<
   string,
@@ -44,6 +45,7 @@ export function ConstructionDashboardPage() {
   >("all");
   const [allProjects, setAllProjects] = useState<any[]>([]);
   const [approvals, setApprovals] = useState<any[]>([]);
+  const [resourcePlans, setResourcePlans] = useState<any[]>([]);
 
   useEffect(() => {
     fetchProjects()
@@ -51,6 +53,9 @@ export function ConstructionDashboardPage() {
       .catch(() => {});
     getConstructionApprovals()
       .then(setApprovals)
+      .catch(() => {});
+    getResourcePlans()
+      .then(setResourcePlans)
       .catch(() => {});
   }, []);
 
@@ -108,11 +113,10 @@ export function ConstructionDashboardPage() {
       icon: <TrendingUp className="w-5 h-5" />,
       iconBg: "bg-green-100 text-green-600",
     },
-    // TODO: No server endpoint for workforce count — using placeholder
     {
       label: "Total Workforce",
-      value: "—",
-      sub: "No workforce data available",
+      value: String(resourcePlans.length),
+      sub: "Resource plan entries",
       subColor: "text-gray-500",
       icon: <Users className="w-5 h-5" />,
       iconBg: "bg-blue-100 text-blue-600",

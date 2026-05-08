@@ -8,6 +8,18 @@ import { AdminExtrasService } from './admin-extras.service';
 export class AdminExtrasController {
     constructor(private readonly svc: AdminExtrasService) { }
 
+    @Get('approvals')
+    getApprovals(@Query('module') module?: string) { return this.svc.findApprovals(module); }
+
+    @Get('reference-data')
+    getReferenceData() { return this.svc.referenceData(); }
+
+    @Get('admin/system-summary')
+    getSystemSummary() { return this.svc.systemSummary(); }
+
+    @Get('admin/activity-log')
+    getActivityLog() { return this.svc.activityLog(); }
+
     // ── Users ──
     @Get('users')
     getAllUsers(@Query('search') search?: string) { return this.svc.findAllUsers(search); }

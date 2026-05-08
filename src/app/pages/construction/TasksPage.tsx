@@ -50,12 +50,8 @@ interface AssignedWorker {
   hoursPerWeek: number;
 }
 
-// ─── Mock Data ────────────────────────────────────────────────────────────────
-
 // allWorkers loaded from API — see component state below
 // allProjects loaded from API — see component state below
-
-// TODO: No tasks endpoint — using placeholder data
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import {
   CheckCircle,
   XCircle,
@@ -8,12 +8,9 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
+import { getApprovals } from "../../api/approvals";
 
-type ESSApprovalType =
-  | "Leave Request"
-  | "Time Extension"
-  | "Expense Claim"
-  | "Training Request";
+type ESSApprovalType = string;
 type ApprovalStatus = "pending" | "approved" | "rejected";
 
 interface ESSApproval {
@@ -28,98 +25,6 @@ interface ESSApproval {
   urgency: "normal" | "urgent";
   description: string;
 }
-
-// TODO: No ESS approvals endpoint — using placeholder data
-const approvals: ESSApproval[] = [
-  {
-    id: "es1",
-    type: "Leave Request",
-    title: "Annual Leave — 10 Days (Fatima Musa)",
-    project: "Downtown Office Complex",
-    requestedBy: "Fatima Musa",
-    date: "2026-04-09",
-    status: "pending",
-    urgency: "normal",
-    description:
-      "Leave dates: 14 Apr – 25 Apr 2026. No critical site deliverables in this window. Coverage arranged with team lead.",
-  },
-  {
-    id: "es2",
-    type: "Time Extension",
-    title: "Foundation Inspection Report Deadline",
-    project: "Industrial Warehouse",
-    requestedBy: "Daniel Moore",
-    date: "2026-04-08",
-    status: "pending",
-    urgency: "urgent",
-    description:
-      "Requests 5-day extension on inspection report. Third-party lab results delayed; beyond employee's control.",
-  },
-  {
-    id: "es3",
-    type: "Expense Claim",
-    title: "Monthly Site Travel Reimbursement",
-    project: "University Science Block",
-    requestedBy: "Alice Ware",
-    date: "2026-04-08",
-    amount: 12500,
-    status: "pending",
-    urgency: "normal",
-    description:
-      "Monthly fuel and toll reimbursement for university site travel. Mileage log and fuel receipts attached.",
-  },
-  {
-    id: "es4",
-    type: "Training Request",
-    title: "Structural Analysis Advanced Course",
-    project: "—",
-    requestedBy: "Carlos Rivera",
-    date: "2026-04-07",
-    amount: 85000,
-    status: "pending",
-    urgency: "normal",
-    description:
-      "3-day technical training at BIM Institute, Lagos. Directly relevant to current project scope. Registration closes April 15.",
-  },
-  {
-    id: "es5",
-    type: "Leave Request",
-    title: "Emergency Family Leave — 2 Days (Diana Park)",
-    project: "—",
-    requestedBy: "Diana Park",
-    date: "2026-04-06",
-    status: "approved",
-    urgency: "urgent",
-    description:
-      "Emergency personal circumstances. Leave granted with full pay per company compassionate leave policy.",
-  },
-  {
-    id: "es6",
-    type: "Expense Claim",
-    title: "Client Entertainment — Tender Submission Dinner",
-    project: "Downtown Office Complex",
-    requestedBy: "John Smith",
-    date: "2026-04-05",
-    amount: 45000,
-    status: "approved",
-    urgency: "normal",
-    description:
-      "Dinner with client representatives following successful tender submission. Within entertainment policy limits.",
-  },
-  {
-    id: "es7",
-    type: "Training Request",
-    title: "First Aid & Safety Certification Renewal",
-    project: "—",
-    requestedBy: "Robert Lee",
-    date: "2026-04-04",
-    amount: 22000,
-    status: "rejected",
-    urgency: "normal",
-    description:
-      "Rejected — company-wide group first aid training already scheduled for May 12. Defer to that date.",
-  },
-];
 
 const statusConfig: Record<
   ApprovalStatus,
@@ -142,7 +47,7 @@ const statusConfig: Record<
   },
 };
 
-const typeColors: Record<ESSApprovalType, string> = {
+const typeColors: Record<string, string> = {
   "Leave Request": "bg-green-50 text-green-700",
   "Time Extension": "bg-amber-50 text-amber-700",
   "Expense Claim": "bg-blue-50 text-blue-700",
@@ -155,6 +60,7 @@ function fmt(n: number) {
 }
 
 export function ESSApprovalsPage() {
+  const [approvals, setApprovals] = useState<ESSApproval[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ApprovalStatus | "all">(
     "all",
@@ -167,6 +73,12 @@ export function ESSApprovalsPage() {
   const [requestInfoFor, setRequestInfoFor] = useState<string | null>(null);
   const [infoNote, setInfoNote] = useState("");
   const [sentInfoFor, setSentInfoFor] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    getApprovals("ess")
+      .then((items) => setApprovals(items as ESSApproval[]))
+      .catch(() => setApprovals([]));
+  }, []);
 
   function getStatus(a: ESSApproval): ApprovalStatus {
     return approvalStates[a.id] ?? a.status;

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { fetchBudgets } from "../../api/budgets";
+import { fetchBudgetBreakdown, fetchBudgets } from "../../api/budgets";
 import {
   Plus,
   Search,
@@ -32,21 +32,6 @@ interface BudgetLine {
   status: BudgetStatus;
 }
 
-interface BudgetItem {
-  category: string;
-  budgeted: number;
-  actual: number;
-}
-
-// TODO: No budget breakdown endpoint — using placeholder data
-const budgetBreakdown: BudgetItem[] = [
-  { category: "Labour Costs", budgeted: 5500000, actual: 4125000 },
-  { category: "Materials", budgeted: 4200000, actual: 2940000 },
-  { category: "Equipment", budgeted: 1500000, actual: 1680000 },
-  { category: "Subcontractors", budgeted: 800000, actual: 520000 },
-  { category: "Overheads", budgeted: 500000, actual: 460000 },
-];
-
 const statusConfig: Record<BudgetStatus, { badge: string; dot: string }> = {
   Active: { badge: "bg-blue-100 text-blue-700", dot: "bg-blue-400" },
   "On Track": {
@@ -73,8 +58,15 @@ export function BudgetManagementPage() {
   const [search, setSearch] = useState("");
   const [scopeFilter, setScopeFilter] = useState<BudgetScope | "All">("All");
   const [selectedBudget, setSelectedBudget] = useState<BudgetLine | null>(null);
+  const [budgetBreakdown, setBudgetBreakdown] = useState<
+    { category: string; budgeted: number; actual: number }[]
+  >([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
+
+  useEffect(() => {
+    fetchBudgetBreakdown().then(setBudgetBreakdown).catch(() => setBudgetBreakdown([]));
+  }, []);
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("en-US", {
@@ -83,7 +75,7 @@ export function BudgetManagementPage() {
       minimumFractionDigits: 0,
     }).format(n);
   const pct = (spent: number, total: number) =>
-    Math.round((spent / total) * 100);
+    total > 0 ? Math.round((spent / total) * 100) : 0;
 
   const filtered = budgets.filter((b) => {
     if (scopeFilter !== "All" && b.scope !== scopeFilter) return false;

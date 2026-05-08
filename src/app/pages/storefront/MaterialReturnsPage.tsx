@@ -14,6 +14,7 @@ import {
   updateMaterialReturn,
   MaterialReturn as ApiMaterialReturn,
 } from "../../api/materials";
+import { getReferenceData } from "../../api/reference-data";
 
 type ReturnStatus =
   | "Draft"
@@ -54,35 +55,16 @@ const CONDITION_STYLE: Record<string, string> = {
   Damaged: "bg-red-50 text-red-700",
 };
 
-const STORES = [
-  "General Store",
-  "Block A Project Store",
-  "Block B Project Store",
-  "Block C Project Store",
-];
-const MATERIALS = [
-  "Cement (50kg bag)",
-  "Steel Rebar Y16",
-  "Steel Rebar Y12",
-  "Binding Wire",
-  "Concrete Block 9 Inch",
-  "Formwork Plywood",
-  "PVC Pipes 2 Inch",
-  "Sand",
-  "Flush Doors",
-  "2.5mm Twin Cable",
-];
-
 const BLANK: Omit<
   MaterialReturn,
   "id" | "status" | "approvedBy" | "approvalDate" | "receivedDate"
 > = {
-  material: MATERIALS[0],
-  category: "Concrete",
+  material: "",
+  category: "",
   quantity: 1,
   unit: "Units",
-  fromStore: STORES[1],
-  toStore: STORES[0],
+  fromStore: "",
+  toStore: "",
   reason: "",
   condition: "Good",
   requestedBy: "",
@@ -125,12 +107,28 @@ export function MaterialReturnsPage() {
   const [showModal, setShowModal] = useState(false);
   const [selected, setSelected] = useState<MaterialReturn | null>(null);
   const [form, setForm] = useState<typeof BLANK>({ ...BLANK });
+  const [materials, setMaterials] = useState<string[]>([]);
+  const [stores, setStores] = useState<string[]>([]);
 
   useEffect(() => {
     getMaterialReturns()
       .then((data) => setReturns(data.map(fromApi)))
       .catch(console.error)
       .finally(() => setLoading(false));
+    getReferenceData()
+      .then((data) => {
+        const materialNames = data.materials.map((m) => m.name);
+        const storeNames = data.stores.map((s) => s.name);
+        setMaterials(materialNames);
+        setStores(storeNames);
+        setForm((prev) => ({
+          ...prev,
+          material: prev.material || materialNames[0] || "",
+          fromStore: prev.fromStore || storeNames[0] || "",
+          toStore: prev.toStore || storeNames[1] || storeNames[0] || "",
+        }));
+      })
+      .catch(() => {});
   }, []);
 
   const filtered = returns.filter((r) => {
@@ -444,7 +442,7 @@ export function MaterialReturnsPage() {
                   }
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  {MATERIALS.map((m) => (
+                  {materials.map((m) => (
                     <option key={m}>{m}</option>
                   ))}
                 </select>
@@ -486,7 +484,7 @@ export function MaterialReturnsPage() {
                   }
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  {STORES.filter((s) => s !== "General Store").map((s) => (
+                  {stores.filter((s) => s !== form.toStore).map((s) => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
@@ -502,7 +500,7 @@ export function MaterialReturnsPage() {
                   }
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
                 >
-                  {STORES.map((s) => (
+                  {stores.map((s) => (
                     <option key={s}>{s}</option>
                   ))}
                 </select>
