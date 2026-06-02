@@ -32,10 +32,10 @@ export class AdminExtrasService {
         await fs.writeFile(this.settingsFilePath, JSON.stringify(data, null, 2), 'utf-8');
     }
 
-    private async sendInviteEmail(email: string, name: string, activationLink: string): Promise<{ sent: boolean; warning?: string }> {
+    private async sendInviteEmail(email: string, name: string, activationLink: string): Promise<void> {
         const emailProvider = String(process.env.EMAIL_PROVIDER || 'resend').toLowerCase();
         if (emailProvider !== 'resend') {
-            return { sent: false, warning: `Invite email skipped: provider '${emailProvider}' is not supported by this service` };
+            throw new BadRequestException(`Invite email provider '${emailProvider}' is not supported by this service`);
         }
 
         const resendApiKey = process.env.RESEND_API_KEY;
@@ -43,9 +43,7 @@ export class AdminExtrasService {
         const from = process.env.EMAIL_FROM || process.env.INVITE_FROM_EMAIL;
 
         if (!resendApiKey || !from) {
-            const warning = 'Invite email skipped: missing RESEND_API_KEY or EMAIL_FROM/INVITE_FROM_EMAIL';
-            this.logger.warn(warning);
-            return { sent: false, warning };
+            throw new BadRequestException('Invite email is not configured: set RESEND_API_KEY and EMAIL_FROM (or INVITE_FROM_EMAIL)');
         }
 
         const resend = new Resend(resendApiKey);
@@ -55,7 +53,6 @@ export class AdminExtrasService {
             subject: 'You are invited to BuildOS',
             text: `Hi ${name},\n\nYou have been invited to BuildOS. Activate your account here: ${activationLink}\n\nThis link expires in 7 days.`,
         });
-        return { sent: true };
     }
 
     private normalizeStatus(status: string) {
@@ -287,7 +284,17 @@ export class AdminExtrasService {
 
     // ── Users ──
     async inviteUser(data: { email: string; name: string; role?: string }) {
-        const normalizedEmail = data.email.trim().toLowerCase();
+        const name = String(data?.name ?? '').trim();
+        const role = String(data?.role ?? '').trim();
+        const normalizedEmail = String(data?.email ?? '').trim().toLowerCase();
+
+        if (!name) throw new BadRequestException('Name is required');
+        if (!normalizedEmail) throw new BadRequestException('Email is required');
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+            throw new BadRequestException('Invalid email address');
+        }
+        if (!role) throw new BadRequestException('Role is required');
+
         const existing = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
         if (existing) throw new ConflictException('Email already registered');
 
@@ -299,8 +306,8 @@ export class AdminExtrasService {
         const user = await this.prisma.user.create({
             data: {
                 email: normalizedEmail,
-                name: data.name,
-                role: data.role ?? 'viewer',
+                name,
+                role,
                 password: placeholder,
                 status: 'pending_invite',
                 inviteToken: token,
@@ -308,19 +315,17 @@ export class AdminExtrasService {
             },
         });
 
-        const activationLink = `/auth/activate?token=${token}`;
+        const frontendUrl = String(process.env.FRONTEND_URL || '').trim().replace(/\/$/, '');
+        const activationPath = `/auth/activate?token=${token}`;
+        const activationLink = frontendUrl ? `${frontendUrl}${activationPath}` : activationPath;
 
-        let inviteEmailSent = false;
-        let inviteEmailWarning: string | undefined;
         try {
-            const result = await this.sendInviteEmail(normalizedEmail, data.name, activationLink);
-            inviteEmailSent = result.sent;
-            inviteEmailWarning = result.warning;
+            await this.sendInviteEmail(normalizedEmail, name, activationLink);
         } catch (error) {
-            // Keep invite creation successful even if email delivery fails.
-            inviteEmailSent = false;
-            inviteEmailWarning = `Invite email failed: ${error instanceof Error ? error.message : 'unknown error'}`;
-            this.logger.warn(`Invite email failed for ${normalizedEmail}: ${error instanceof Error ? error.message : 'unknown error'}`);
+            await this.prisma.user.delete({ where: { id: user.id } }).catch(() => null);
+            const reason = error instanceof Error ? error.message : 'unknown error';
+            this.logger.warn(`Invite email failed for ${normalizedEmail}: ${reason}`);
+            throw new BadRequestException(`Invite email failed: ${reason}`);
         }
 
         return {
@@ -328,8 +333,7 @@ export class AdminExtrasService {
             email: user.email,
             inviteToken: token,
             activationLink,
-            inviteEmailSent,
-            inviteEmailWarning,
+            inviteEmailSent: true,
         };
     }
 
@@ -425,7 +429,7 @@ export class AdminExtrasService {
         return this.prisma.appRole.update({ where: { id }, data });
     }
     deleteRole(id: string) {
-        return this.prisma.appRole.delete({ where: { id } });
+        return this.prisma.appRole.deleteMany({ where: { id } });
     }
 
     // ── Issue Types ──
@@ -518,7 +522,41 @@ export class AdminExtrasService {
     }
 
     updateCompanyProfile(data: any) {
-        const { id, updatedAt, ...rest } = data;
+        const requiredFields = [
+            { key: 'name', label: 'Company name' },
+            { key: 'email', label: 'Email' },
+            { key: 'phone', label: 'Phone number' },
+            { key: 'address', label: 'Address' },
+            { key: 'city', label: 'City' },
+            { key: 'state', label: 'State / Province' },
+        ] as const;
+
+        const missing = requiredFields
+            .filter(({ key }) => !String(data?.[key] ?? '').trim())
+            .map(({ label }) => label);
+
+        if (missing.length > 0) {
+            throw new BadRequestException(`Missing required fields: ${missing.join(', ')}`);
+        }
+
+        const email = String(data.email).trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            throw new BadRequestException('Invalid email address');
+        }
+
+        const sanitized = {
+            ...data,
+            name: String(data.name).trim(),
+            email,
+            phone: String(data.phone).trim(),
+            address: String(data.address).trim(),
+            city: String(data.city).trim(),
+            state: String(data.state).trim(),
+            zipCode: String(data.zipCode ?? '').trim(),
+            country: String(data.country ?? '').trim(),
+        };
+
+        const { id, updatedAt, ...rest } = sanitized;
         return this.prisma.companyProfile.upsert({
             where: { id: 'singleton' },
             create: { id: 'singleton', ...rest },

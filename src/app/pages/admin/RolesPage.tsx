@@ -430,6 +430,7 @@ function AddRoleModal({
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export function RolesPage() {
   const [roles, setRoles] = useState<Role[]>([]);
+  const [roleStatus, setRoleStatus] = useState<Record<string, "saving" | "saved" | "error">>({});
 
   const rolePayload = (role: Role) => ({
     name: role.name,
@@ -511,7 +512,23 @@ export function RolesPage() {
       }),
     );
     if (nextRole) {
-      void updateAppRole(nextRole.id, rolePayload(nextRole));
+      setRoleStatus((s) => ({ ...s, [roleId]: "saving" }));
+      updateAppRole((nextRole as Role).id, rolePayload(nextRole as Role))
+        .then(() => {
+          setRoleStatus((s) => ({ ...s, [roleId]: "saved" }));
+          setTimeout(
+            () =>
+              setRoleStatus((s) => {
+                const copy = { ...s };
+                delete copy[roleId];
+                return copy;
+              }),
+            2000,
+          );
+        })
+        .catch(() => {
+          setRoleStatus((s) => ({ ...s, [roleId]: "error" }));
+        });
     }
   };
 
@@ -550,11 +567,37 @@ export function RolesPage() {
     setProcesses((prev) => prev.filter((p) => p.id !== procId));
   };
 
-  const duplicateRole = (role: Role) => {
-    setRoles((prev) => [
-      ...prev,
-      { ...role, id: `r_${Date.now()}`, name: `${role.name} (Copy)`, users: 0 },
-    ]);
+  const duplicateRole = async (role: Role) => {
+    const permissions = { ...role.permissions };
+    const appAccess = { ...role.appAccess };
+    const navAccess = { ...role.navAccess };
+    try {
+      const created = await createAppRole({
+        name: `${role.name} (Copy)`,
+        description: role.description,
+        isSuper: false,
+        permissions: {
+          processPermissions: permissions,
+          appAccess,
+          navAccess,
+        },
+      });
+      setRoles((prev) => [
+        ...prev,
+        {
+          id: created.id,
+          name: created.name,
+          description: created.description ?? "",
+          users: 0,
+          isSuper: false,
+          permissions,
+          appAccess,
+          navAccess,
+        },
+      ]);
+    } catch {
+      // silently ignore — server may reject duplicate names
+    }
   };
 
   const deleteRole = async (roleId: string) => {
@@ -717,6 +760,17 @@ export function RolesPage() {
                                   Super
                                 </span>
                               )}
+                              {roleStatus[role.id] === "saving" && (
+                                <span className="text-[10px] text-gray-400 shrink-0">saving…</span>
+                              )}
+                              {roleStatus[role.id] === "saved" && (
+                                <CheckCircle2 className="w-3 h-3 text-emerald-500 shrink-0" />
+                              )}
+                              {roleStatus[role.id] === "error" && (
+                                <span className="text-[10px] text-red-500 shrink-0 flex items-center gap-0.5">
+                                  <XCircle className="w-3 h-3" /> Save failed
+                                </span>
+                              )}
                             </div>
                             <span className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
                               <Users className="w-3 h-3" />
@@ -732,7 +786,7 @@ export function RolesPage() {
                             <Edit className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={() => duplicateRole(role)}
+                            onClick={() => void duplicateRole(role)}
                             className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
                             title="Duplicate"
                           >

@@ -52,14 +52,13 @@ export const getAdminSystemSummary = () =>
     apiFetch<AdminSystemSummary>('/admin/system-summary');
 export const getAdminActivityLog = () =>
     apiFetch<AdminActivity[]>('/admin/activity-log');
-export const inviteUser = (data: { email: string; name: string; role?: string }) =>
+export const inviteUser = (data: { email: string; name: string; role: string }) =>
     apiFetch<{
         id: string;
         email: string;
         inviteToken: string;
         activationLink: string;
-        inviteEmailSent?: boolean;
-        inviteEmailWarning?: string;
+        inviteEmailSent: boolean;
     }>(
         '/admin/users/invite', { method: 'POST', body: JSON.stringify(data) }
     );

@@ -65,6 +65,18 @@ async function compressImage(
 }
 
 export function CompanyProfilePage() {
+  type RequiredField =
+    | "companyName"
+    | "email"
+    | "phone"
+    | "address"
+    | "city"
+    | "state"
+    | "zipCode"
+    | "country";
+
+  type FormErrors = Partial<Record<RequiredField, string>>;
+
   const [formData, setFormData] = useState({
     companyName: "",
     email: "",
@@ -87,6 +99,7 @@ export function CompanyProfilePage() {
   const [saving, setSaving] = useState(false);
   const [creatingDepartment, setCreatingDepartment] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const [departmentMessage, setDepartmentMessage] = useState<string | null>(
     null,
   );
@@ -122,10 +135,41 @@ export function CompanyProfilePage() {
   }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const field = e.target.name as RequiredField;
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+    if (formErrors[field]) {
+      setFormErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const validateGeneralInformation = (): FormErrors => {
+    const errors: FormErrors = {};
+    if (!formData.companyName.trim())
+      errors.companyName = "Company name is required.";
+    if (!formData.email.trim()) {
+      errors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim())) {
+      errors.email = "Enter a valid email address.";
+    }
+    if (!formData.phone.trim()) {
+      errors.phone = "Phone number is required.";
+    } else if (!/^[+\d][\d\s\-().]{5,19}$/.test(formData.phone.trim())) {
+      errors.phone = "Enter a valid phone number.";
+    }
+    if (!formData.address.trim()) errors.address = "Address is required.";
+    if (!formData.city.trim()) errors.city = "City is required.";
+    if (!formData.state.trim()) errors.state = "State / Province is required.";
+    if (!formData.country.trim()) errors.country = "Country is required.";
+    if (
+      formData.zipCode.trim() &&
+      !/^[a-zA-Z0-9\s\-]{3,10}$/.test(formData.zipCode.trim())
+    ) {
+      errors.zipCode = "Enter a valid ZIP / postal code.";
+    }
+    return errors;
   };
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -148,18 +192,26 @@ export function CompanyProfilePage() {
   };
 
   const handleSave = async () => {
+    const validationErrors = validateGeneralInformation();
+    if (Object.keys(validationErrors).length > 0) {
+      setFormErrors(validationErrors);
+      setSaveMessage("Please complete all required fields before saving.");
+      return;
+    }
+
+    setFormErrors({});
     setSaving(true);
     setSaveMessage(null);
     try {
       await updateCompanyProfile({
-        name: formData.companyName,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address,
-        city: formData.city,
-        state: formData.state,
-        zipCode: formData.zipCode,
-        country: formData.country,
+        name: formData.companyName.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        address: formData.address.trim(),
+        city: formData.city.trim(),
+        state: formData.state.trim(),
+        zipCode: formData.zipCode.trim(),
+        country: formData.country.trim(),
         logoUrl: logoPreview,
       });
       setSaveMessage("Company profile updated successfully.");
@@ -294,8 +346,15 @@ export function CompanyProfilePage() {
               name="companyName"
               value={formData.companyName}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent ${
+                formErrors.companyName ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {formErrors.companyName && (
+              <p className="mt-1 text-xs text-red-600">
+                {formErrors.companyName}
+              </p>
+            )}
           </div>
 
           <div>
@@ -307,8 +366,13 @@ export function CompanyProfilePage() {
               name="email"
               value={formData.email}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent ${
+                formErrors.email ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {formErrors.email && (
+              <p className="mt-1 text-xs text-red-600">{formErrors.email}</p>
+            )}
           </div>
 
           <div>
@@ -320,21 +384,31 @@ export function CompanyProfilePage() {
               name="phone"
               value={formData.phone}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent ${
+                formErrors.phone ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {formErrors.phone && (
+              <p className="mt-1 text-xs text-red-600">{formErrors.phone}</p>
+            )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Country
+              Country <span className="text-red-500">*</span>
             </label>
             <select
               name="country"
               value={formData.country}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, country: e.target.value }))
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              onChange={(e) => {
+                setFormData((prev) => ({ ...prev, country: e.target.value }));
+                if (formErrors.country) {
+                  setFormErrors((prev) => ({ ...prev, country: undefined }));
+                }
+              }}
+              className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent ${
+                formErrors.country ? "border-red-500" : "border-gray-300"
+              }`}
             >
               <option value="">Select country</option>
               {countries.map((country) => (
@@ -343,6 +417,9 @@ export function CompanyProfilePage() {
                 </option>
               ))}
             </select>
+            {formErrors.country && (
+              <p className="mt-1 text-xs text-red-600">{formErrors.country}</p>
+            )}
           </div>
 
           <div className="md:col-span-2">
@@ -354,8 +431,13 @@ export function CompanyProfilePage() {
               name="address"
               value={formData.address}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent ${
+                formErrors.address ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {formErrors.address && (
+              <p className="mt-1 text-xs text-red-600">{formErrors.address}</p>
+            )}
           </div>
 
           <div>
@@ -367,8 +449,13 @@ export function CompanyProfilePage() {
               name="city"
               value={formData.city}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent ${
+                formErrors.city ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {formErrors.city && (
+              <p className="mt-1 text-xs text-red-600">{formErrors.city}</p>
+            )}
           </div>
 
           <div>
@@ -380,8 +467,13 @@ export function CompanyProfilePage() {
               name="state"
               value={formData.state}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent ${
+                formErrors.state ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {formErrors.state && (
+              <p className="mt-1 text-xs text-red-600">{formErrors.state}</p>
+            )}
           </div>
 
           <div>
@@ -393,8 +485,13 @@ export function CompanyProfilePage() {
               name="zipCode"
               value={formData.zipCode}
               onChange={handleInputChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent"
+              className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent ${
+                formErrors.zipCode ? "border-red-500" : "border-gray-300"
+              }`}
             />
+            {formErrors.zipCode && (
+              <p className="mt-1 text-xs text-red-600">{formErrors.zipCode}</p>
+            )}
           </div>
         </div>
       </div>

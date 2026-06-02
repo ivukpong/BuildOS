@@ -760,7 +760,7 @@ function AddUserModal({
         setDepartments(referenceData.departments);
         setForm((f) => ({
           ...f,
-          role: f.role || roles[0]?.name || "",
+          role: f.role || "",
           department: f.department || referenceData.departments[0]?.name || "",
         }));
       })
