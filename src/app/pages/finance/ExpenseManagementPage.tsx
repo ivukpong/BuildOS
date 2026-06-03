@@ -199,7 +199,9 @@ export function ExpenseManagementPage() {
   function approve(id: string) {
     approveExpense(id)
       .then(() => {
-        fetchExpenses().then((items) => setExpenses(items.map(toExpense))).catch(console.error);
+        fetchExpenses()
+          .then((items) => setExpenses(items.map(toExpense)))
+          .catch(console.error);
       })
       .catch((err) => {
         alert("Failed to approve expense. Please try again.");
@@ -212,7 +214,9 @@ export function ExpenseManagementPage() {
     if (!rejectState || !rejectState.reason.trim()) return;
     rejectExpense(rejectState.id, rejectState.reason)
       .then(() => {
-        fetchExpenses().then((items) => setExpenses(items.map(toExpense))).catch(console.error);
+        fetchExpenses()
+          .then((items) => setExpenses(items.map(toExpense)))
+          .catch(console.error);
       })
       .catch((err) => {
         alert("Failed to reject expense. Please try again.");

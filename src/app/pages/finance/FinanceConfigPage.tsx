@@ -61,7 +61,7 @@ const FISCAL_MONTHS = [
 
 export function FinanceConfigPage() {
   const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
-  const [paymentMethods] = useState<PaymentMethod[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [saved, setSaved] = useState(false);
 
   // General settings state
@@ -196,7 +196,11 @@ export function FinanceConfigPage() {
   }
 
   function addBankAccount() {
-    if (!bankForm.name.trim() || !bankForm.bank.trim() || !bankForm.accountNumber.trim()) {
+    if (
+      !bankForm.name.trim() ||
+      !bankForm.bank.trim() ||
+      !bankForm.accountNumber.trim()
+    ) {
       return;
     }
     const acc: BankAccount = {

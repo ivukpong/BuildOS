@@ -48,27 +48,31 @@ const tabs: { key: GRNStatus | "all"; label: string }[] = [
 
 const statusConfig: Record<
   GRNStatus,
-  { label: string; badge: string; border: string }
+  { label: string; badge: string; border: string; icon: string }
 > = {
   pending: {
     label: "Pending",
     badge: "bg-amber-100 text-amber-700",
     border: "border-amber-200",
+    icon: "Clock",
   },
   partial: {
     label: "Partial",
     badge: "bg-blue-100 text-blue-700",
     border: "border-blue-200",
+    icon: "Package",
   },
   completed: {
     label: "Completed",
     badge: "bg-emerald-100 text-emerald-700",
     border: "border-emerald-200",
+    icon: "CheckCircle2",
   },
   over_supply: {
     label: "Over Supply",
     badge: "bg-red-100 text-red-700",
     border: "border-red-200",
+    icon: "AlertTriangle",
   },
 };
 

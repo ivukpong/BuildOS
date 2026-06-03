@@ -203,7 +203,10 @@ export function EmailConfigPage() {
         .then(() => {
           setConfigs([
             ...configs,
-            { ...form, id: `EC-${String(configs.length + 1).padStart(3, "0")}` },
+            {
+              ...form,
+              id: `EC-${String(configs.length + 1).padStart(3, "0")}`,
+            },
           ]);
           setShowModal(false);
           setSaved(true);

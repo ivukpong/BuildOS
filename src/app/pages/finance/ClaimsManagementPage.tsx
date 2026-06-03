@@ -138,7 +138,9 @@ export function ClaimsManagementPage() {
   function approve(id: string) {
     approveClaim(id)
       .then(() => {
-        fetchClaims().then((items) => setClaims(items.map(toClaim))).catch(console.error);
+        fetchClaims()
+          .then((items) => setClaims(items.map(toClaim)))
+          .catch(console.error);
       })
       .catch((err) => {
         alert("Failed to approve claim. Please try again.");
@@ -151,7 +153,9 @@ export function ClaimsManagementPage() {
     if (!rejectState || !rejectState.reason.trim()) return;
     rejectClaim(rejectState.id, rejectState.reason)
       .then(() => {
-        fetchClaims().then((items) => setClaims(items.map(toClaim))).catch(console.error);
+        fetchClaims()
+          .then((items) => setClaims(items.map(toClaim)))
+          .catch(console.error);
       })
       .catch((err) => {
         alert("Failed to reject claim. Please try again.");
@@ -164,7 +168,9 @@ export function ClaimsManagementPage() {
   function markPaid(id: string) {
     payClaim(id)
       .then(() => {
-        fetchClaims().then((items) => setClaims(items.map(toClaim))).catch(console.error);
+        fetchClaims()
+          .then((items) => setClaims(items.map(toClaim)))
+          .catch(console.error);
       })
       .catch((err) => {
         alert("Failed to mark claim as paid. Please try again.");
@@ -176,7 +182,9 @@ export function ClaimsManagementPage() {
   function setUnderReview(id: string) {
     updateClaimStatus(id, "UnderReview")
       .then(() => {
-        fetchClaims().then((items) => setClaims(items.map(toClaim))).catch(console.error);
+        fetchClaims()
+          .then((items) => setClaims(items.map(toClaim)))
+          .catch(console.error);
       })
       .catch((err) => {
         alert("Failed to set claim under review. Please try again.");

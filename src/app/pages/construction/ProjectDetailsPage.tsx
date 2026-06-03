@@ -1339,7 +1339,10 @@ export function ProjectDetailsPage() {
                 role: w.role ?? "",
                 phone: "—",
                 attendance: "present" as const,
-                hoursThisWeek: Math.max(0, Math.round(Number(w.allocPct ?? 0) * 0.4)),
+                hoursThisWeek: Math.max(
+                  0,
+                  Math.round(Number(w.allocPct ?? 0) * 0.4),
+                ),
               })),
           ),
         )

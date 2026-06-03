@@ -155,6 +155,8 @@ export function ProjectsListPage() {
       name: p.name ?? "",
       client: p.client ?? "",
       location: p.location ?? "",
+      state: p.state ?? "",
+      city: p.city ?? "",
       status,
       type,
       budget: Number(p.budget ?? 0),

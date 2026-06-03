@@ -65,7 +65,8 @@ export function BudgetManagementPage() {
       b.status === "Closed"
         ? b.status
         : "Active";
-    const scope: BudgetScope = b.scope === "Department" ? "Department" : "Project";
+    const scope: BudgetScope =
+      b.scope === "Department" ? "Department" : "Project";
     return {
       id: b.id,
       name: b.name ?? "",

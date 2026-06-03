@@ -146,7 +146,8 @@ export function NotificationsPage() {
     if (!current) return;
     const name = window.prompt("Rule name", current.name)?.trim();
     if (!name) return;
-    const event = window.prompt("Event", current.event)?.trim() ?? current.event;
+    const event =
+      window.prompt("Event", current.event)?.trim() ?? current.event;
     const recipients =
       window.prompt("Recipients", current.recipients)?.trim() ??
       current.recipients;

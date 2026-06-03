@@ -94,7 +94,7 @@ export function LeaveTypeSetupPage() {
     setShowForm(false);
   }
 
-  function startEdit(t: LeaveType) {
+  function startEdit(t: UILeaveType) {
     setForm({
       name: t.name,
       daysAllowed: t.daysAllowed,

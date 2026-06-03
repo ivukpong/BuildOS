@@ -270,7 +270,9 @@ export function EmployeesPage() {
         data.map((e: any) => ({
           ...e,
           status:
-            e.status === "active" || e.status === "inactive" || e.status === "on_leave"
+            e.status === "active" ||
+            e.status === "inactive" ||
+            e.status === "on_leave"
               ? e.status
               : "active",
           projects: Array.isArray(e.projects) ? e.projects : [],
@@ -300,7 +302,9 @@ export function EmployeesPage() {
         .toLowerCase()
         .includes(search.toLowerCase());
       const matchAdv = Object.entries(advFilters).every(([key, vals]) => {
-        const fieldVal = String((e as Record<string, unknown>)[key] ?? "");
+        const fieldVal = String(
+          e[key as keyof EmployeeRow] ?? "",
+        );
         if (
           vals.text?.trim() &&
           !fieldVal.toLowerCase().includes(vals.text.trim().toLowerCase())
@@ -318,11 +322,11 @@ export function EmployeesPage() {
       const aVal =
         sf === "name"
           ? `${a.firstName} ${a.lastName}`
-          : String((a as Record<string, unknown>)[sf] ?? "");
+          : String(a[sf as keyof EmployeeRow] ?? "");
       const bVal =
         sf === "name"
           ? `${b.firstName} ${b.lastName}`
-          : String((b as Record<string, unknown>)[sf] ?? "");
+          : String(b[sf as keyof EmployeeRow] ?? "");
       const cmp = aVal.localeCompare(bVal);
       return advSort.direction === "asc" ? cmp : -cmp;
     });
@@ -396,8 +400,7 @@ export function EmployeesPage() {
     exportCSV("employees", headers, rows);
   }
 
-  const initials = (e: EmployeeRow) =>
-    `${e.firstName[0]}${e.lastName[0]}`;
+  const initials = (e: EmployeeRow) => `${e.firstName[0]}${e.lastName[0]}`;
   const avatarColors = [
     "bg-indigo-100 text-indigo-700",
     "bg-blue-100 text-blue-700",
