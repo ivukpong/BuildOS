@@ -281,28 +281,28 @@ async function safe<T>(fn: () => Promise<T>, fallback: T): Promise<T> {
 
 async function buildAppsFromApi(authName?: string): Promise<AppDef[]> {
   const [
-    catalog,
-    projects,
-    tasks,
-    approvals,
-    budgets,
-    expenses,
-    payments,
-    employees,
-    leaveRequests,
-    jobRoles,
-    purchaseRequests,
-    sentRfqs,
-    purchaseOrders,
-    suppliers,
-    materials,
-    stores,
-    materialRequests,
-    claims,
-    activity,
+    rawCatalog,
+    rawProjects,
+    rawTasks,
+    rawApprovals,
+    rawBudgets,
+    rawExpenses,
+    rawPayments,
+    rawEmployees,
+    rawLeaveRequests,
+    rawJobRoles,
+    rawPurchaseRequests,
+    rawSentRfqs,
+    rawPurchaseOrders,
+    rawSuppliers,
+    rawMaterials,
+    rawStores,
+    rawMaterialRequests,
+    rawClaims,
+    rawActivity,
     adminSummary,
-    adminActivity,
-    users,
+    rawAdminActivity,
+    rawUsers,
   ] = await Promise.all([
     safe(() => fetchAppCatalog(), []),
     safe(() => fetchProjects(), []),
@@ -327,6 +327,31 @@ async function buildAppsFromApi(authName?: string): Promise<AppDef[]> {
     safe(() => getAdminActivityLog(), []),
     safe(() => getUsers(), []),
   ]);
+
+  const asArray = <T,>(value: unknown): T[] =>
+    Array.isArray(value) ? (value as T[]) : [];
+
+  const catalog = asArray<AppCatalogItem>(rawCatalog);
+  const projects = asArray<any>(rawProjects);
+  const tasks = asArray<any>(rawTasks);
+  const approvals = asArray<any>(rawApprovals);
+  const budgets = asArray<any>(rawBudgets);
+  const expenses = asArray<any>(rawExpenses);
+  const payments = asArray<any>(rawPayments);
+  const employees = asArray<any>(rawEmployees);
+  const leaveRequests = asArray<any>(rawLeaveRequests);
+  const jobRoles = asArray<any>(rawJobRoles);
+  const purchaseRequests = asArray<any>(rawPurchaseRequests);
+  const sentRfqs = asArray<any>(rawSentRfqs);
+  const purchaseOrders = asArray<any>(rawPurchaseOrders);
+  const suppliers = asArray<any>(rawSuppliers);
+  const materials = asArray<any>(rawMaterials);
+  const stores = asArray<any>(rawStores);
+  const materialRequests = asArray<any>(rawMaterialRequests);
+  const claims = asArray<any>(rawClaims);
+  const activity = asArray<any>(rawActivity);
+  const adminActivity = asArray<any>(rawAdminActivity);
+  const users = asArray<any>(rawUsers);
 
   const activityBy = (keys: string[]) =>
     activity
