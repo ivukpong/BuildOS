@@ -657,6 +657,28 @@ export function RolesPage() {
     }
   };
 
+  const saveRolePermissions = async (roleId: string) => {
+    const current = roles.find((r) => r.id === roleId);
+    if (!current) return;
+
+    setRoleStatus((s) => ({ ...s, [roleId]: "saving" }));
+    try {
+      await updateAppRole(roleId, rolePayload(current));
+      setRoleStatus((s) => ({ ...s, [roleId]: "saved" }));
+      setTimeout(
+        () =>
+          setRoleStatus((s) => {
+            const copy = { ...s };
+            delete copy[roleId];
+            return copy;
+          }),
+        2000,
+      );
+    } catch {
+      setRoleStatus((s) => ({ ...s, [roleId]: "error" }));
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -923,6 +945,15 @@ export function RolesPage() {
                             Layer 3 — Process Permissions visible in matrix
                             above
                           </span>
+                          <button
+                            onClick={() => void saveRolePermissions(role.id)}
+                            disabled={roleStatus[role.id] === "saving"}
+                            className="px-3 py-1.5 text-xs font-medium rounded-md bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {roleStatus[role.id] === "saving"
+                              ? "Saving…"
+                              : "Save Modifications"}
+                          </button>
                         </div>
 
                         {/* Layer 1: Application Access */}
