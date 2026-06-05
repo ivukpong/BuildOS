@@ -14,9 +14,7 @@ import {
   Lock,
 } from "lucide-react";
 import {
-  getProcessCatalog,
-  createProcessCatalogItem,
-  deleteProcessCatalogItem,
+  getUsers,
   getProcessWorkflows,
   createProcessWorkflow,
   updateProcessWorkflow,
@@ -40,15 +38,6 @@ interface ProcessCatalogItem {
   description: string;
   requiresApproval: boolean;
 }
-const PROCESS_APP_OPTIONS = [
-  "Procurement",
-  "Finance",
-  "HR",
-  "ESS",
-  "Construction",
-  "Storefront",
-  "Admin",
-];
 
 // ── Static approval workflow types ────────────────────────────────────────────
 const APPROVAL_WORKFLOW_TYPES = [
@@ -90,8 +79,212 @@ const APPROVAL_WORKFLOW_TYPES = [
   },
 ];
 
-// ── Available approvers ────────────────────────────────────────────────────────
-const AVAILABLE_USERS: string[] = [];
+// ── Extended process catalog (hardcoded) ─────────────────────────────────────
+const PROCESS_CATALOG: ProcessCatalogItem[] = [
+  // Procurement
+  {
+    id: "pc-001",
+    label: "Create Purchase Request",
+    app: "Procurement",
+    description: "Initiate a request to procure materials or services",
+    requiresApproval: true,
+  },
+  {
+    id: "pc-002",
+    label: "Approve Purchase Order",
+    app: "Procurement",
+    description: "Authorize a purchase order before sending to supplier",
+    requiresApproval: true,
+  },
+  {
+    id: "pc-003",
+    label: "Send RFQ to Supplier",
+    app: "Procurement",
+    description: "Dispatch a request for quotation to selected vendors",
+    requiresApproval: false,
+  },
+  {
+    id: "pc-004",
+    label: "Goods Receipt",
+    app: "Procurement",
+    description: "Record delivery and confirm goods match PO",
+    requiresApproval: false,
+  },
+  {
+    id: "pc-005",
+    label: "Invoice Processing",
+    app: "Procurement",
+    description: "Match and process supplier invoices against POs",
+    requiresApproval: true,
+  },
+  {
+    id: "pc-006",
+    label: "Supplier Payment",
+    app: "Procurement",
+    description: "Disburse funds to suppliers upon invoice approval",
+    requiresApproval: true,
+  },
+  // Finance
+  {
+    id: "fc-001",
+    label: "Journal Entry",
+    app: "Finance",
+    description: "Post manual accounting entries to the ledger",
+    requiresApproval: true,
+  },
+  {
+    id: "fc-002",
+    label: "Approve Expense",
+    app: "Finance",
+    description: "Authorize employee expense claims and reimbursements",
+    requiresApproval: true,
+  },
+  {
+    id: "fc-003",
+    label: "Budget Allocation",
+    app: "Finance",
+    description: "Set and distribute budget lines across departments",
+    requiresApproval: true,
+  },
+  {
+    id: "fc-004",
+    label: "WHT Remittance",
+    app: "Finance",
+    description: "File and remit withholding tax to FIRS",
+    requiresApproval: true,
+  },
+  {
+    id: "fc-005",
+    label: "Bank Reconciliation",
+    app: "Finance",
+    description: "Match system records against bank statement",
+    requiresApproval: false,
+  },
+  // HR
+  {
+    id: "hr-001",
+    label: "Approve Leave Request",
+    app: "HR",
+    description: "Approve or reject employee time-off applications",
+    requiresApproval: true,
+  },
+  {
+    id: "hr-002",
+    label: "Create Payroll",
+    app: "HR",
+    description: "Generate monthly payroll runs for all staff",
+    requiresApproval: true,
+  },
+  {
+    id: "hr-003",
+    label: "Salary Advance",
+    app: "HR",
+    description: "Process employee requests for advance salary payments",
+    requiresApproval: true,
+  },
+  {
+    id: "hr-004",
+    label: "Employee Onboarding",
+    app: "HR",
+    description: "Initiate and track new hire onboarding steps",
+    requiresApproval: false,
+  },
+  {
+    id: "hr-005",
+    label: "Appraisal Review",
+    app: "HR",
+    description: "Manage performance review cycles and ratings",
+    requiresApproval: true,
+  },
+  // ESS
+  {
+    id: "es-001",
+    label: "Expense Claim",
+    app: "ESS",
+    description: "Submit and track employee out-of-pocket expense claims",
+    requiresApproval: true,
+  },
+  {
+    id: "es-002",
+    label: "Travel Advance",
+    app: "ESS",
+    description: "Request pre-trip cash advance for business travel",
+    requiresApproval: true,
+  },
+  {
+    id: "es-003",
+    label: "Reimbursement",
+    app: "ESS",
+    description: "Process and pay out approved expense reimbursements",
+    requiresApproval: false,
+  },
+  // Construction / Projects
+  {
+    id: "ct-001",
+    label: "Create Project",
+    app: "Construction",
+    description: "Register a new project with scope, budget, and timeline",
+    requiresApproval: true,
+  },
+  {
+    id: "ct-002",
+    label: "Approve Project Budget",
+    app: "Construction",
+    description: "Authorize total project expenditure limits",
+    requiresApproval: true,
+  },
+  {
+    id: "ct-003",
+    label: "Assign Workforce",
+    app: "Construction",
+    description: "Allocate personnel to project tasks and sites",
+    requiresApproval: false,
+  },
+  {
+    id: "ct-004",
+    label: "Milestone Approval",
+    app: "Construction",
+    description: "Sign off on completion of project milestones",
+    requiresApproval: true,
+  },
+  {
+    id: "ct-005",
+    label: "Contract Revenue",
+    app: "Construction",
+    description: "Recognize revenue against contract milestones billed",
+    requiresApproval: true,
+  },
+  // Storefront
+  {
+    id: "sf-001",
+    label: "Material Transfer",
+    app: "Storefront",
+    description: "Move materials between store locations or to site",
+    requiresApproval: false,
+  },
+  {
+    id: "sf-002",
+    label: "Stock Adjustment",
+    app: "Storefront",
+    description: "Reconcile physical count with system stock levels",
+    requiresApproval: true,
+  },
+  {
+    id: "sf-003",
+    label: "Issue to Site",
+    app: "Storefront",
+    description: "Record material issues from store to construction site",
+    requiresApproval: false,
+  },
+  {
+    id: "sf-004",
+    label: "Send for Procurement",
+    app: "Storefront",
+    description:
+      "Trigger a procurement request for low/out-of-stock items",
+    requiresApproval: false,
+  },
+];
 
 const CATALOG_APP_COLORS: Record<string, string> = {
   Procurement: "bg-blue-50 text-blue-700 border-blue-100",
@@ -116,128 +309,17 @@ function TypeBadge({ type }: { type: ApprovalType }) {
   );
 }
 
-function AddCatalogProcessModal({
-  onSave,
-  onClose,
-}: {
-  onSave: (item: ProcessCatalogItem) => Promise<void>;
-  onClose: () => void;
-}) {
-  const [label, setLabel] = useState("");
-  const [app, setApp] = useState(PROCESS_APP_OPTIONS[0]);
-  const [description, setDescription] = useState("");
-  const [requiresApproval, setRequiresApproval] = useState(true);
-
-  const [saving, setSaving] = useState(false);
-
-  const handleSave = async () => {
-    const cleanLabel = label.trim();
-    if (!cleanLabel) return;
-
-    setSaving(true);
-    try {
-      await onSave({
-        id: `proc_${Date.now()}`,
-        label: cleanLabel,
-        app,
-        description: description.trim(),
-        requiresApproval,
-      });
-      onClose();
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
-          <h2 className="text-base font-semibold text-gray-900">Add Process</h2>
-          <button
-            onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-700 rounded"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Process Name
-            </label>
-            <input
-              value={label}
-              onChange={(e) => setLabel(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Application
-            </label>
-            <select
-              value={app}
-              onChange={(e) => setApp(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-              {PROCESS_APP_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="block text-xs font-medium text-gray-700 mb-1.5">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
-            />
-          </div>
-          <label className="flex items-center gap-2 text-sm text-gray-700">
-            <input
-              type="checkbox"
-              checked={requiresApproval}
-              onChange={(e) => setRequiresApproval(e.target.checked)}
-              className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-            />
-            Requires approval workflow
-          </label>
-          <div className="flex justify-end gap-3 pt-2 border-t border-gray-100">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSave}
-              disabled={saving}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
-            >
-              {saving ? "Adding..." : "Add Process"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ── Configure Workflow Modal ──────────────────────────────────────────────────
 function ConfigureWorkflowModal({
   existing,
   availableProcesses,
+  availableUsers,
   onSave,
   onClose,
 }: {
   existing?: ProcessWorkflow;
   availableProcesses: { id: string; label: string; app: string }[];
+  availableUsers: string[];
   onSave: (wf: ProcessWorkflow) => Promise<void>;
   onClose: () => void;
 }) {
@@ -381,7 +463,7 @@ function ConfigureWorkflowModal({
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="">Select approver…</option>
-                {AVAILABLE_USERS.map((u) => (
+                {availableUsers.map((u) => (
                   <option key={u} value={u}>
                     {u}
                   </option>
@@ -398,7 +480,7 @@ function ConfigureWorkflowModal({
                 <span className="text-gray-400">(select multiple)</span>
               </label>
               <div className="space-y-1.5 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
-                {AVAILABLE_USERS.map((u) => (
+                {availableUsers.map((u) => (
                   <label
                     key={u}
                     className="flex items-center gap-2.5 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer"
@@ -444,7 +526,7 @@ function ConfigureWorkflowModal({
                         className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
                       >
                         <option value="">Select approver…</option>
-                        {AVAILABLE_USERS.map((u) => (
+                        {availableUsers.map((u) => (
                           <option key={u} value={u}>
                             {u}
                           </option>
@@ -529,12 +611,10 @@ export function ProjectConfigurationPage() {
   const [editingWf, setEditingWf] = useState<ProcessWorkflow | undefined>(
     undefined,
   );
-  const [catalog, setCatalog] = useState<ProcessCatalogItem[]>([]);
-  const [catalogLoading, setCatalogLoading] = useState(true);
+  const catalog = PROCESS_CATALOG;
+  const [availableUsers, setAvailableUsers] = useState<string[]>([]);
   const [workflowsLoading, setWorkflowsLoading] = useState(true);
-  const [catalogError, setCatalogError] = useState<string | null>(null);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
-  const [showAddCatalogProcess, setShowAddCatalogProcess] = useState(false);
   const [expandedWfId, setExpandedWfId] = useState<string | null>(null);
   const [catalogAppFilter, setCatalogAppFilter] = useState("All");
 
@@ -561,16 +641,14 @@ export function ProjectConfigurationPage() {
   }, {});
 
   useEffect(() => {
-    getProcessCatalog()
+    getUsers()
       .then((items) => {
-        setCatalog(items);
-        setCatalogError(null);
+        const names = items
+          .map((u) => String(u.name ?? "").trim())
+          .filter(Boolean);
+        setAvailableUsers(Array.from(new Set(names)));
       })
-      .catch(() => {
-        setCatalog([]);
-        setCatalogError("Unable to load process catalog. Please refresh.");
-      })
-      .finally(() => setCatalogLoading(false));
+      .catch(() => setAvailableUsers([]));
   }, []);
 
   useEffect(() => {
@@ -623,40 +701,25 @@ export function ProjectConfigurationPage() {
       {/* ── PROCESS LIST TAB ── */}
       {activeTab === "process_list" && (
         <div className="space-y-4">
-          {catalogLoading && (
-            <p className="text-sm text-gray-500">Loading process catalog...</p>
-          )}
-          {catalogError && (
-            <p className="text-sm text-red-600">{catalogError}</p>
-          )}
           <div className="flex items-center justify-between">
             <p className="text-sm text-gray-500">
               {catalog.length} system processes across {catalogApps.length - 1}{" "}
               applications
             </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowAddCatalogProcess(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-medium hover:bg-indigo-700"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                Add Process
-              </button>
-              <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1">
-                {catalogApps.map((app) => (
-                  <button
-                    key={app}
-                    onClick={() => setCatalogAppFilter(app)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
-                      catalogAppFilter === app
-                        ? "bg-indigo-600 text-white"
-                        : "text-gray-600 hover:bg-gray-100"
-                    }`}
-                  >
-                    {app}
-                  </button>
-                ))}
-              </div>
+            <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1">
+              {catalogApps.map((app) => (
+                <button
+                  key={app}
+                  onClick={() => setCatalogAppFilter(app)}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors ${
+                    catalogAppFilter === app
+                      ? "bg-indigo-600 text-white"
+                      : "text-gray-600 hover:bg-gray-100"
+                  }`}
+                >
+                  {app}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -710,28 +773,6 @@ export function ProjectConfigurationPage() {
                           Workflow configured
                         </span>
                       )}
-                      <button
-                        onClick={async () => {
-                          try {
-                            await deleteProcessCatalogItem(proc.id);
-                            setCatalog((prev) =>
-                              prev.filter((item) => item.id !== proc.id),
-                            );
-                            setWorkflows((prev) =>
-                              prev.filter((wf) => wf.processId !== proc.id),
-                            );
-                            setCatalogError(null);
-                          } catch {
-                            setCatalogError(
-                              "Failed to delete process. Please try again.",
-                            );
-                          }
-                        }}
-                        className="p-1 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded"
-                        title="Delete process"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -978,6 +1019,7 @@ export function ProjectConfigurationPage() {
         <ConfigureWorkflowModal
           existing={editingWf}
           availableProcesses={availableProcesses}
+          availableUsers={availableUsers}
           onSave={async (wf) => {
             if (editingWf) {
               try {
@@ -1024,26 +1066,6 @@ export function ProjectConfigurationPage() {
             setShowWfModal(false);
             setEditingWf(undefined);
           }}
-        />
-      )}
-      {showAddCatalogProcess && (
-        <AddCatalogProcessModal
-          onSave={async (item) => {
-            try {
-              const created = await createProcessCatalogItem({
-                label: item.label,
-                app: item.app,
-                description: item.description,
-                requiresApproval: item.requiresApproval,
-              });
-              setCatalog((prev) => [...prev, created]);
-              setCatalogError(null);
-            } catch {
-              setCatalogError("Failed to create process. Please try again.");
-              throw new Error("Failed to create process");
-            }
-          }}
-          onClose={() => setShowAddCatalogProcess(false)}
         />
       )}
     </div>
