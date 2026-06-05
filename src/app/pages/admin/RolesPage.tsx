@@ -214,8 +214,13 @@ function AddRoleModal({
     try {
       await onAdd({ name: name.trim(), description: desc.trim() });
       onClose();
-    } catch {
-      setError("Failed to create role.");
+    } catch (err: any) {
+      const message = err?.message || "Failed to create role.";
+      if (message.includes("409") || message.includes("already exists")) {
+        setError("Role with this name already exists.");
+      } else {
+        setError(message);
+      }
     } finally {
       setSaving(false);
     }
@@ -306,8 +311,13 @@ function EditRoleModal({
     try {
       await onSave({ name: name.trim(), description: desc.trim() });
       onClose();
-    } catch {
-      setError("Failed to update role.");
+    } catch (err: any) {
+      const message = err?.message || "Failed to update role.";
+      if (message.includes("409") || message.includes("already exists")) {
+        setError("Role with this name already exists.");
+      } else {
+        setError(message);
+      }
     } finally {
       setSaving(false);
     }
@@ -379,6 +389,7 @@ export function RolesPage() {
   const [roleStatus, setRoleStatus] = useState<
     Record<string, "saving" | "saved" | "error">
   >({});
+  const [actionLoading, setActionLoading] = useState<Set<string>>(new Set());
   const roleSaveQueueRef = useRef<Record<string, Promise<void>>>({});
   const [editingRole, setEditingRole] = useState<Role | null>(null);
 
@@ -553,6 +564,8 @@ export function RolesPage() {
   };
 
   const duplicateRole = async (role: Role) => {
+    const actionId = `duplicate-${role.id}`;
+    setActionLoading((prev) => new Set(prev).add(actionId));
     const permissions = { ...role.permissions };
     const appAccess = { ...role.appAccess };
     const navAccess = { ...role.navAccess };
@@ -582,16 +595,30 @@ export function RolesPage() {
       ]);
     } catch {
       // silently ignore — server may reject duplicate names
+    } finally {
+      setActionLoading((prev) => {
+        const next = new Set(prev);
+        next.delete(actionId);
+        return next;
+      });
     }
   };
 
   const deleteRole = async (roleId: string) => {
+    const actionId = `delete-${roleId}`;
+    setActionLoading((prev) => new Set(prev).add(actionId));
     const previous = roles;
     setRoles((prev) => prev.filter((r) => r.id !== roleId));
     try {
       await deleteAppRole(roleId);
     } catch {
       setRoles(previous);
+    } finally {
+      setActionLoading((prev) => {
+        const next = new Set(prev);
+        next.delete(actionId);
+        return next;
+      });
     }
   };
 
@@ -799,7 +826,8 @@ export function RolesPage() {
                           </button>
                           <button
                             onClick={() => void duplicateRole(role)}
-                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
+                            disabled={actionLoading.has(`duplicate-${role.id}`)}
+                            className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed"
                             title="Duplicate"
                           >
                             <Copy className="w-3.5 h-3.5" />
@@ -807,7 +835,8 @@ export function RolesPage() {
                           {!role.isSuper && (
                             <button
                               onClick={() => void deleteRole(role.id)}
-                              className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
+                              disabled={actionLoading.has(`delete-${role.id}`)}
+                              className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                               title="Delete"
                             >
                               <Trash2 className="w-3.5 h-3.5" />

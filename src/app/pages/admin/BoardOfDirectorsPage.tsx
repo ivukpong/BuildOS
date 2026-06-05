@@ -20,6 +20,8 @@ export function BoardOfDirectorsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingDirector, setEditingDirector] = useState<Director | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Director | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [directors, setDirectors] = useState<Director[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -91,7 +93,7 @@ export function BoardOfDirectorsPage() {
     setDeleteTarget(target);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const newErrors: Record<string, string> = {};
     if (!formData.firstName.trim())
       newErrors.firstName = "First name is required";
@@ -103,28 +105,29 @@ export function BoardOfDirectorsPage() {
       return;
     }
     setErrors({});
+    setIsSaving(true);
 
-    if (editingDirector) {
-      updateDirector(editingDirector.id, {
-        firstName: formData.firstName,
-        middleName: formData.middleName,
-        lastName: formData.lastName,
-        designation: formData.designation,
-      }).then(() => {
-        void loadDirectors();
-        handleCloseModal();
-      });
-    } else {
-      createDirector({
-        firstName: formData.firstName,
-        middleName: formData.middleName,
-        lastName: formData.lastName,
-        designation: formData.designation,
-        sequence: formData.sequence,
-      }).then(() => {
-        void loadDirectors();
-        handleCloseModal();
-      });
+    try {
+      if (editingDirector) {
+        await updateDirector(editingDirector.id, {
+          firstName: formData.firstName,
+          middleName: formData.middleName,
+          lastName: formData.lastName,
+          designation: formData.designation,
+        });
+      } else {
+        await createDirector({
+          firstName: formData.firstName,
+          middleName: formData.middleName,
+          lastName: formData.lastName,
+          designation: formData.designation,
+          sequence: formData.sequence,
+        });
+      }
+      await loadDirectors();
+      handleCloseModal();
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -377,14 +380,19 @@ export function BoardOfDirectorsPage() {
             <div className="flex items-center justify-end gap-3 px-6 py-4 bg-gray-50 border-t border-gray-100">
               <button
                 onClick={handleCloseModal}
-                className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                disabled={isSaving}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                disabled={isSaving}
+                className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >
+                {isSaving && (
+                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                )}
                 {editingDirector ? "Save Changes" : "Add Director"}
               </button>
             </div>
@@ -407,18 +415,28 @@ export function BoardOfDirectorsPage() {
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setDeleteTarget(null)}
-                className="px-4 py-2 text-sm border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={async () => {
-                  await deleteDirector(deleteTarget.id);
-                  await loadDirectors();
-                  setDeleteTarget(null);
+                  setIsDeleting(true);
+                  try {
+                    await deleteDirector(deleteTarget.id);
+                    await loadDirectors();
+                    setDeleteTarget(null);
+                  } finally {
+                    setIsDeleting(false);
+                  }
                 }}
-                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl"
+                disabled={isDeleting}
+                className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >
+                {isDeleting && (
+                  <span className="inline-block w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                )}
                 Delete
               </button>
             </div>

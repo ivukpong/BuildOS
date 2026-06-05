@@ -80,23 +80,52 @@ const BLANK_CAT: Omit<ChangeCategory, "id"> = { name: "", description: "" };
 
 function CategoryModal({
   initial,
+  existing,
   onSave,
   onClose,
 }: {
   initial: Partial<ChangeCategory> & { name: string; description: string };
+  existing: ChangeCategory[];
   onSave: (data: Omit<ChangeCategory, "id"> & { id?: string }) => Promise<void>;
   onClose: () => void;
 }) {
   const [form, setForm] = useState({ ...initial });
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSaving, setIsSaving] = useState(false);
+
   async function submit() {
     if (!form.name.trim()) {
       setErrors({ name: "Name is required." });
       return;
     }
-    await onSave(form);
-    onClose();
+
+    const isDuplicate = existing.some(
+      (c) =>
+        c.name.toLowerCase() === form.name.toLowerCase() && c.id !== initial.id,
+    );
+    if (isDuplicate) {
+      setErrors({ name: "Category name already exists." });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await onSave(form);
+      onClose();
+    } catch (err: any) {
+      if (
+        err?.message?.includes("409") ||
+        err?.message?.includes("already exists")
+      ) {
+        setErrors({ name: "Category name already exists." });
+      } else {
+        setErrors({ name: err?.message || "Failed to save category." });
+      }
+    } finally {
+      setIsSaving(false);
+    }
   }
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
       <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
@@ -118,7 +147,10 @@ function CategoryModal({
             </label>
             <input
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                if (errors.name) setErrors({});
+              }}
               placeholder="e.g. Design Change"
               className={`w-full border rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 ${errors.name ? "border-red-400" : "border-gray-200"}`}
             />
@@ -144,13 +176,15 @@ function CategoryModal({
         <div className="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+            disabled={isSaving}
+            className="px-4 py-2 text-sm border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
             Cancel
           </button>
           <button
             onClick={submit}
-            className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl"
+            disabled={isSaving}
+            className="px-4 py-2 text-sm bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl disabled:opacity-50"
           >
             {initial.id ? "Save Changes" : "Add Category"}
           </button>
@@ -162,10 +196,12 @@ function CategoryModal({
 
 function DeleteCatModal({
   name,
+  isLoading = false,
   onConfirm,
   onClose,
 }: {
   name: string;
+  isLoading?: boolean;
   onConfirm: () => void;
   onClose: () => void;
 }) {
@@ -181,7 +217,8 @@ function DeleteCatModal({
         <div className="flex justify-end gap-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-sm border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50"
+            disabled={isLoading}
+            className="px-4 py-2 text-sm border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>
@@ -190,9 +227,10 @@ function DeleteCatModal({
               onConfirm();
               onClose();
             }}
-            className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl"
+            disabled={isLoading}
+            className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Delete
+            {isLoading ? "Deleting…" : "Delete"}
           </button>
         </div>
       </div>
@@ -263,24 +301,56 @@ export function GeneralSettingsPage() {
   const [issueTypes, setIssueTypes] = useState<IssueType[]>([]);
   const [showIssueForm, setShowIssueForm] = useState(false);
   const [editIssueId, setEditIssueId] = useState<string | null>(null);
+  const [issueFormError, setIssueFormError] = useState<string>("");
+  const [issueSaving, setIssueSaving] = useState(false);
+  const [issueDeletingId, setIssueDeletingId] = useState<string | null>(null);
+  const [issueTogglingId, setIssueTogglingId] = useState<string | null>(null);
   const [issueForm, setIssueForm] = useState<typeof EMPTY_ISSUE>({
     ...EMPTY_ISSUE,
   });
   async function saveIssue(e: React.FormEvent) {
     e.preventDefault();
-    if (!issueForm.name.trim()) return;
-    if (editIssueId) {
-      const updated = await updateIssueType(editIssueId, issueForm);
-      setIssueTypes((prev) =>
-        prev.map((t) => (t.id === editIssueId ? updated : t)),
-      );
-      setEditIssueId(null);
-    } else {
-      const created = await createIssueType(issueForm);
-      setIssueTypes((prev) => [...prev, created]);
+    setIssueFormError("");
+
+    if (!issueForm.name.trim()) {
+      setIssueFormError("Issue type name is required");
+      return;
     }
-    setIssueForm({ ...EMPTY_ISSUE });
-    setShowIssueForm(false);
+
+    const isDuplicate = issueTypes.some(
+      (t) =>
+        t.name.toLowerCase() === issueForm.name.toLowerCase() &&
+        t.id !== editIssueId,
+    );
+    if (isDuplicate) {
+      setIssueFormError("Issue type name already exists");
+      return;
+    }
+
+    setIssueSaving(true);
+    try {
+      if (editIssueId) {
+        const updated = await updateIssueType(editIssueId, issueForm);
+        setIssueTypes((prev) =>
+          prev.map((t) => (t.id === editIssueId ? updated : t)),
+        );
+        setEditIssueId(null);
+      } else {
+        const created = await createIssueType(issueForm);
+        setIssueTypes((prev) => [...prev, created]);
+      }
+      setIssueForm({ ...EMPTY_ISSUE });
+      setShowIssueForm(false);
+    } catch (err: any) {
+      const message = err?.message || "Failed to save issue type";
+      if (message.includes("409") || message.includes("already exists")) {
+        setIssueFormError("Issue type name already exists");
+      } else {
+        setIssueFormError(message);
+      }
+    } finally {
+      setIssueSaving(false);
+    }
   }
   function startEditIssue(t: IssueType) {
     setIssueForm({
@@ -295,14 +365,27 @@ export function GeneralSettingsPage() {
     setShowIssueForm(true);
   }
   async function deleteIssue(id: string) {
-    await deleteIssueType(id);
-    setIssueTypes((prev) => prev.filter((t) => t.id !== id));
+    setIssueDeletingId(id);
+    try {
+      await deleteIssueType(id);
+      setIssueTypes((prev) => prev.filter((t) => t.id !== id));
+    } finally {
+      setIssueDeletingId(null);
+    }
   }
   async function toggleIssueActive(id: string) {
+    setIssueTogglingId(id);
     const current = issueTypes.find((t) => t.id === id);
-    if (!current) return;
-    const updated = await updateIssueType(id, { active: !current.active });
-    setIssueTypes((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    if (!current) {
+      setIssueTogglingId(null);
+      return;
+    }
+    try {
+      const updated = await updateIssueType(id, { active: !current.active });
+      setIssueTypes((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    } finally {
+      setIssueTogglingId(null);
+    }
   }
 
   // ── Change Categories state ──────────────────────────────────────────────
@@ -311,20 +394,27 @@ export function GeneralSettingsPage() {
   const [showCatModal, setShowCatModal] = useState(false);
   const [editingCat, setEditingCat] = useState<ChangeCategory | null>(null);
   const [deletingCat, setDeletingCat] = useState<ChangeCategory | null>(null);
+  const [catSaving, setCatSaving] = useState(false);
+  const [catDeleting, setCatDeleting] = useState(false);
   const filteredCats = categories.filter(
     (c) =>
       c.name.toLowerCase().includes(catSearch.toLowerCase()) ||
       c.description.toLowerCase().includes(catSearch.toLowerCase()),
   );
   async function saveCat(data: Omit<ChangeCategory, "id"> & { id?: string }) {
-    if (data.id) {
-      const updated = await updateChangeCategory(data.id, data);
-      setCategories((prev) =>
-        prev.map((c) => (c.id === data.id ? updated : c)),
-      );
-    } else {
-      const created = await createChangeCategory(data);
-      setCategories((prev) => [...prev, created]);
+    setCatSaving(true);
+    try {
+      if (data.id) {
+        const updated = await updateChangeCategory(data.id, data);
+        setCategories((prev) =>
+          prev.map((c) => (c.id === data.id ? updated : c)),
+        );
+      } else {
+        const created = await createChangeCategory(data);
+        setCategories((prev) => [...prev, created]);
+      }
+    } finally {
+      setCatSaving(false);
     }
   }
 
@@ -641,6 +731,11 @@ export function GeneralSettingsPage() {
                 {editIssueId ? "Edit Issue Type" : "New Issue Type"}
               </h2>
               <form onSubmit={saveIssue} className="space-y-4">
+                {issueFormError && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-700">{issueFormError}</p>
+                  </div>
+                )}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="col-span-2">
                     <label className="block text-xs font-medium text-gray-600 mb-1">
@@ -648,9 +743,10 @@ export function GeneralSettingsPage() {
                     </label>
                     <input
                       value={issueForm.name}
-                      onChange={(e) =>
-                        setIssueForm((f) => ({ ...f, name: e.target.value }))
-                      }
+                      onChange={(e) => {
+                        setIssueForm((f) => ({ ...f, name: e.target.value }));
+                        if (issueFormError) setIssueFormError("");
+                      }}
                       placeholder="e.g. Equipment Breakdown"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-500"
                     />
@@ -747,9 +843,16 @@ export function GeneralSettingsPage() {
                 <div className="flex gap-3 pt-2">
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800"
+                    disabled={issueSaving}
+                    className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {editIssueId ? "Save Changes" : "Add Issue Type"}
+                    {issueSaving
+                      ? editIssueId
+                        ? "Saving…"
+                        : "Adding…"
+                      : editIssueId
+                        ? "Save Changes"
+                        : "Add Issue Type"}
                   </button>
                   <button
                     type="button"
@@ -758,7 +861,8 @@ export function GeneralSettingsPage() {
                       setEditIssueId(null);
                       setIssueForm({ ...EMPTY_ISSUE });
                     }}
-                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50"
+                    disabled={issueSaving}
+                    className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Cancel
                   </button>
@@ -831,7 +935,8 @@ export function GeneralSettingsPage() {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => toggleIssueActive(t.id)}
-                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${t.active ? "bg-gray-800" : "bg-gray-200"}`}
+                        disabled={issueTogglingId === t.id}
+                        className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${t.active ? "bg-gray-800" : "bg-gray-200"}`}
                       >
                         <span
                           className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${t.active ? "translate-x-4" : "translate-x-0.5"}`}
@@ -842,13 +947,23 @@ export function GeneralSettingsPage() {
                       <div className="flex items-center justify-end gap-2">
                         <button
                           onClick={() => startEditIssue(t)}
-                          className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100"
+                          disabled={
+                            issueSaving ||
+                            issueDeletingId === t.id ||
+                            issueTogglingId === t.id
+                          }
+                          className="text-gray-400 hover:text-gray-700 p-1 rounded-lg hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
                           onClick={() => deleteIssue(t.id)}
-                          className="text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-red-50"
+                          disabled={
+                            issueSaving ||
+                            issueDeletingId === t.id ||
+                            issueTogglingId === t.id
+                          }
+                          className="text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
@@ -936,13 +1051,15 @@ export function GeneralSettingsPage() {
                             setEditingCat(cat);
                             setShowCatModal(true);
                           }}
-                          className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700"
+                          disabled={catSaving || catDeleting}
+                          className="p-1.5 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Edit className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() => setDeletingCat(cat)}
-                          className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
+                          disabled={catSaving || catDeleting}
+                          className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -960,6 +1077,7 @@ export function GeneralSettingsPage() {
           {showCatModal && (
             <CategoryModal
               initial={editingCat ?? { ...BLANK_CAT }}
+              existing={categories}
               onSave={saveCat}
               onClose={() => setShowCatModal(false)}
             />
@@ -967,11 +1085,18 @@ export function GeneralSettingsPage() {
           {deletingCat && (
             <DeleteCatModal
               name={deletingCat.name}
+              isLoading={catDeleting}
               onConfirm={async () => {
-                await deleteChangeCategory(deletingCat.id);
-                setCategories((prev) =>
-                  prev.filter((c) => c.id !== deletingCat.id),
-                );
+                setCatDeleting(true);
+                try {
+                  await deleteChangeCategory(deletingCat.id);
+                  setCategories((prev) =>
+                    prev.filter((c) => c.id !== deletingCat.id),
+                  );
+                } finally {
+                  setCatDeleting(false);
+                  setDeletingCat(null);
+                }
               }}
               onClose={() => setDeletingCat(null)}
             />

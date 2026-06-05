@@ -364,7 +364,12 @@ export class AdminExtrasService {
                 const fallback = String(process.env.APP_URL || '').trim();
                 if (fallback) return fallback.replace(/\/$/, '');
 
-                return 'http://localhost:5173';
+                // NOTE: Returning localhost as fallback. In production, ensure FRONTEND_URL environment variable is set.
+                // This is critical for invitation email links to work correctly in production environments.
+                // Without FRONTEND_URL, users will receive invite emails with localhost links that won't work.
+                const fallbackUrl = 'http://localhost:5173';
+                this.logger.warn(`FRONTEND_URL not configured. Using fallback: ${fallbackUrl}. Set FRONTEND_URL environment variable in production.`);
+                return fallbackUrl;
         }
 
         private buildActivationLink(token: string): string {
@@ -916,20 +921,41 @@ export class AdminExtrasService {
             await this.ensureAdminRole();
             return this.prisma.appRole.findUniqueOrThrow({ where: { name: 'Admin' } });
         }
-        return this.prisma.appRole.create({ data });
+        try {
+            return await this.prisma.appRole.create({ data });
+        } catch (error: any) {
+            if (error?.code === 'P2002' && error?.meta?.target?.includes('name')) {
+                throw new ConflictException(`Role with name '${data.name}' already exists`);
+            }
+            throw error;
+        }
     }
     async updateRole(id: string, data: any) {
         const current = await this.prisma.appRole.findUnique({ where: { id } });
-        const isAdminRole =
-            String(current?.name ?? '').trim().toLowerCase() === 'admin' ||
-            String(data?.name ?? '').trim().toLowerCase() === 'admin';
+        if (!current) throw new BadRequestException('Role not found');
+        
+        const isCurrentAdminRole = String(current.name ?? '').trim().toLowerCase() === 'admin';
+        const isAttemptingAdminName = String(data?.name ?? '').trim().toLowerCase() === 'admin';
 
-        if (isAdminRole || data?.isSuper) {
+        // Prevent renaming roles to 'admin' or making non-admin roles super
+        if (isAttemptingAdminName || (data?.isSuper && !isCurrentAdminRole)) {
+            throw new BadRequestException('Cannot rename roles to "Admin" or make non-admin roles super');
+        }
+
+        // Allow updating admin role metadata
+        if (isCurrentAdminRole) {
             await this.ensureAdminRole();
             return this.prisma.appRole.findUniqueOrThrow({ where: { name: 'Admin' } });
         }
 
-        return this.prisma.appRole.update({ where: { id }, data });
+        try {
+            return await this.prisma.appRole.update({ where: { id }, data });
+        } catch (error: any) {
+            if (error?.code === 'P2002' && error?.meta?.target?.includes('name')) {
+                throw new ConflictException(`Role with name '${data.name}' already exists`);
+            }
+            throw error;
+        }
     }
     async deleteRole(id: string) {
         const current = await this.prisma.appRole.findUnique({ where: { id } });
@@ -947,9 +973,15 @@ export class AdminExtrasService {
 
     async createIssueType(data: any) {
         const settings = await this.readAdminSettings();
+        const name = String(data?.name ?? '').trim();
+        if (!name) throw new BadRequestException('Issue type name is required');
+        
+        const exists = settings.issueTypes.some((t: any) => t.name.toLowerCase() === name.toLowerCase());
+        if (exists) throw new ConflictException(`Issue type '${name}' already exists`);
+        
         const next = {
             id: crypto.randomUUID(),
-            name: data.name,
+            name,
             description: data.description ?? '',
             priority: data.priority ?? 'medium',
             color: data.color ?? 'bg-red-100 text-red-700',
@@ -989,9 +1021,15 @@ export class AdminExtrasService {
 
     async createChangeCategory(data: any) {
         const settings = await this.readAdminSettings();
+        const name = String(data?.name ?? '').trim();
+        if (!name) throw new BadRequestException('Category name is required');
+        
+        const exists = settings.changeCategories.some((c: any) => c.name.toLowerCase() === name.toLowerCase());
+        if (exists) throw new ConflictException(`Category '${name}' already exists`);
+        
         const next = {
             id: crypto.randomUUID(),
-            name: data.name,
+            name,
             description: data.description ?? '',
         };
         settings.changeCategories.push(next);

@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 import {
   getCompanyProfile,
   updateCompanyProfile,
@@ -121,6 +122,14 @@ export function CompanyProfilePage() {
     null,
   );
   const [editingDepartmentName, setEditingDepartmentName] = useState("");
+  const [deletingDepartmentId, setDeletingDepartmentId] = useState<
+    string | null
+  >(null);
+  const [departmentToDelete, setDepartmentToDelete] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
+  const [isDeletingDepartment, setIsDeletingDepartment] = useState(false);
 
   useEffect(() => {
     fetchCountryOptions()
@@ -315,23 +324,30 @@ export function CompanyProfilePage() {
     id: string;
     name: string;
   }) => {
-    const confirmed = window.confirm(
-      `Delete department "${department.name}"? This cannot be undone.`,
-    );
-    if (!confirmed) return;
+    setDepartmentToDelete(department);
+  };
 
+  const confirmDeleteDepartment = async () => {
+    if (!departmentToDelete) return;
+
+    setIsDeletingDepartment(true);
     try {
-      await deleteDepartment(department.id);
-      setDepartments((prev) => prev.filter((d) => d.id !== department.id));
+      await deleteDepartment(departmentToDelete.id);
+      setDepartments((prev) =>
+        prev.filter((d) => d.id !== departmentToDelete.id),
+      );
       setDepartmentMessage("Department deleted.");
-      if (editingDepartmentId === department.id) {
+      if (editingDepartmentId === departmentToDelete.id) {
         setEditingDepartmentId(null);
         setEditingDepartmentName("");
       }
+      setDepartmentToDelete(null);
     } catch {
       setDepartmentMessage(
         "Failed to delete department. Remove linked records first.",
       );
+    } finally {
+      setIsDeletingDepartment(false);
     }
   };
 
@@ -682,6 +698,19 @@ export function CompanyProfilePage() {
           </div>
         </div>
       </div>
+
+      {/* Confirmation Modal for Department Deletion */}
+      <ConfirmationModal
+        isOpen={departmentToDelete !== null}
+        title="Delete Department?"
+        description={`Are you sure you want to delete "${departmentToDelete?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        isDangerous={true}
+        isLoading={isDeletingDepartment}
+        onConfirm={confirmDeleteDepartment}
+        onCancel={() => setDepartmentToDelete(null)}
+      />
     </div>
   );
 }

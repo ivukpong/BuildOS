@@ -1,11 +1,12 @@
 import { Filter } from "lucide-react";
 import { useState, useEffect } from "react";
 import { DataTable } from "../../components/DataTable";
-import { getAuditLogs } from "../../api/admin-extras";
+import { getAuditLogs, getUsers } from "../../api/admin-extras";
 
 interface AuditLog {
   id: string;
   timestamp: string;
+  createdAt: string;
   user: string;
   action: string;
   module: string;
@@ -15,27 +16,61 @@ interface AuditLog {
 
 export function AuditLogsPage() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [activeUsers, setActiveUsers] = useState(0);
 
   useEffect(() => {
-    getAuditLogs({ limit: 100 })
-      .then((data) => {
+    Promise.all([getAuditLogs({ limit: 100 }), getUsers()])
+      .then(([auditLogs, users]) => {
         setLogs(
-          data.map((log: any) => ({
-            id: log.id,
-            timestamp: new Date(log.createdAt).toLocaleString(),
-            user: log.user?.name || log.userId || "System",
-            action: log.action || "Unknown",
-            module: log.module || log.resource || "System",
-            details: log.details || log.description || "",
-            ipAddress: log.ipAddress || "N/A",
+          auditLogs.map((log: any) => ({
+            id: String(log.id),
+            timestamp: new Date(log.createdAt || log.timestamp).toLocaleString(),
+            createdAt: String(log.createdAt || log.timestamp || ""),
+            user:
+              typeof log.user === "string"
+                ? log.user
+                : log.user?.name || log.userId || "System",
+            action: String(log.action || "Unknown"),
+            module: String(log.module || log.resource || "System"),
+            details: String(log.details || log.description || ""),
+            ipAddress: String(log.ipAddress || "N/A"),
           })),
+        );
+
+        const since24h = Date.now() - 24 * 60 * 60 * 1000;
+        setActiveUsers(
+          users.filter((user) => {
+            if (!user.lastLogin) return false;
+            const at = new Date(user.lastLogin).getTime();
+            return Number.isFinite(at) && at >= since24h;
+          }).length,
         );
       })
       .catch((err) => {
         console.error("Failed to load audit logs:", err);
         setLogs([]);
+        setActiveUsers(0);
       });
   }, []);
+
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
+  const todayCount = logs.filter((log) => {
+    const at = new Date(log.createdAt).getTime();
+    return Number.isFinite(at) && at >= startOfToday.getTime();
+  }).length;
+
+  const failedLogins = logs.filter((log) => {
+    const action = log.action.toLowerCase();
+    const details = log.details.toLowerCase();
+    return (
+      action.includes("failed") ||
+      action.includes("login_failed") ||
+      action.includes("failed login") ||
+      details.includes("failed login")
+    );
+  }).length;
 
   const columns = [
     {
@@ -121,22 +156,17 @@ export function AuditLogsPage() {
 
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <p className="text-sm text-gray-600">Today</p>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">
-            {
-              logs.filter((log) => log.timestamp.startsWith("2026-04-07"))
-                .length
-            }
-          </p>
+          <p className="text-2xl font-semibold text-gray-900 mt-1">{todayCount}</p>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <p className="text-sm text-gray-600">Active Users</p>
-          <p className="text-2xl font-semibold text-gray-900 mt-1">8</p>
+          <p className="text-2xl font-semibold text-gray-900 mt-1">{activeUsers}</p>
         </div>
 
         <div className="bg-white border border-gray-200 rounded-lg p-4">
           <p className="text-sm text-gray-600">Failed Logins</p>
-          <p className="text-2xl font-semibold text-red-600 mt-1">0</p>
+          <p className="text-2xl font-semibold text-red-600 mt-1">{failedLogins}</p>
         </div>
       </div>
 

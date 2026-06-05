@@ -150,48 +150,66 @@ export function MyTasksView({
   const [tasks, setTasks] = useState<MyTask[]>([]);
   const [currentUser, setCurrentUser] = useState(users[0]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [loadingTaskId, setLoadingTaskId] = useState<string | null>(null);
 
   const myTasks = tasks.filter((t) => t.assignedTo === currentUser);
 
   function startTask(id: string) {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, status: "In Progress", startedAt: TODAY } : t,
-      ),
-    );
+    setLoadingTaskId(id);
+    setTimeout(() => {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, status: "In Progress", startedAt: TODAY } : t,
+        ),
+      );
+      setLoadingTaskId(null);
+    }, 0);
   }
 
   function submitTask(id: string) {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? { ...t, status: "Awaiting Approval", submittedAt: TODAY }
-          : t,
-      ),
-    );
+    setLoadingTaskId(id);
+    setTimeout(() => {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? { ...t, status: "Awaiting Approval", submittedAt: TODAY }
+            : t,
+        ),
+      );
+      setLoadingTaskId(null);
+    }, 0);
   }
 
   function approveTask(id: string) {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, status: "Approved", resolvedAt: TODAY } : t,
-      ),
-    );
+    setLoadingTaskId(id);
+    setTimeout(() => {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id ? { ...t, status: "Approved", resolvedAt: TODAY } : t,
+        ),
+      );
+      setLoadingTaskId(null);
+    }, 0);
   }
 
   function declineTask(id: string) {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              status: "Declined",
-              resolvedAt: TODAY,
-              declineReason: "Declined by manager. Please review and resubmit.",
-            }
-          : t,
-      ),
-    );
+    setLoadingTaskId(id);
+    setTimeout(() => {
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? {
+                ...t,
+                status: "Declined",
+                resolvedAt: TODAY,
+                declineReason:
+                  "Declined by manager. Please review and resubmit.",
+              }
+            : t,
+        ),
+      );
+      setLoadingTaskId(null);
+    }, 0);
   }
 
   return (
@@ -353,41 +371,61 @@ export function MyTasksView({
                       {task.status === "To Do" && (
                         <button
                           onClick={() => startTask(task.id)}
-                          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors"
+                          disabled={loadingTaskId === task.id}
+                          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <PlayCircle className="w-3.5 h-3.5" /> Start Task
+                          <PlayCircle className="w-3.5 h-3.5" />{" "}
+                          {loadingTaskId === task.id
+                            ? "Starting…"
+                            : "Start Task"}
                         </button>
                       )}
                       {task.status === "In Progress" && (
                         <button
                           onClick={() => submitTask(task.id)}
-                          className={`w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-white rounded-lg transition-colors ${accentColor}`}
+                          disabled={loadingTaskId === task.id}
+                          className={`w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${accentColor}`}
                         >
-                          <Send className="w-3.5 h-3.5" /> Submit as Done
+                          <Send className="w-3.5 h-3.5" />{" "}
+                          {loadingTaskId === task.id
+                            ? "Submitting…"
+                            : "Submit as Done"}
                         </button>
                       )}
                       {task.status === "Awaiting Approval" && (
                         <div className="flex gap-1.5">
                           <button
                             onClick={() => approveTask(task.id)}
-                            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors"
+                            disabled={loadingTaskId === task.id}
+                            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium bg-emerald-50 text-emerald-700 rounded-lg hover:bg-emerald-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <ThumbsUp className="w-3.5 h-3.5" /> Approve
+                            <ThumbsUp className="w-3.5 h-3.5" />{" "}
+                            {loadingTaskId === task.id
+                              ? "Approving…"
+                              : "Approve"}
                           </button>
                           <button
                             onClick={() => declineTask(task.id)}
-                            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+                            disabled={loadingTaskId === task.id}
+                            className="flex-1 flex items-center justify-center gap-1 py-1.5 text-xs font-medium bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           >
-                            <ThumbsDown className="w-3.5 h-3.5" /> Decline
+                            <ThumbsDown className="w-3.5 h-3.5" />{" "}
+                            {loadingTaskId === task.id
+                              ? "Declining…"
+                              : "Decline"}
                           </button>
                         </div>
                       )}
                       {task.status === "Declined" && (
                         <button
                           onClick={() => startTask(task.id)}
-                          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200"
+                          disabled={loadingTaskId === task.id}
+                          className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs font-medium bg-gray-50 text-gray-600 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <PlayCircle className="w-3.5 h-3.5" /> Restart Task
+                          <PlayCircle className="w-3.5 h-3.5" />{" "}
+                          {loadingTaskId === task.id
+                            ? "Restarting…"
+                            : "Restart Task"}
                         </button>
                       )}
                     </div>
