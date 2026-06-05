@@ -1,0 +1,331 @@
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class WorkflowEngineService {
+  constructor(private prisma: PrismaService) {}
+
+  /**
+   * Create approval workflow instance
+   */
+  async createWorkflowInstance(
+    workflowId: string,
+    entityType: string,
+    entityId: string,
+    initiatedBy: string,
+    context?: any,
+  ) {
+    const workflow = await this.prisma.approvalWorkflow.findUnique({
+      where: { id: workflowId },
+      include: { nodes: { orderBy: { sequence: 'asc' } } },
+    });
+
+    if (!workflow) {
+      throw new NotFoundException(`Workflow ${workflowId} not found`);
+    }
+
+    // Create workflow instance
+    const instance = await this.prisma.workflowInstance.create({
+      data: {
+        workflowId,
+        entityType,
+        entityId,
+        initiatedBy,
+        status: 'in_progress',
+        context: context || {},
+        currentNodeSeq: 1,
+      },
+    });
+
+    // Create first approval request
+    if (workflow.nodes.length > 0) {
+      const firstNode = workflow.nodes[0];
+      await this.createApprovalRequest(instance.id, firstNode, initiatedBy, context);
+    }
+
+    return instance;
+  }
+
+  /**
+   * Get workflow instance
+   */
+  async getWorkflowInstance(instanceId: string) {
+    const instance = await this.prisma.workflowInstance.findUnique({
+      where: { id: instanceId },
+      include: { approvalRequests: { orderBy: { nodeSequence: 'asc' } } },
+    });
+
+    if (!instance) {
+      throw new NotFoundException(`Workflow instance ${instanceId} not found`);
+    }
+
+    return {
+      ...instance,
+      context: JSON.parse(instance.context as string),
+    };
+  }
+
+  /**
+   * Get pending approvals for user
+   */
+  async getPendingApprovals(approverId: string, limit = 20, skip = 0) {
+    const [requests, total] = await Promise.all([
+      this.prisma.approvalRequest.findMany({
+        where: {
+          approverId,
+          status: 'pending',
+        },
+        include: { workflowInstance: true },
+        orderBy: { createdAt: 'asc' },
+        take: limit,
+        skip,
+      }),
+      this.prisma.approvalRequest.count({
+        where: { approverId, status: 'pending' },
+      }),
+    ]);
+
+    return {
+      requests,
+      pagination: { total, limit, skip },
+    };
+  }
+
+  /**
+   * Approve workflow node
+   */
+  async approveNode(
+    approvalRequestId: string,
+    approverId: string,
+    comments?: string,
+  ) {
+    const approvalRequest = await this.prisma.approvalRequest.findUnique({
+      where: { id: approvalRequestId },
+      include: { workflowInstance: { include: { approvalWorkflow: { include: { nodes: true } } } } },
+    });
+
+    if (!approvalRequest) {
+      throw new NotFoundException(`Approval request ${approvalRequestId} not found`);
+    }
+
+    if (approvalRequest.status !== 'pending') {
+      throw new BadRequestException('Approval request is not pending');
+    }
+
+    // Update approval request
+    await this.prisma.approvalRequest.update({
+      where: { id: approvalRequestId },
+      data: {
+        status: 'approved',
+        approverId,
+        comments,
+        approvedAt: new Date(),
+      },
+    });
+
+    // Get next node
+    const currentSequence = approvalRequest.nodeSequence;
+    const nextNode = approvalRequest.workflowInstance.approvalWorkflow.nodes.find(
+      (n) => n.sequence === currentSequence + 1,
+    );
+
+    if (nextNode) {
+      // Create approval request for next node
+      const instance = approvalRequest.workflowInstance;
+      await this.createApprovalRequest(instance.id, nextNode, approverId, {});
+
+      // Update instance current node
+      await this.prisma.workflowInstance.update({
+        where: { id: instance.id },
+        data: { currentNodeSeq: nextNode.sequence },
+      });
+    } else {
+      // All approvals completed - mark workflow as completed
+      await this.prisma.workflowInstance.update({
+        where: { id: approvalRequest.workflowInstanceId },
+        data: { status: 'completed', updatedAt: new Date() },
+      });
+    }
+
+    return approvalRequest;
+  }
+
+  /**
+   * Reject workflow node
+   */
+  async rejectNode(
+    approvalRequestId: string,
+    approverId: string,
+    reason: string,
+  ) {
+    const approvalRequest = await this.prisma.approvalRequest.findUnique({
+      where: { id: approvalRequestId },
+    });
+
+    if (!approvalRequest) {
+      throw new NotFoundException(`Approval request ${approvalRequestId} not found`);
+    }
+
+    // Update approval request
+    const updated = await this.prisma.approvalRequest.update({
+      where: { id: approvalRequestId },
+      data: {
+        status: 'rejected',
+        approverId,
+        comments: reason,
+        updatedAt: new Date(),
+      },
+    });
+
+    // Mark workflow as rejected
+    await this.prisma.workflowInstance.update({
+      where: { id: approvalRequest.workflowInstanceId },
+      data: { status: 'rejected', updatedAt: new Date() },
+    });
+
+    return updated;
+  }
+
+  /**
+   * Delegate approval
+   */
+  async delegateApproval(
+    approvalRequestId: string,
+    delegateTo: string,
+    delegatedFrom: string,
+  ) {
+    const approvalRequest = await this.prisma.approvalRequest.findUnique({
+      where: { id: approvalRequestId },
+    });
+
+    if (!approvalRequest) {
+      throw new NotFoundException(`Approval request ${approvalRequestId} not found`);
+    }
+
+    return this.prisma.approvalRequest.update({
+      where: { id: approvalRequestId },
+      data: {
+        approverId: delegateTo,
+        delegatedFrom,
+        updatedAt: new Date(),
+      },
+    });
+  }
+
+  /**
+   * Handle node escalation
+   */
+  async handleEscalation(approvalRequestId: string, escalatedTo: string) {
+    const approvalRequest = await this.prisma.approvalRequest.findUnique({
+      where: { id: approvalRequestId },
+      include: { workflowInstance: { include: { approvalWorkflow: { include: { nodes: true } } } } },
+    });
+
+    if (!approvalRequest) {
+      throw new NotFoundException(`Approval request ${approvalRequestId} not found`);
+    }
+
+    // Mark current as pending escalation
+    await this.prisma.approvalRequest.update({
+      where: { id: approvalRequestId },
+      data: { status: 'escalated' },
+    });
+
+    // Create new approval request for escalated approver
+    const node = approvalRequest.workflowInstance.approvalWorkflow.nodes.find(
+      (n) => n.sequence === approvalRequest.nodeSequence,
+    );
+
+    if (node) {
+      return this.prisma.approvalRequest.create({
+        data: {
+          workflowInstanceId: approvalRequest.workflowInstanceId,
+          nodeSequence: node.sequence,
+          approverId: escalatedTo,
+          status: 'pending',
+          delegatedFrom: approvalRequest.approverId,
+        },
+      });
+    }
+  }
+
+  /**
+   * Get workflow statistics
+   */
+  async getWorkflowStats(workflowId: string) {
+    const [total, completed, rejected, inProgress] = await Promise.all([
+      this.prisma.workflowInstance.count({ where: { workflowId } }),
+      this.prisma.workflowInstance.count({
+        where: { workflowId, status: 'completed' },
+      }),
+      this.prisma.workflowInstance.count({
+        where: { workflowId, status: 'rejected' },
+      }),
+      this.prisma.workflowInstance.count({
+        where: { workflowId, status: 'in_progress' },
+      }),
+    ]);
+
+    // Calculate average completion time
+    const completedInstances = await this.prisma.workflowInstance.findMany({
+      where: { workflowId, status: 'completed' },
+      select: { createdAt: true, updatedAt: true },
+    });
+
+    const avgCompletionMs =
+      completedInstances.length > 0
+        ? completedInstances.reduce((sum, inst) => {
+            const time = (inst.updatedAt.getTime() - inst.createdAt.getTime()) / 1000 / 60; // minutes
+            return sum + time;
+          }, 0) / completedInstances.length
+        : 0;
+
+    return {
+      workflowId,
+      total,
+      completed,
+      rejected,
+      inProgress,
+      completionRate: total > 0 ? (completed / total) * 100 : 0,
+      averageCompletionTimeMinutes: Math.round(avgCompletionMs),
+    };
+  }
+
+  /**
+   * Get overdue approvals
+   */
+  async getOverdueApprovals(hoursOverdue = 24) {
+    const cutoffTime = new Date();
+    cutoffTime.setHours(cutoffTime.getHours() - hoursOverdue);
+
+    return this.prisma.approvalRequest.findMany({
+      where: {
+        status: 'pending',
+        createdAt: { lt: cutoffTime },
+      },
+      include: { workflowInstance: true },
+      orderBy: { createdAt: 'asc' },
+    });
+  }
+
+  // ── Helper Methods ──
+
+  private async createApprovalRequest(
+    workflowInstanceId: string,
+    node: any,
+    initiatedBy: string,
+    context: any,
+  ) {
+    // Determine approver
+    let approverId = node.approverEmail; // Placeholder - should resolve to user ID
+
+    return this.prisma.approvalRequest.create({
+      data: {
+        workflowInstanceId,
+        nodeSequence: node.sequence,
+        approverId,
+        status: 'pending',
+      },
+    });
+  }
+}

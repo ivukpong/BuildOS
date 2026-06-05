@@ -1,143 +1,229 @@
 import {
     Controller, Get, Post, Put, Patch, Delete,
-    Param, Body, Query,
+    Param, Body, Query, UseGuards,
 } from '@nestjs/common';
 import { AdminExtrasService } from './admin-extras.service';
+import { Roles, Public } from '../auth/decorators';
+import { RolesGuard } from '../auth/roles.guard';
 
-@Controller()
+@Controller('admin')
+@UseGuards(RolesGuard)
 export class AdminExtrasController {
     constructor(private readonly svc: AdminExtrasService) { }
 
+    // ── Approvals ──
     @Get('approvals')
+    @Roles('admin', 'approver')
     getApprovals(@Query('module') module?: string) { return this.svc.findApprovals(module); }
 
     @Patch('approvals/:id')
+    @Roles('admin', 'approver')
     updateApproval(@Param('id') id: string, @Body() body: any) { return this.svc.updateApproval(id, body); }
 
     @Get('reference-data')
+    @Roles('admin')
     getReferenceData() { return this.svc.referenceData(); }
 
-    @Get('admin/system-summary')
+    @Get('system-summary')
+    @Roles('admin')
     getSystemSummary() { return this.svc.systemSummary(); }
 
-    @Get('admin/activity-log')
+    @Get('activity-log')
+    @Roles('admin')
     getActivityLog() { return this.svc.activityLog(); }
 
     @Get('audit-logs')
+    @Roles('admin', 'compliance-officer')
     getAuditLogs(@Query('limit') limit?: number, @Query('offset') offset?: number) { 
         return this.svc.getAuditLogs(limit, offset); 
     }
 
     // ── Users ──
-    @Post('admin/users/invite')
+    @Post('users/invite')
+    @Roles('admin')
     inviteUser(@Body() body: { email: string; name: string; role?: string; assignedApps?: string[]; department?: string }) { return this.svc.inviteUser(body); }
-    @Post('admin/users/:id/resend-invite')
+    
+    @Post('users/:id/resend-invite')
+    @Roles('admin')
     resendInvite(@Param('id') id: string) { return this.svc.resendInvite(id); }
+    
     @Get('users')
+    @Roles('admin')
     getAllUsers(@Query('search') search?: string) { return this.svc.findAllUsers(search); }
+    
     @Get('users/:id')
+    @Roles('admin')
     getUser(@Param('id') id: string) { return this.svc.findUser(id); }
+    
     @Post('users')
+    @Roles('admin')
     createUser(@Body() body: any) { return this.svc.createUser(body); }
+    
     @Put('users/:id')
+    @Roles('admin')
     updateUser(@Param('id') id: string, @Body() body: any) { return this.svc.updateUser(id, body); }
+    
     @Delete('users/:id')
+    @Roles('admin')
     deleteUser(@Param('id') id: string) { return this.svc.deleteUser(id); }
 
     // ── App Roles ──
-    @Get('app-roles')
+    @Get('roles')
+    @Roles('admin')
     getAllRoles() { return this.svc.findAllRoles(); }
-    @Get('app-roles/:id')
+    
+    @Get('roles/:id')
+    @Roles('admin')
     getRole(@Param('id') id: string) { return this.svc.findRole(id); }
-    @Post('app-roles')
+    
+    @Post('roles')
+    @Roles('admin')
     createRole(@Body() body: any) { return this.svc.createRole(body); }
-    @Put('app-roles/:id')
+    
+    @Put('roles/:id')
+    @Roles('admin')
     updateRole(@Param('id') id: string, @Body() body: any) { return this.svc.updateRole(id, body); }
-    @Delete('app-roles/:id')
+    
+    @Delete('roles/:id')
+    @Roles('admin')
     deleteRole(@Param('id') id: string) { return this.svc.deleteRole(id); }
 
     // ── Issue Types ──
-    @Get('admin/issue-types')
+    @Get('issue-types')
+    @Roles('admin')
     getIssueTypes() { return this.svc.findAllIssueTypes(); }
-    @Post('admin/issue-types')
+    
+    @Post('issue-types')
+    @Roles('admin')
     createIssueType(@Body() body: any) { return this.svc.createIssueType(body); }
-    @Put('admin/issue-types/:id')
+    
+    @Put('issue-types/:id')
+    @Roles('admin')
     updateIssueType(@Param('id') id: string, @Body() body: any) { return this.svc.updateIssueType(id, body); }
-    @Delete('admin/issue-types/:id')
+    
+    @Delete('issue-types/:id')
+    @Roles('admin')
     deleteIssueType(@Param('id') id: string) { return this.svc.deleteIssueType(id); }
 
     // ── Change Categories ──
-    @Get('admin/change-categories')
+    @Get('change-categories')
+    @Roles('admin')
     getChangeCategories() { return this.svc.findAllChangeCategories(); }
-    @Post('admin/change-categories')
+    
+    @Post('change-categories')
+    @Roles('admin')
     createChangeCategory(@Body() body: any) { return this.svc.createChangeCategory(body); }
-    @Put('admin/change-categories/:id')
+    
+    @Put('change-categories/:id')
+    @Roles('admin')
     updateChangeCategory(@Param('id') id: string, @Body() body: any) { return this.svc.updateChangeCategory(id, body); }
-    @Delete('admin/change-categories/:id')
+    
+    @Delete('change-categories/:id')
+    @Roles('admin')
     deleteChangeCategory(@Param('id') id: string) { return this.svc.deleteChangeCategory(id); }
 
     // ── Process Catalog ──
-    @Get('admin/process-catalog')
+    @Get('process-catalog')
+    @Roles('admin')
     getProcessCatalog() { return this.svc.findProcessCatalog(); }
-    @Post('admin/process-catalog')
+    
+    @Post('process-catalog')
+    @Roles('admin')
     createProcessCatalogItem(@Body() body: any) { return this.svc.createProcessCatalogItem(body); }
-    @Patch('admin/process-catalog/:id')
+    
+    @Patch('process-catalog/:id')
+    @Roles('admin')
     updateProcessCatalogItem(@Param('id') id: string, @Body() body: any) { return this.svc.updateProcessCatalogItem(id, body); }
-    @Delete('admin/process-catalog/:id')
+    
+    @Delete('process-catalog/:id')
+    @Roles('admin')
     deleteProcessCatalogItem(@Param('id') id: string) { return this.svc.deleteProcessCatalogItem(id); }
 
     // ── Process Workflows ──
-    @Get('admin/process-workflows')
+    @Get('process-workflows')
+    @Roles('admin')
     getProcessWorkflows() { return this.svc.findProcessWorkflows(); }
-    @Post('admin/process-workflows')
+    
+    @Post('process-workflows')
+    @Roles('admin')
     createProcessWorkflow(@Body() body: any) { return this.svc.createProcessWorkflow(body); }
-    @Patch('admin/process-workflows/:id')
+    
+    @Patch('process-workflows/:id')
+    @Roles('admin')
     updateProcessWorkflow(@Param('id') id: string, @Body() body: any) { return this.svc.updateProcessWorkflow(id, body); }
-    @Delete('admin/process-workflows/:id')
+    
+    @Delete('process-workflows/:id')
+    @Roles('admin')
     deleteProcessWorkflow(@Param('id') id: string) { return this.svc.deleteProcessWorkflow(id); }
 
     // ── Company Profile ──
     @Get('company-profile')
+    @Roles('admin')
     getCompanyProfile() { return this.svc.getCompanyProfile(); }
+    
     @Put('company-profile')
+    @Roles('admin')
     updateCompanyProfile(@Body() body: any) { return this.svc.updateCompanyProfile(body); }
 
     // ── Directors ──
     @Get('directors')
+    @Roles('admin')
     getAllDirectors() { return this.svc.findAllDirectors(); }
+    
     @Post('directors')
+    @Roles('admin')
     createDirector(@Body() body: any) { return this.svc.createDirector(body); }
+    
     @Put('directors/:id')
+    @Roles('admin')
     updateDirector(@Param('id') id: string, @Body() body: any) { return this.svc.updateDirector(id, body); }
+    
     @Delete('directors/:id')
+    @Roles('admin')
     deleteDirector(@Param('id') id: string) { return this.svc.deleteDirector(id); }
 
     // ── Email Config ──
     @Get('email-config')
+    @Roles('admin')
     getEmailConfigs() { return this.svc.findEmailConfigs(); }
+    
     @Post('email-config')
+    @Roles('admin')
     createEmailConfig(@Body() body: any) { return this.svc.createEmailConfig(body); }
+    
     @Patch('email-config/:id')
+    @Roles('admin')
     updateEmailConfig(@Param('id') id: string, @Body() body: any) { return this.svc.updateEmailConfig(id, body); }
+    
     @Delete('email-config/:id')
+    @Roles('admin')
     deleteEmailConfig(@Param('id') id: string) { return this.svc.deleteEmailConfig(id); }
 
     // ── Units of Measurement ──
     @Get('units')
+    @Roles('admin')
     getUnits() { return this.svc.findUnits(); }
+    
     @Post('units')
+    @Roles('admin')
     createUnit(@Body() body: any) { return this.svc.createUnit(body); }
+    
     @Patch('units/:id')
+    @Roles('admin')
     updateUnit(@Param('id') id: string, @Body() body: any) { return this.svc.updateUnit(id, body); }
+    
     @Delete('units/:id')
+    @Roles('admin')
     deleteUnit(@Param('id') id: string) { return this.svc.deleteUnit(id); }
 
     // ── API Keys ──
     @Get('api-keys')
+    @Roles('admin')
     getApiKeys() { return this.svc.findApiKeys(); }
 
     // ── Webhooks ──
     @Get('webhooks')
+    @Roles('admin')
     getWebhooks() { return this.svc.findWebhooks(); }
 
     // ── Email Templates ──

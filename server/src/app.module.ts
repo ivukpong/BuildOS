@@ -32,12 +32,21 @@ import { ReportsModule } from './reports/reports.module';
 import { ResourcePlanningModule } from './resource-planning/resource-planning.module';
 import { ComplianceDocumentsModule } from './compliance-documents/compliance-documents.module';
 import { AppCatalogModule } from './app-catalog/app-catalog.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
+import { NotificationsModule } from './notifications/notifications.module';
+import { WorkflowsModule } from './workflows/workflows.module';
+import { IntegrationsModule } from './integrations/integrations.module';
+import { RolesGuard } from './auth/roles.guard';
 
 @Module({
     imports: [
         ConfigModule.forRoot({ isGlobal: true }),
         AuthModule,
         PrismaModule,
+        AuditLogModule,
+        NotificationsModule,
+        WorkflowsModule,
+        IntegrationsModule,
         ProjectsModule,
         EmployeesModule,
         DepartmentsModule,
@@ -68,6 +77,9 @@ import { AppCatalogModule } from './app-catalog/app-catalog.module';
         AppCatalogModule,
         ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ],
-    providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
+    providers: [
+        { provide: APP_GUARD, useClass: ThrottlerGuard },
+        { provide: APP_GUARD, useClass: RolesGuard },
+    ],
 })
 export class AppModule { }

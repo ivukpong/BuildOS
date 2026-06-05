@@ -56,12 +56,10 @@ export class AdminExtrasService {
                 name: 'Admin',
                 description: 'System administrator with unrestricted access',
                 isSuper: true,
-                permissions: fullPermissions,
             },
             update: {
                 description: 'System administrator with unrestricted access',
                 isSuper: true,
-                permissions: fullPermissions,
             },
         });
     }

@@ -46,6 +46,51 @@ enum LeaveStatus {
   rejected
 }
 
+enum TaskStatus {
+  todo
+  in_progress
+  done
+  blocked
+  cancelled
+}
+
+enum TaskPriority {
+  low
+  medium
+  high
+  critical
+}
+
+enum ApprovalStatus {
+  pending
+  approved
+  rejected
+  escalated
+}
+
+enum ResourceType {
+  equipment
+  labor
+  material
+  service
+}
+
+enum DocumentType {
+  contract
+  invoice
+  photo
+  report
+  specification
+  other
+}
+
+enum NotificationStatus {
+  sent
+  read
+  archived
+  failed
+}
+
 enum POStatus {
   draft
   sent
@@ -116,68 +161,106 @@ enum ClaimStatus {
 // ─────────────── PROJECTS ───────────────
 
 model Project {
-  id         String        @id @default(cuid())
-  name       String
-  client     String
-  location   String
-  state      String
-  city       String
-  status     ProjectStatus @default(Planning)
-  type       ProjectType
-  budget     Float
-  spent      Float         @default(0)
-  progress   Int           @default(0)
-  startDate  DateTime
-  endDate    DateTime
-  manager    String
-  teamSize   Int           @default(0)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  id             String        @id @default(cuid())
+  name           String
+  client         String
+  location       String
+  state          String
+  city           String
+  status         ProjectStatus @default(Planning)
+  type           ProjectType
+  budget         Float
+  spent          Float         @default(0)
+  contingency    Float?        @default(0)
+  progress       Int           @default(0)
+  startDate      DateTime
+  endDate        DateTime
+  actualEndDate  DateTime?
+  manager        String
+  teamSize       Int           @default(0)
+  approvalStatus String        @default("pending") // pending, approved, rejected
+  stakeholders   String[]      @default([])
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  expenses   Expense[]
-  incomes    Income[]
-  budgets    Budget[]
+  expenses       Expense[]
+  incomes        Income[]
+  budgets        Budget[]
 }
 
 // ─────────────── DEPARTMENTS ───────────────
 
 model Department {
-  id          String  @id @default(cuid())
-  name        String  @unique
-  description String
-  location    String
-  budget      String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                String      @id @default(cuid())
+  name              String      @unique
+  description       String
+  location          String
+  budget            Float       @default(0)
+  budgetStartDate   DateTime?
+  budgetEndDate     DateTime?
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
 
-  head        Employee? @relation("DeptHead", fields: [headId], references: [id])
-  headId      String?   @unique
-  employees   Employee[] @relation("DeptMembers")
+  head              Employee?   @relation("DeptHead", fields: [headId], references: [id])
+  headId            String?     @unique
+  employees         Employee[]  @relation("DeptMembers")
 }
 
 // ─────────────── EMPLOYEES ───────────────
 
 model Employee {
-  id             String         @id @default(cuid())
-  firstName      String
-  lastName       String
-  role           String
-  email          String         @unique
-  phone          String
-  dateHired      DateTime
-  status         EmployeeStatus @default(active)
-  employmentType EmploymentType @default(FullTime)
-  projectCount   Int            @default(0)
-  projects       String[]       @default([])
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  id                String         @id @default(cuid())
+  firstName         String
+  lastName          String
+  middleName        String?
+  email             String         @unique
+  phone             String
+  dateOfBirth       DateTime?
+  gender            String?
+  dateHired         DateTime
+  status            EmployeeStatus @default(active)
+  employmentType    EmploymentType @default(FullTime)
+  projectCount      Int            @default(0)
+  projects          String[]       @default([])
+  
+  // Salary/Grade fields
+  baseSalary        Float?         @default(0)
+  gradeLevel        String?
+  jobRoleId         String?
+  jobRole           JobRole?       @relation("EmployeeJobRole", fields: [jobRoleId], references: [id])
+  
+  // Bank details (for payroll)
+  bankName          String?
+  accountNumber     String?
+  accountHolder     String?
+  
+  // Supervisor relationship
+  supervisorId      String?
+  supervisor        Employee?      @relation("SupervisorOf", fields: [supervisorId], references: [id])
+  subordinates      Employee[]     @relation("SupervisorOf")
+  
+  // Tax/Compliance
+  taxId             String?
+  pensionId         String?
+  healthInsuranceId String?
+  
+  // Additional info
+  emergencyContact  String?
+  emergencyPhone    String?
+  address           String?
+  city              String?
+  state             String?
+  zipCode           String?
+  
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
 
-  department     Department?    @relation("DeptMembers", fields: [departmentId], references: [id])
-  departmentId   String?
+  department        Department?    @relation("DeptMembers", fields: [departmentId], references: [id])
+  departmentId      String?
 
-  headOf         Department?    @relation("DeptHead")
-  leaveRequests  LeaveRequest[]
-  claims         Claim[]
+  headOf            Department?    @relation("DeptHead")
+  leaveRequests     LeaveRequest[]
+  claims            Claim[]
 }
 
 // ─────────────── LEAVE TYPES ───────────────
@@ -201,23 +284,29 @@ model LeaveType {
 // ─────────────── LEAVE REQUESTS ───────────────
 
 model LeaveRequest {
-  id          String      @id @default(cuid())
-  refId       String      @unique
-  days        Int
-  startDate   DateTime
-  endDate     DateTime
-  status      LeaveStatus @default(pending)
-  submittedAt DateTime    @default(now())
-  approvedBy  String?
-  approvedAt  DateTime?
-  notes       String?
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id            String      @id @default(cuid())
+  refId         String      @unique
+  days          Int
+  startDate     DateTime
+  endDate       DateTime
+  status        LeaveStatus @default(pending)
+  submittedAt   DateTime    @default(now())
+  approvedBy    String?
+  approvedAt    DateTime?
+  notes         String?
+  
+  // Balance tracking for audit
+  balanceBefore Int?
+  balanceAfter  Int?
+  autoApproved  Boolean?    @default(false)
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
-  employee    Employee    @relation(fields: [employeeId], references: [id])
-  employeeId  String
-  leaveType   LeaveType   @relation(fields: [leaveTypeId], references: [id])
-  leaveTypeId String
+  employee      Employee    @relation(fields: [employeeId], references: [id])
+  employeeId    String
+  leaveType     LeaveType   @relation(fields: [leaveTypeId], references: [id])
+  leaveTypeId   String
 }
 
 // ─────────────── CLAIM TYPES ───────────────
@@ -401,34 +490,80 @@ model Payment {
 // ─────────────── USERS ───────────────
 
 model User {
-  id              String    @id @default(cuid())
-  email           String    @unique
-  password        String
-  name            String
-  role            String    @default("viewer")
-  assignedApps    String[]  @default(["ess"])
-  department      String?
-  phone           String?
-  status          String    @default("Active")
-  lastLogin       DateTime?
-  inviteToken     String?
-  inviteExpiresAt DateTime?
-  refreshTokenHash String?
+  id                  String      @id @default(cuid())
+  email               String      @unique
+  password            String
+  name                String
+  phone               String?
+  status              String      @default("Active")
+  
+  // Multi-role support
+  assignedApps        String[]    @default(["ess"])
+  department          String?
+  permissionScope     String      @default("global") // "global" | "departmental" | "project"
+  
+  // Old single role (deprecated, kept for backward compat)
+  role                String      @default("viewer")
+  
+  // Last login tracking
+  lastLogin           DateTime?
+  inviteToken         String?
+  inviteExpiresAt     DateTime?
+  refreshTokenHash    String?
   refreshTokenExpiresAt DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  
+  // Relations
+  roles               UserRole[]
+  permissions         Permission[]
+  auditLogs           AuditLog[]
+}
+
+model UserRole {
+  id          String    @id @default(cuid())
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId      String
+  role        AppRole   @relation(fields: [roleId], references: [id])
+  roleId      String
+  validFrom   DateTime  @default(now())
+  validUntil  DateTime?
+  grantedBy   String?
+  createdAt   DateTime  @default(now())
+  
+  @@unique([userId, roleId])
+}
+
+model Permission {
+  id          String    @id @default(cuid())
+  name        String    @unique
+  description String?
+  appScope    String    // "admin" | "hr" | "projects" | "finance" | "procurement" | "ess"
+  users       User[]
+  appRoles    AppRole[]
+  createdAt   DateTime  @default(now())
 }
 
 // ─────────────── APP ROLES / PERMISSIONS ───────────────
 
 model AppRole {
-  id          String   @id @default(cuid())
-  name        String   @unique
-  description String?
-  isSuper     Boolean  @default(false)
-  permissions Json     @default("{}")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id              String      @id @default(cuid())
+  name            String      @unique
+  description     String?
+  isSuper         Boolean     @default(false)
+  
+  // App scope
+  appScope        String[]    @default([])
+  
+  // Role hierarchy
+  inheritedRoles  String[]    @default([])
+  
+  permissions     Permission[]
+  users           UserRole[]
+  
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 }
 
 // ─────────────── COMPANY PROFILE / DIRECTORS ───────────────
@@ -891,33 +1026,41 @@ model TaxConfig {
 }
 
 model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  status      String    @default("todo")
-  priority    String    @default("medium")
-  assignedTo  String?
-  projectId   String?
-  projectName String?
-  dueDate     DateTime?
-  tags        String[]  @default([])
-  createdBy   String    @default("system")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id            String       @id @default(cuid())
+  title         String
+  description   String?
+  status        String       @default("todo") // todo, in_progress, done, blocked, cancelled
+  priority      String       @default("medium") // low, medium, high, critical
+  assignedTo    String?
+  projectId     String?
+  projectName   String?
+  parentTaskId  String?
+  dueDate       DateTime?
+  startDate     DateTime?
+  completedAt   DateTime?
+  tags          String[]     @default([])
+  createdBy     String       @default("system")
+  estimatedHours Float?
+  actualHours    Float?
+  dependencies  String[]     @default([])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model JobRole {
-  id               String   @id @default(cuid())
+  id               String      @id @default(cuid())
   title            String
   department       String
   gradeLevel       String?
-  minSalary        String?
-  maxSalary        String?
-  headcount        Int      @default(0)
-  responsibilities String[] @default([])
-  skills           String[] @default([])
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  minSalary        Float?
+  maxSalary        Float?
+  headcount        Int         @default(0)
+  responsibilities String[]    @default([])
+  skills           String[]    @default([])
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+  
+  employees        Employee[]  @relation("EmployeeJobRole")
 }
 
 model WorkforceAllocation {
@@ -995,4 +1138,277 @@ model ComplianceDocumentType {
   level       String   @default("Mandatory")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+}
+
+// ─────────────── AUDIT LOGGING ───────────────
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  userId        String?
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  entity        String    // "User", "Project", "Expense", etc
+  entityId      String?
+  action        String    // "CREATE", "UPDATE", "DELETE", "APPROVE", "REJECT"
+  oldValue      Json?
+  newValue      Json?
+  description   String?
+  ipAddress     String?
+  timestamp     DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+}
+
+// ─────────────── SALARY & PAYROLL ───────────────
+
+model SalaryBand {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  gradeLevel    String
+  minSalary     Float
+  maxSalary     Float
+  midSalary     Float?
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model EmployeeBank {
+  id              String    @id @default(cuid())
+  employeeId      String    @unique
+  bankName        String
+  accountNumber   String
+  accountHolder   String
+  accountType     String?
+  isDefault       Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+// ─────────────── RESOURCE & PROJECT PLANNING ───────────────
+
+model ResourceAllocation {
+  id                String    @id @default(cuid())
+  workerId          String
+  workerName        String
+  projectId         String?
+  projectName       String?
+  resourceType      String    @default("labor") // labor, equipment, material, service
+  allocationPercent Float     @default(100)
+  startDate         DateTime
+  endDate           DateTime?
+  status            String    @default("active") // active, inactive, completed
+  approvedBy        String?
+  approvedAt        DateTime?
+  notes             String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+}
+
+model ProjectPhase {
+  id            String    @id @default(cuid())
+  projectId     String?
+  projectName   String?
+  name          String
+  description   String?
+  sequence      Int
+  status        String    @default("planned") // planned, in_progress, completed, on_hold
+  plannedStart  DateTime
+  plannedEnd    DateTime
+  actualStart   DateTime?
+  actualEnd     DateTime?
+  percentComplete Int    @default(0)
+  budget        Float?
+  spent         Float?    @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ─────────────── APPROVAL WORKFLOWS ───────────────
+
+model ApprovalWorkflow {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  description   String?
+  processType   String    // "expense", "purchase_order", "leave", "payroll", etc
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  nodes         ApprovalNode[]
+  rules         ApprovalRule[]
+  instances     WorkflowInstance[]
+}
+
+model ApprovalNode {
+  id            String    @id @default(cuid())
+  workflowId    String
+  workflow      ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  sequence      Int
+  name          String
+  approverRole  String
+  approverEmail String?
+  canDelegate   Boolean   @default(false)
+  escalateAfter Int?      // Days before escalation
+  createdAt     DateTime  @default(now())
+}
+
+model ApprovalRule {
+  id            String    @id @default(cuid())
+  workflowId    String
+  workflow      ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  name          String
+  condition     String    // "amount > 50000", "department = HR", etc
+  targetNode    String    // Node name to route to
+  description   String?
+  createdAt     DateTime  @default(now())
+}
+
+// ─────────────── DOCUMENTS ───────────────
+
+model DocumentUpload {
+  id            String    @id @default(cuid())
+  fileName      String
+  fileUrl       String
+  fileSize      Int
+  mimeType      String
+  documentType  String    // contract, invoice, photo, report, etc
+  uploadedBy    String
+  uploadedAt    DateTime  @default(now())
+  
+  // Relations
+  projectId     String?
+  taskId        String?
+  expenseId     String?
+  
+  tags          String[]  @default([])
+  description   String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ─────────────── HOLIDAYS ───────────────
+
+model Holiday {
+  id            String    @id @default(cuid())
+  name          String
+  date          DateTime
+  type          String    @default("public") // public, regional, company
+  isRecurring   Boolean   @default(false)
+  affectedDepts String[]  @default([])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// ─────────────── NOTIFICATIONS ───────────────
+
+model Notification {
+  id            String                @id @default(cuid())
+  userId        String
+  title         String
+  message       String
+  type          String                // "approval", "task", "alert", "info"
+  status        NotificationStatus    @default(sent)
+  actionUrl     String?
+  relatedId     String?               // ID of related entity
+  relatedType   String?               // Type of related entity
+  readAt        DateTime?
+  sentAt        DateTime              @default(now())
+  createdAt     DateTime              @default(now())
+}
+
+model NotificationRule {
+  id            String                @id @default(cuid())
+  event         String                // Event type: "leave_approved", "payroll_processed", etc.
+  description   String
+  conditions    Json?                 // Stored as JSON array of condition objects
+  actions       String[]              // ["email", "push", "sms"]
+  isActive      Boolean               @default(true)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+model Webhook {
+  id            String                @id @default(cuid())
+  url           String
+  event         String                // Event to trigger on: "*" for all or specific events
+  isActive      Boolean               @default(true)
+  secret        String                // HMAC secret for webhook verification
+  headers       Json?                 // Custom headers JSON
+  maxRetries    Int                   @default(5)
+  retryCount    Int                   @default(0)
+  lastError     String?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  deliveries    WebhookDelivery[]
+}
+
+model WebhookDelivery {
+  id            String                @id @default(cuid())
+  webhookId     String
+  webhook       Webhook               @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  event         String
+  payload       Json
+  status        String                // "pending", "delivered", "failed"
+  responseCode  Int?
+  responseBody  String?
+  error         String?
+  attemptCount  Int                   @default(0)
+  nextRetry     DateTime?
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+}
+
+// ─────────────── WORKFLOW & APPROVAL MODELS ───────────────
+
+model WorkflowInstance {
+  id                String                @id @default(cuid())
+  workflowId        String
+  approvalWorkflow  ApprovalWorkflow      @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  entityType        String                // "expense", "leave", "purchase_order", etc.
+  entityId          String                // ID of the related entity
+  status            String                @default("in_progress")  // "in_progress", "completed", "rejected"
+  initiatedBy       String
+  currentNodeSeq    Int                   @default(1)
+  context           Json?                 // Additional context data
+  approvalRequests  ApprovalRequest[]
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+}
+
+model ApprovalRequest {
+  id                String                @id @default(cuid())
+  workflowInstanceId String
+  workflowInstance  WorkflowInstance      @relation(fields: [workflowInstanceId], references: [id], onDelete: Cascade)
+  nodeSequence      Int                   // Sequential node number
+  approverId        String
+  status            String                // "pending", "approved", "rejected", "delegated"
+  comments          String?
+  delegatedTo       String?               // If delegated to another approver
+  delegatedFrom     String?               // Original approver if delegated
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+  approvedAt        DateTime?
+}
+
+// ─────────────── NOTIFICATION PREFERENCE MODELS ───────────────
+
+model NotificationPreference {
+  id                    String                @id @default(cuid())
+  userId                String                @unique
+  emailOnApproval       Boolean               @default(true)
+  emailOnPayroll        Boolean               @default(true)
+  smsOnUrgent           Boolean               @default(false)
+  pushNotifications     Boolean               @default(true)
+  digestFrequency       String                @default("daily")  // "immediate", "daily", "weekly"
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+}
+
+model NotificationTemplate {
+  id                String                @id @default(cuid())
+  eventType         String                // "leave_approved", "payroll_processed", etc.
+  subject           String
+  body              String                // Template with {{variable}} placeholders
+  module            String                // Which module/app this applies to
+  isActive          Boolean               @default(true)
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
 }
