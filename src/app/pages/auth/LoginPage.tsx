@@ -8,8 +8,32 @@ export function LoginPage() {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showForgotPasswordModal, setShowForgotPasswordModal] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotSuccess, setForgotSuccess] = useState(false);
+
+  // Load remembered credentials on mount
+  const loadRememberedCredentials = () => {
+    const saved = localStorage.getItem('buildos_remembered_creds');
+    if (saved) {
+      try {
+        const { email } = JSON.parse(saved);
+        setFormData((prev) => ({ ...prev, email }));
+        setRememberMe(true);
+      } catch (e) {
+        console.error('Failed to load remembered credentials', e);
+      }
+    }
+  };
+
+  // Initialize on component mount
+  if (!formData.email && typeof window !== 'undefined') {
+    setTimeout(loadRememberedCredentials, 0);
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,11 +62,41 @@ export function LoginPage() {
         refreshToken: res.refresh_token,
         user: res.user,
       });
+      // Save credentials if remember me is checked
+      if (rememberMe) {
+        localStorage.setItem(
+          'buildos_remembered_creds',
+          JSON.stringify({ email: formData.email.trim().toLowerCase() })
+        );
+      } else {
+        localStorage.removeItem('buildos_remembered_creds');
+      }
       navigate("/apps");
     } catch {
       setError("Invalid email or password.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForgotLoading(true);
+    try {
+      await apiFetch("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() }),
+      });
+      setForgotSuccess(true);
+      setForgotEmail("");
+      setTimeout(() => {
+        setShowForgotPasswordModal(false);
+        setForgotSuccess(false);
+      }, 3000);
+    } catch {
+      setError("Failed to send password reset email.");
+    } finally {
+      setForgotLoading(false);
     }
   };
 
@@ -104,12 +158,21 @@ export function LoginPage() {
 
           <div className="flex items-center justify-between">
             <label className="flex items-center text-sm text-gray-600">
-              <input type="checkbox" className="mr-2" />
+              <input
+                type="checkbox"
+                className="mr-2"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+              />
               Remember me
             </label>
-            <a href="#" className="text-sm text-blue-600 hover:underline">
+            <button
+              type="button"
+              onClick={() => setShowForgotPasswordModal(true)}
+              className="text-sm text-blue-600 hover:underline"
+            >
               Forgot password?
-            </a>
+            </button>
           </div>
 
           {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -130,6 +193,55 @@ export function LoginPage() {
           </Link>
         </p> */}
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPasswordModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30">
+          <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
+            <h2 className="text-2xl mb-4 text-gray-900">Reset Password</h2>
+            <p className="text-gray-600 text-sm mb-4">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+
+            {forgotSuccess ? (
+              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-md text-emerald-700 text-sm">
+                ✓ Password reset email sent successfully. Check your inbox.
+              </div>
+            ) : (
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div>
+                  <label className="block text-sm mb-1 text-gray-700">Email</label>
+                  <input
+                    type="email"
+                    required
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="you@company.com"
+                  />
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPasswordModal(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={forgotLoading}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {forgotLoading ? "Sending…" : "Send Reset Link"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

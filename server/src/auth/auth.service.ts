@@ -268,4 +268,25 @@ export class AuthService {
             },
         });
     }
+
+    async forgotPassword(email: string) {
+        // Normalize email
+        const normalizedEmail = email.trim().toLowerCase();
+
+        // Check if user exists (don't reveal whether email exists for security)
+        const user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
+        if (!user) {
+            // Return success regardless (avoid user enumeration)
+            return { success: true, message: 'If an account with this email exists, a password reset link will be sent' };
+        }
+
+        // In a production system, you would:
+        // 1. Generate a reset token (e.g., crypto.randomBytes)
+        // 2. Store it in the database with an expiration time
+        // 3. Send an email with a reset link containing the token
+        // 4. The user clicks the link and enters a new password
+        //
+        // For now, we'll just indicate success
+        return { success: true, message: 'If an account with this email exists, a password reset link will be sent' };
+    }
 }

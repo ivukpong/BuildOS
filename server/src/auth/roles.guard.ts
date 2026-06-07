@@ -49,12 +49,14 @@ export class RolesGuard implements CanActivate {
       throw new ForbiddenException('User not authenticated');
     }
 
-    // Check if user has any of the required roles
+    // Check if user has any of the required roles (normalize to lowercase for case-insensitive comparison)
     const userRole = user.role || user.roles || [];
     const userRolesArray = Array.isArray(userRole) ? userRole : [userRole];
+    const normalizedUserRoles = userRolesArray.map((r) => String(r).trim().toLowerCase());
+    const normalizedRequiredRoles = requiredRoles.map((r) => String(r).trim().toLowerCase());
 
-    const hasRole = requiredRoles.some((role) =>
-      userRolesArray.includes(role),
+    const hasRole = normalizedRequiredRoles.some((role) =>
+      normalizedUserRoles.includes(role),
     );
 
     if (!hasRole) {

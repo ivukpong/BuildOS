@@ -58,4 +58,9 @@ export class AuthController {
         await this.authService.clearRefreshToken(payload.sub);
         return { success: true };
     }
+
+    @Post('forgot-password')
+    forgotPassword(@Body() body: { email: string }) {
+        return this.authService.forgotPassword(body.email);
+    }
 }

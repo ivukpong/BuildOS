@@ -392,9 +392,15 @@ export class AdminExtrasService {
 
     private normalizeAssignedApps(input: unknown, role?: string): string[] {
         const normalizedRole = String(role ?? '').trim().toLowerCase();
-        if (normalizedRole.includes('admin')) return this.allApps;
-
         const defaultApps = ['ess'];
+        
+        // For admin role, only return all apps if no specific apps were provided
+        if (normalizedRole.includes('admin')) {
+            const hasSpecificApps = Array.isArray(input) && input.length > 0;
+            if (!hasSpecificApps) return this.allApps;
+            // Otherwise fall through to normalize the provided apps
+        }
+
         if (!Array.isArray(input)) return defaultApps;
 
         const allowed = new Set(this.allApps);
