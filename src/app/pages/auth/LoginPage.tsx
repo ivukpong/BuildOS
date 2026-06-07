@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Building2, Eye, EyeOff } from "lucide-react";
 import { apiFetch } from "../../api/client";
 import { saveAuthSession } from "../../utils/authSession";
+import { toast } from "sonner";
 
 export function LoginPage() {
   const navigate = useNavigate();
@@ -30,10 +31,11 @@ export function LoginPage() {
     }
   };
 
-  // Initialize on component mount
-  if (!formData.email && typeof window !== "undefined") {
-    setTimeout(loadRememberedCredentials, 0);
-  }
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      loadRememberedCredentials();
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -81,20 +83,32 @@ export function LoginPage() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    const normalizedEmail = forgotEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
     setForgotLoading(true);
     try {
       await apiFetch("/auth/forgot-password", {
         method: "POST",
-        body: JSON.stringify({ email: forgotEmail.trim().toLowerCase() }),
+        body: JSON.stringify({ email: normalizedEmail }),
       });
       setForgotSuccess(true);
       setForgotEmail("");
+      toast.success("If an account exists, a reset link has been sent.");
       setTimeout(() => {
         setShowForgotPasswordModal(false);
         setForgotSuccess(false);
       }, 3000);
-    } catch {
-      setError("Failed to send password reset email.");
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to send password reset email.";
+      setError(message);
+      toast.error(message);
     } finally {
       setForgotLoading(false);
     }
@@ -219,6 +233,7 @@ export function LoginPage() {
                     required
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
+                    pattern="^[^\s@]+@[^\s@]+\.[^\s@]+$"
                     className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="you@company.com"
                   />

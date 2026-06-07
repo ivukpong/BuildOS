@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { Fragment } from "react";
 import { useNavigate } from "react-router";
+import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type AppKey =
@@ -208,15 +209,19 @@ function AddRoleModal({
   const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    if (!name.trim()) return;
+    if (!name.trim()) {
+      setError("Role name is required.");
+      return;
+    }
     setSaving(true);
     setError("");
     try {
       await onAdd({ name: name.trim(), description: desc.trim() });
+      toast.success("Role created successfully.");
       onClose();
     } catch (err: any) {
       const message = err?.message || "Failed to create role.";
-      if (message.includes("409") || message.includes("already exists")) {
+      if (message.toLowerCase().includes("already exists")) {
         setError("Role with this name already exists.");
       } else {
         setError(message);
@@ -593,8 +598,9 @@ export function RolesPage() {
           navAccess,
         },
       ]);
-    } catch {
-      // silently ignore — server may reject duplicate names
+      toast.success("Role duplicated successfully.");
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to duplicate role.");
     } finally {
       setActionLoading((prev) => {
         const next = new Set(prev);
@@ -611,8 +617,10 @@ export function RolesPage() {
     setRoles((prev) => prev.filter((r) => r.id !== roleId));
     try {
       await deleteAppRole(roleId);
-    } catch {
+      toast.success("Role deleted successfully.");
+    } catch (err: any) {
       setRoles(previous);
+      toast.error(err?.message || "Failed to delete role.");
     } finally {
       setActionLoading((prev) => {
         const next = new Set(prev);
@@ -653,7 +661,7 @@ export function RolesPage() {
     } catch {
       setRoles((prev) => prev.map((r) => (r.id === roleId ? original : r)));
       setRoleStatus((s) => ({ ...s, [roleId]: "error" }));
-      throw new Error("Update failed");
+      throw new Error("Failed to update role");
     }
   };
 
@@ -676,6 +684,7 @@ export function RolesPage() {
       );
     } catch {
       setRoleStatus((s) => ({ ...s, [roleId]: "error" }));
+      toast.error("Failed to save role permissions.");
     }
   };
 
@@ -1083,6 +1092,15 @@ export function RolesPage() {
       {showAddRole && (
         <AddRoleModal
           onAdd={async ({ name, description }) => {
+            if (
+              roles.some(
+                (r) =>
+                  r.name.trim().toLowerCase() === name.trim().toLowerCase(),
+              )
+            ) {
+              throw new Error(`Role with name '${name.trim()}' already exists`);
+            }
+
             const appAccess = {
               construction: false,
               finance: false,

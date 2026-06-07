@@ -26,12 +26,28 @@ export async function apiFetch<T = any>(path: string, options?: RequestInit): Pr
     }
 
     if (!res.ok) {
-        const text = await res.text();
+        const rawText = await res.text();
+        let message = rawText || `Request failed with status ${res.status}`;
+
+        try {
+            const parsed = rawText ? JSON.parse(rawText) : null;
+            const apiMessage = parsed?.message;
+            if (Array.isArray(apiMessage)) {
+                message = apiMessage.join(', ');
+            } else if (typeof apiMessage === 'string' && apiMessage.trim()) {
+                message = apiMessage;
+            } else if (typeof parsed?.error === 'string' && parsed.error.trim()) {
+                message = parsed.error;
+            }
+        } catch {
+            // Keep the raw text message when response body is not JSON.
+        }
+
         if (res.status === 401) {
             clearAuthSession();
             throw new Error('Session expired. Please log in again.');
         }
-        throw new Error(`API error ${res.status}: ${text}`);
+        throw new Error(message);
     }
 
     const statusNoContent = res.status === 204;

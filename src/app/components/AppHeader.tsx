@@ -95,7 +95,17 @@ export function AppHeader({ currentApp }: AppHeaderProps) {
     email: authEmail,
     role: authRole,
     initials: authInitials,
+    assignedApps,
   } = useAuthUser();
+
+  const allowedApps = new Set(
+    (assignedApps.length > 0 ? assignedApps : ["ess"]).map((app) =>
+      String(app).trim().toLowerCase(),
+    ),
+  );
+  const switcherApps = apps.filter(
+    (a) => a.id !== "launcher" && allowedApps.has(a.id.toLowerCase()),
+  );
 
   const currentAppInfo = apps.find((a) => a.id === currentApp);
 
@@ -157,34 +167,32 @@ export function AppHeader({ currentApp }: AppHeaderProps) {
                   <p className="px-3 pt-1 pb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
                     Switch App
                   </p>
-                  {apps
-                    .filter((a) => a.id !== "launcher")
-                    .map((app) => (
-                      <button
-                        key={app.id}
-                        onClick={() => {
-                          navigate(app.href);
-                          setShowAppSwitcher(false);
-                        }}
-                        className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 text-left transition-colors ${currentApp === app.id ? "bg-indigo-50" : ""}`}
+                  {switcherApps.map((app) => (
+                    <button
+                      key={app.id}
+                      onClick={() => {
+                        navigate(app.href);
+                        setShowAppSwitcher(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2 hover:bg-gray-50 text-left transition-colors ${currentApp === app.id ? "bg-indigo-50" : ""}`}
+                    >
+                      <div
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center bg-slate-100`}
                       >
-                        <div
-                          className={`w-7 h-7 rounded-lg flex items-center justify-center bg-slate-100`}
-                        >
-                          <app.icon
-                            className={`w-4 h-4 ${app.color.replace("text-", "text-").replace("-400", "-600")}`}
-                          />
-                        </div>
-                        <span
-                          className={`text-sm font-medium ${currentApp === app.id ? "text-indigo-700" : "text-gray-800"}`}
-                        >
-                          {app.name}
-                        </span>
-                        {currentApp === app.id && (
-                          <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600" />
-                        )}
-                      </button>
-                    ))}
+                        <app.icon
+                          className={`w-4 h-4 ${app.color.replace("text-", "text-").replace("-400", "-600")}`}
+                        />
+                      </div>
+                      <span
+                        className={`text-sm font-medium ${currentApp === app.id ? "text-indigo-700" : "text-gray-800"}`}
+                      >
+                        {app.name}
+                      </span>
+                      {currentApp === app.id && (
+                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-indigo-600" />
+                      )}
+                    </button>
+                  ))}
                 </div>
               </>
             )}

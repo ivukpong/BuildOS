@@ -9,6 +9,7 @@ import {
   X,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
 import {
   getCompanyProfile,
@@ -242,14 +243,19 @@ export function CompanyProfilePage() {
         logoUrl: logoPreview,
       });
       setSaveMessage("Company profile updated successfully.");
+      toast.success("Company profile updated successfully.");
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to save";
       if (message.includes("413")) {
         setSaveMessage(
           "Upload is too large for the server. Try a smaller image and save again.",
         );
+        toast.error(
+          "Upload is too large for the server. Try a smaller image and save again.",
+        );
       } else {
         setSaveMessage(message);
+        toast.error(message);
       }
     } finally {
       setSaving(false);
@@ -260,6 +266,7 @@ export function CompanyProfilePage() {
     const cleanName = newDepartmentName.trim();
     if (!cleanName) {
       setDepartmentMessage("Department name is required.");
+      toast.error("Department name is required.");
       return;
     }
 
@@ -279,10 +286,12 @@ export function CompanyProfilePage() {
       setNewDepartmentName("");
       setNewDepartmentDescription("");
       setDepartmentMessage("Department created.");
-    } catch {
-      setDepartmentMessage(
-        "Failed to create department. It may already exist.",
-      );
+      toast.success("Department created successfully.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to create department.";
+      setDepartmentMessage(message);
+      toast.error(message);
     } finally {
       setCreatingDepartment(false);
     }
@@ -302,6 +311,7 @@ export function CompanyProfilePage() {
     const name = editingDepartmentName.trim();
     if (!name) {
       setDepartmentMessage("Department name is required.");
+      toast.error("Department name is required.");
       return;
     }
 
@@ -315,8 +325,12 @@ export function CompanyProfilePage() {
       setEditingDepartmentId(null);
       setEditingDepartmentName("");
       setDepartmentMessage("Department updated.");
-    } catch {
-      setDepartmentMessage("Failed to update department.");
+      toast.success("Department updated successfully.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to update department.";
+      setDepartmentMessage(message);
+      toast.error(message);
     }
   };
 
@@ -342,10 +356,14 @@ export function CompanyProfilePage() {
         setEditingDepartmentName("");
       }
       setDepartmentToDelete(null);
-    } catch {
-      setDepartmentMessage(
-        "Failed to delete department. Remove linked records first.",
-      );
+      toast.success("Department deleted successfully.");
+    } catch (err) {
+      const message =
+        err instanceof Error
+          ? err.message
+          : "Failed to delete department. Remove linked records first.";
+      setDepartmentMessage(message);
+      toast.error(message);
     } finally {
       setIsDeletingDepartment(false);
     }

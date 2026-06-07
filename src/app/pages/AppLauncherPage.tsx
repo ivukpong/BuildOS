@@ -1615,31 +1615,20 @@ export function AppLauncherPage() {
         const nextApps = await buildAppsFromApi(name);
         if (!alive) return;
 
-        const isAdmin = String(role).trim().toLowerCase().includes("admin");
         const normalizedAssignedApps = normalizedAssignedAppsKey
           ? normalizedAssignedAppsKey.split("|")
           : [];
         const assigned = new Set(
-          (isAdmin
-            ? [
-                "construction",
-                "finance",
-                "hr",
-                "procurement",
-                "admin",
-                "ess",
-                "storefront",
-              ]
-            : normalizedAssignedApps.length > 0
-              ? normalizedAssignedApps
-              : ["ess"]
+          (normalizedAssignedApps.length > 0
+            ? normalizedAssignedApps
+            : ["ess"]
           ).map((a) => String(a).trim().toLowerCase()),
         );
 
         const visible = nextApps.filter((app) =>
           assigned.has(String(app.id).trim().toLowerCase()),
         );
-        setApps(visible.length > 0 ? visible : nextApps);
+        setApps(visible);
       } catch {
         if (!alive) return;
         setLoadError("Unable to load launcher data.");

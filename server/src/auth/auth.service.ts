@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException, BadRequestExcepti
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import { Resend } from 'resend';
 import { PrismaService } from '../prisma/prisma.service';
 import type { User } from '@prisma/client';
 
@@ -43,6 +44,41 @@ export class AuthService {
 
     private getRefreshTokenSecret(): string {
         return this.config.get<string>('JWT_REFRESH_SECRET') || 'buildos_refresh_secret_change_in_production';
+    }
+
+    private getJwtSecret(): string {
+        return this.config.get<string>('JWT_SECRET') || 'buildos_jwt_secret_change_in_production';
+    }
+
+    private isValidEmail(email: string): boolean {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+    }
+
+    private getFrontendBaseUrl(): string {
+        return (this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173').replace(/\/$/, '');
+    }
+
+    private async sendPasswordResetEmail(email: string, name: string, resetLink: string): Promise<void> {
+        const resendApiKey = this.config.get<string>('RESEND_API_KEY');
+        const from = this.config.get<string>('EMAIL_FROM') || this.config.get<string>('INVITE_FROM_EMAIL');
+
+        if (!resendApiKey || !from) {
+            throw new BadRequestException('Password reset email is not configured: set RESEND_API_KEY and EMAIL_FROM (or INVITE_FROM_EMAIL)');
+        }
+
+        const resend = new Resend(resendApiKey);
+        await resend.emails.send({
+            from,
+            to: [email],
+            subject: 'Reset your BuildOS password',
+            text: `Hi ${name},\n\nUse this link to reset your password: ${resetLink}\n\nThis link expires in 30 minutes.`,
+            html: `
+                <p>Hi ${name},</p>
+                <p>We received a request to reset your BuildOS password.</p>
+                <p><a href="${resetLink}">Reset Password</a></p>
+                <p>This link expires in 30 minutes.</p>
+            `,
+        });
     }
 
     private getPrivilegedAdminEmail(): string {
@@ -270,23 +306,27 @@ export class AuthService {
     }
 
     async forgotPassword(email: string) {
-        // Normalize email
         const normalizedEmail = email.trim().toLowerCase();
+        if (!normalizedEmail) {
+            throw new BadRequestException('Email is required');
+        }
+        if (!this.isValidEmail(normalizedEmail)) {
+            throw new BadRequestException('Please enter a valid email address');
+        }
 
-        // Check if user exists (don't reveal whether email exists for security)
+        // Do not reveal whether email exists to prevent account enumeration.
         const user = await this.prisma.user.findUnique({ where: { email: normalizedEmail } });
         if (!user) {
-            // Return success regardless (avoid user enumeration)
             return { success: true, message: 'If an account with this email exists, a password reset link will be sent' };
         }
 
-        // In a production system, you would:
-        // 1. Generate a reset token (e.g., crypto.randomBytes)
-        // 2. Store it in the database with an expiration time
-        // 3. Send an email with a reset link containing the token
-        // 4. The user clicks the link and enters a new password
-        //
-        // For now, we'll just indicate success
+        const resetToken = this.jwtService.sign(
+            { sub: user.id, email: user.email, type: 'password-reset' },
+            { secret: this.getJwtSecret(), expiresIn: '30m' },
+        );
+        const resetLink = `${this.getFrontendBaseUrl()}/auth/reset-password?token=${encodeURIComponent(resetToken)}`;
+
+        await this.sendPasswordResetEmail(user.email, user.name, resetLink);
         return { success: true, message: 'If an account with this email exists, a password reset link will be sent' };
     }
 }

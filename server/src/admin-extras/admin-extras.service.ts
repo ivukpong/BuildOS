@@ -920,16 +920,40 @@ export class AdminExtrasService {
         return this.prisma.appRole.findUniqueOrThrow({ where: { id } });
     }
     async createRole(data: any) {
-        const isAdminName = String(data?.name ?? '').trim().toLowerCase() === 'admin';
+        const requestedName = String(data?.name ?? '').trim();
+        if (!requestedName) {
+            throw new BadRequestException('Role name is required');
+        }
+
+        const isAdminName = requestedName.toLowerCase() === 'admin';
         if (isAdminName || data?.isSuper) {
             await this.ensureAdminRole();
             return this.prisma.appRole.findUniqueOrThrow({ where: { name: 'Admin' } });
         }
+
+        const existingRole = await this.prisma.appRole.findFirst({
+            where: {
+                name: {
+                    equals: requestedName,
+                    mode: 'insensitive',
+                },
+            },
+        });
+        if (existingRole) {
+            throw new ConflictException(`Role with name '${requestedName}' already exists`);
+        }
+
+        const payload = {
+            name: requestedName,
+            description: String(data?.description ?? '').trim() || null,
+            isSuper: Boolean(data?.isSuper),
+        };
+
         try {
-            return await this.prisma.appRole.create({ data });
+            return await this.prisma.appRole.create({ data: payload });
         } catch (error: any) {
             if (error?.code === 'P2002' && error?.meta?.target?.includes('name')) {
-                throw new ConflictException(`Role with name '${data.name}' already exists`);
+                throw new ConflictException(`Role with name '${requestedName}' already exists`);
             }
             throw error;
         }
@@ -939,7 +963,9 @@ export class AdminExtrasService {
         if (!current) throw new BadRequestException('Role not found');
         
         const isCurrentAdminRole = String(current.name ?? '').trim().toLowerCase() === 'admin';
-        const isAttemptingAdminName = String(data?.name ?? '').trim().toLowerCase() === 'admin';
+        const requestedName =
+            typeof data?.name === 'string' ? data.name.trim() : String(current.name ?? '').trim();
+        const isAttemptingAdminName = requestedName.toLowerCase() === 'admin';
 
         // Prevent renaming roles to 'admin' or making non-admin roles super
         if (isAttemptingAdminName || (data?.isSuper && !isCurrentAdminRole)) {
@@ -952,11 +978,37 @@ export class AdminExtrasService {
             return this.prisma.appRole.findUniqueOrThrow({ where: { name: 'Admin' } });
         }
 
+        if (!requestedName) {
+            throw new BadRequestException('Role name is required');
+        }
+
+        const duplicate = await this.prisma.appRole.findFirst({
+            where: {
+                id: { not: id },
+                name: {
+                    equals: requestedName,
+                    mode: 'insensitive',
+                },
+            },
+        });
+        if (duplicate) {
+            throw new ConflictException(`Role with name '${requestedName}' already exists`);
+        }
+
+        const payload = {
+            name: requestedName,
+            description:
+                typeof data?.description === 'string'
+                    ? data.description.trim() || null
+                    : current.description,
+            isSuper: Boolean(data?.isSuper),
+        };
+
         try {
-            return await this.prisma.appRole.update({ where: { id }, data });
+            return await this.prisma.appRole.update({ where: { id }, data: payload });
         } catch (error: any) {
             if (error?.code === 'P2002' && error?.meta?.target?.includes('name')) {
-                throw new ConflictException(`Role with name '${data.name}' already exists`);
+                throw new ConflictException(`Role with name '${requestedName}' already exists`);
             }
             throw error;
         }
