@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, BadRequestException, InternalServerErrorException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
@@ -8,6 +8,8 @@ import type { User } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
+    private readonly logger = new Logger(AuthService.name);
+
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
@@ -55,7 +57,17 @@ export class AuthService {
     }
 
     private getFrontendBaseUrl(): string {
-        return (this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173').replace(/\/$/, '');
+        const explicitUrl = this.config.get<string>('FRONTEND_URL')
+            || this.config.get<string>('WEB_URL')
+            || this.config.get<string>('APP_WEB_URL');
+
+        if (explicitUrl) {
+            return explicitUrl.replace(/\/$/, '');
+        }
+
+        return this.config.get<string>('NODE_ENV') === 'production'
+            ? 'https://build-os-delta.vercel.app'
+            : 'http://localhost:5173';
     }
 
     private async sendPasswordResetEmail(email: string, name: string, resetLink: string): Promise<void> {
@@ -67,18 +79,49 @@ export class AuthService {
         }
 
         const resend = new Resend(resendApiKey);
-        await resend.emails.send({
+                const safeName = String(name || '').trim() || 'there';
+
+                const result = await resend.emails.send({
             from,
             to: [email],
             subject: 'Reset your BuildOS password',
-            text: `Hi ${name},\n\nUse this link to reset your password: ${resetLink}\n\nThis link expires in 30 minutes.`,
+                        text: `Hi ${safeName},\n\nUse this link to reset your BuildOS password: ${resetLink}\n\nThis link expires in 30 minutes. If you did not request this, you can ignore this email.`,
             html: `
-                <p>Hi ${name},</p>
-                <p>We received a request to reset your BuildOS password.</p>
-                <p><a href="${resetLink}">Reset Password</a></p>
-                <p>This link expires in 30 minutes.</p>
+                                <div style="margin:0; padding:24px; background:#f3f6fb; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif; color:#0f172a;">
+                                    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px; margin:0 auto; background:#ffffff; border:1px solid #e2e8f0; border-radius:16px; overflow:hidden;">
+                                        <tr>
+                                            <td style="padding:24px 28px; background:linear-gradient(120deg, #1d4ed8, #2563eb); color:#ffffff;">
+                                                <h1 style="margin:0; font-size:22px; line-height:1.2; font-weight:700;">BuildOS</h1>
+                                                <p style="margin:8px 0 0; font-size:14px; opacity:.92;">Password reset request</p>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="padding:28px;">
+                                                <p style="margin:0 0 14px; font-size:15px;">Hi ${safeName},</p>
+                                                <p style="margin:0 0 18px; font-size:15px; line-height:1.6; color:#334155;">
+                                                    We received a request to reset your BuildOS password. Click the button below to choose a new password.
+                                                </p>
+                                                <p style="margin:0 0 24px;">
+                                                    <a href="${resetLink}" style="display:inline-block; padding:12px 20px; border-radius:10px; background:#2563eb; color:#ffffff; text-decoration:none; font-weight:600; font-size:14px;">Reset Password</a>
+                                                </p>
+                                                <p style="margin:0 0 8px; font-size:13px; color:#64748b; line-height:1.6;">
+                                                    This link expires in <strong>30 minutes</strong>. If the button does not work, copy and paste this URL into your browser:
+                                                </p>
+                                                <p style="margin:0 0 18px; font-size:12px; word-break:break-all; color:#2563eb;">${resetLink}</p>
+                                                <p style="margin:0; font-size:13px; color:#64748b; line-height:1.6;">
+                                                    If you did not request this password reset, you can safely ignore this email.
+                                                </p>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
             `,
         });
+
+                if ((result as { error?: unknown }).error) {
+                        this.logger.error(`Password reset email failed for ${email}`);
+                        throw new InternalServerErrorException('Unable to send password reset email at this time');
+                }
     }
 
     private getPrivilegedAdminEmail(): string {
@@ -328,5 +371,44 @@ export class AuthService {
 
         await this.sendPasswordResetEmail(user.email, user.name, resetLink);
         return { success: true, message: 'If an account with this email exists, a password reset link will be sent' };
+    }
+
+    async resetPassword(token: string, password: string) {
+        if (!token) {
+            throw new BadRequestException('Reset token is required');
+        }
+        if (!password || password.length < 8) {
+            throw new BadRequestException('Password must be at least 8 characters');
+        }
+
+        let payload: { sub: string; email: string; type?: string };
+        try {
+            payload = this.jwtService.verify<{ sub: string; email: string; type?: string }>(token, {
+                secret: this.getJwtSecret(),
+            });
+        } catch {
+            throw new UnauthorizedException('Invalid or expired reset token');
+        }
+
+        if (payload.type !== 'password-reset' || !payload.sub || !payload.email) {
+            throw new UnauthorizedException('Invalid reset token');
+        }
+
+        const user = await this.prisma.user.findUnique({ where: { id: payload.sub } });
+        if (!user || user.email.trim().toLowerCase() !== payload.email.trim().toLowerCase()) {
+            throw new UnauthorizedException('Invalid reset token');
+        }
+
+        const hashedPassword = await bcrypt.hash(password, 10);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: {
+                password: hashedPassword,
+                refreshTokenHash: null,
+                refreshTokenExpiresAt: null,
+            },
+        });
+
+        return { success: true, message: 'Password has been reset successfully' };
     }
 }

@@ -1203,6 +1203,43 @@ export class AdminExtrasService {
         return this.prisma.director.update({ where: { id }, data: rest });
     }
 
+    async reorderDirectors(items: Array<{ id: string; sequence: number }>) {
+        if (!Array.isArray(items) || items.length === 0) {
+            throw new BadRequestException('At least one director reorder item is required');
+        }
+
+        const normalized = items.map((item) => ({
+            id: String(item?.id ?? '').trim(),
+            sequence: Number(item?.sequence),
+        }));
+
+        if (normalized.some((item) => !item.id || !Number.isInteger(item.sequence) || item.sequence < 1)) {
+            throw new BadRequestException('Each reorder item must include a valid id and a positive integer sequence');
+        }
+
+        const uniqueIds = new Set(normalized.map((item) => item.id));
+        if (uniqueIds.size !== normalized.length) {
+            throw new BadRequestException('Duplicate director ids are not allowed in reorder payload');
+        }
+
+        const existing = await this.prisma.director.findMany({ select: { id: true } });
+        const existingIds = new Set(existing.map((director) => director.id));
+        if (normalized.some((item) => !existingIds.has(item.id))) {
+            throw new BadRequestException('Reorder payload contains unknown director id(s)');
+        }
+
+        await this.prisma.$transaction(
+            normalized.map((item) =>
+                this.prisma.director.update({
+                    where: { id: item.id },
+                    data: { sequence: item.sequence },
+                }),
+            ),
+        );
+
+        return this.findAllDirectors();
+    }
+
     async deleteDirector(id: string) {
         await this.prisma.director.delete({ where: { id } });
         const directors = await this.prisma.director.findMany({ orderBy: { sequence: 'asc' } });

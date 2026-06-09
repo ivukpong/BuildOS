@@ -1,9 +1,11 @@
 import { Plus, Edit, Trash2, GripVertical, Search } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
 import {
   getDirectors,
   createDirector,
   updateDirector,
+  reorderDirectors,
   deleteDirector,
 } from "../../api/admin-extras";
 
@@ -22,14 +24,29 @@ export function BoardOfDirectorsPage() {
   const [deleteTarget, setDeleteTarget] = useState<Director | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
 
   const [directors, setDirectors] = useState<Director[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const loadDirectors = () => getDirectors().then(setDirectors);
+  const loadDirectors = async (showErrorToast = true) => {
+    try {
+      const items = await getDirectors();
+      setDirectors(items);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to load directors.";
+      if (showErrorToast) {
+        toast.error(message);
+      }
+      throw err;
+    }
+  };
 
   useEffect(() => {
-    void loadDirectors();
+    void loadDirectors().catch(() => {
+      // Error toast is already shown in loadDirectors.
+    });
   }, []);
 
   const [formData, setFormData] = useState({
@@ -41,33 +58,54 @@ export function BoardOfDirectorsPage() {
   });
 
   const [searchTerm, setSearchTerm] = useState("");
-  const dragIndex = useRef<number | null>(null);
-  const dragOverIndex = useRef<number | null>(null);
+  const dragDirectorId = useRef<string | null>(null);
+  const dragOverDirectorId = useRef<string | null>(null);
 
-  const handleDragStart = (index: number) => {
-    dragIndex.current = index;
+  const handleDragStart = (directorId: string) => {
+    dragDirectorId.current = directorId;
   };
 
-  const handleDragOver = (e: React.DragEvent, index: number) => {
+  const handleDragOver = (e: React.DragEvent, directorId: string) => {
     e.preventDefault();
-    dragOverIndex.current = index;
+    dragOverDirectorId.current = directorId;
   };
 
-  const handleDrop = () => {
-    const from = dragIndex.current;
-    const to = dragOverIndex.current;
-    if (from === null || to === null || from === to) return;
+  const handleDrop = async () => {
+    const fromId = dragDirectorId.current;
+    const toId = dragOverDirectorId.current;
+    if (!fromId || !toId || fromId === toId || isReordering) return;
 
-    setDirectors((prev) => {
-      const updated = [...prev];
-      const [moved] = updated.splice(from, 1);
-      updated.splice(to, 0, moved);
-      // Re-assign sequence numbers based on new order
-      return updated.map((d, i) => ({ ...d, sequence: i + 1 }));
-    });
+    const fromIndex = directors.findIndex((d) => d.id === fromId);
+    const toIndex = directors.findIndex((d) => d.id === toId);
+    if (fromIndex < 0 || toIndex < 0) return;
 
-    dragIndex.current = null;
-    dragOverIndex.current = null;
+    const previousDirectors = directors;
+    const reordered = [...directors];
+    const [moved] = reordered.splice(fromIndex, 1);
+    reordered.splice(toIndex, 0, moved);
+    const normalized = reordered.map((d, i) => ({ ...d, sequence: i + 1 }));
+
+    setDirectors(normalized);
+    setIsReordering(true);
+    dragDirectorId.current = null;
+    dragOverDirectorId.current = null;
+
+    try {
+      await reorderDirectors(
+        normalized.map((director) => ({
+          id: director.id,
+          sequence: director.sequence,
+        })),
+      );
+      toast.success("Director order updated successfully.");
+    } catch (err) {
+      setDirectors(previousDirectors);
+      const message =
+        err instanceof Error ? err.message : "Failed to reorder directors.";
+      toast.error(message);
+    } finally {
+      setIsReordering(false);
+    }
   };
 
   const filteredDirectors = directors.filter((d) =>
@@ -102,6 +140,7 @@ export function BoardOfDirectorsPage() {
       newErrors.designation = "Designation is required";
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
+      toast.error(Object.values(newErrors)[0]);
       return;
     }
     setErrors({});
@@ -124,10 +163,37 @@ export function BoardOfDirectorsPage() {
           sequence: formData.sequence,
         });
       }
-      await loadDirectors();
+      await loadDirectors(false);
       handleCloseModal();
+      toast.success(
+        editingDirector
+          ? "Director updated successfully."
+          : "Director created successfully.",
+      );
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to save director.";
+      toast.error(message);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteDirector(deleteTarget.id);
+      await loadDirectors(false);
+      setDeleteTarget(null);
+      toast.success("Director deleted successfully.");
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Failed to delete director.";
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -210,13 +276,15 @@ export function BoardOfDirectorsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
-              {filteredDirectors.map((director, index) => (
+              {filteredDirectors.map((director) => (
                 <tr
                   key={director.id}
                   draggable
-                  onDragStart={() => handleDragStart(index)}
-                  onDragOver={(e) => handleDragOver(e, index)}
-                  onDrop={handleDrop}
+                  onDragStart={() => handleDragStart(director.id)}
+                  onDragOver={(e) => handleDragOver(e, director.id)}
+                  onDrop={() => {
+                    void handleDrop();
+                  }}
                   className="hover:bg-indigo-50/40 transition-colors cursor-default"
                 >
                   <td className="px-4 py-3">
@@ -421,16 +489,7 @@ export function BoardOfDirectorsPage() {
                 Cancel
               </button>
               <button
-                onClick={async () => {
-                  setIsDeleting(true);
-                  try {
-                    await deleteDirector(deleteTarget.id);
-                    await loadDirectors();
-                    setDeleteTarget(null);
-                  } finally {
-                    setIsDeleting(false);
-                  }
-                }}
+                onClick={handleConfirmDelete}
                 disabled={isDeleting}
                 className="px-4 py-2 text-sm bg-red-600 hover:bg-red-700 text-white rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
               >

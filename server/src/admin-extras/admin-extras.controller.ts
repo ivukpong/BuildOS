@@ -177,6 +177,13 @@ export class AdminExtrasController {
     @Put('directors/:id')
     @Roles('admin')
     updateDirector(@Param('id') id: string, @Body() body: any) { return this.svc.updateDirector(id, body); }
+
+    @Patch('directors/reorder')
+    @Roles('admin')
+    reorderDirectors(@Body() body: { items?: Array<{ id: string; sequence: number }> } | Array<{ id: string; sequence: number }>) {
+        const items = Array.isArray(body) ? body : (body?.items ?? []);
+        return this.svc.reorderDirectors(items);
+    }
     
     @Delete('directors/:id')
     @Roles('admin')

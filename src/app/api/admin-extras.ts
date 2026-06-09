@@ -241,5 +241,7 @@ export const createDirector = (data: Omit<Director, 'id' | 'createdAt' | 'update
     apiFetch<Director>('/admin/directors', { method: 'POST', body: JSON.stringify(data) });
 export const updateDirector = (id: string, data: Partial<Director>) =>
     apiFetch<Director>(`/admin/directors/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+export const reorderDirectors = (items: Array<{ id: string; sequence: number }>) =>
+    apiFetch<Director[]>('/admin/directors/reorder', { method: 'PATCH', body: JSON.stringify({ items }) });
 export const deleteDirector = (id: string) =>
     apiFetch<void>(`/admin/directors/${id}`, { method: 'DELETE' });

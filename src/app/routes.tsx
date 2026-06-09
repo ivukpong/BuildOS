@@ -8,6 +8,7 @@ import { SignupPage } from "./pages/auth/SignupPage";
 import { LoginPage } from "./pages/auth/LoginPage";
 import { VerifyEmailPage } from "./pages/auth/VerifyEmailPage";
 import { ActivateInvitePage } from "./pages/auth/ActivateInvitePage";
+import { ResetPasswordPage } from "./pages/auth/ResetPasswordPage";
 
 // App Launcher
 import { AppLauncherPage } from "./pages/AppLauncherPage";
@@ -172,6 +173,7 @@ export const router = createBrowserRouter([
           { path: "login", Component: LoginPage },
           { path: "verify", Component: VerifyEmailPage },
           { path: "activate", Component: ActivateInvitePage },
+          { path: "reset-password", Component: ResetPasswordPage },
         ],
       },
       {
