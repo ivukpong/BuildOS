@@ -48,6 +48,21 @@ interface ProcessPerm {
   delete: boolean;
 }
 
+const DEFAULT_PROCESSES: ProcessDef[] = [
+  { id: "p_create_pr", label: "Create Purchase Request", app: "procurement" },
+  { id: "p_approve_po", label: "Approve Purchase Order", app: "procurement" },
+  { id: "p_issue_mat", label: "Issue Materials", app: "procurement" },
+  { id: "p_create_exp", label: "Create Expense", app: "finance" },
+  { id: "p_approve_exp", label: "Approve Expense", app: "finance" },
+  { id: "p_create_pay", label: "Create Payroll", app: "hr" },
+  { id: "p_approve_lv", label: "Approve Leave Request", app: "hr" },
+  { id: "p_assign_wf", label: "Assign Workforce", app: "construction" },
+  { id: "p_create_proj", label: "Create Project", app: "construction" },
+  { id: "p_approve_bud", label: "Approve Project Budget", app: "construction" },
+  { id: "p_gen_rpt", label: "Generate Reports", app: "admin" },
+  { id: "p_manage_usr", label: "Manage Users", app: "admin" },
+];
+
 interface Role {
   id: string;
   name: string;
@@ -167,6 +182,13 @@ function toRoleProcessDefs(
       app: String(item.app).toLowerCase() as AppKey,
     }))
     .filter((item) => allowedApps.has(item.app));
+}
+
+function mergeProcessCatalog(fetched: ProcessDef[]): ProcessDef[] {
+  const byId = new Map<string, ProcessDef>();
+  DEFAULT_PROCESSES.forEach((item) => byId.set(item.id, item));
+  fetched.forEach((item) => byId.set(item.id, item));
+  return Array.from(byId.values());
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -470,13 +492,18 @@ export function RolesPage() {
       );
     });
   }, []);
-  const [processes, setProcesses] = useState<ProcessDef[]>([]);
+  const [processes, setProcesses] = useState<ProcessDef[]>(DEFAULT_PROCESSES);
   const [processesLoading, setProcessesLoading] = useState(true);
 
   useEffect(() => {
     getProcessCatalog()
-      .then((items) => setProcesses(toRoleProcessDefs(items)))
-      .catch(() => setProcesses([]))
+      .then((items) => {
+        const fetched = toRoleProcessDefs(items);
+        setProcesses(
+          fetched.length > 0 ? mergeProcessCatalog(fetched) : DEFAULT_PROCESSES,
+        );
+      })
+      .catch(() => setProcesses(DEFAULT_PROCESSES))
       .finally(() => setProcessesLoading(false));
   }, []);
 

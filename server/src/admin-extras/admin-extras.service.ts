@@ -23,6 +23,21 @@ export class AdminExtrasService {
 
     private allApps = ['construction', 'finance', 'hr', 'procurement', 'admin', 'ess', 'storefront'];
 
+    private readonly defaultProcessCatalog = [
+        { id: 'p_create_pr', label: 'Create Purchase Request', app: 'procurement', description: '', requiresApproval: false },
+        { id: 'p_approve_po', label: 'Approve Purchase Order', app: 'procurement', description: '', requiresApproval: true },
+        { id: 'p_issue_mat', label: 'Issue Materials', app: 'procurement', description: '', requiresApproval: false },
+        { id: 'p_create_exp', label: 'Create Expense', app: 'finance', description: '', requiresApproval: false },
+        { id: 'p_approve_exp', label: 'Approve Expense', app: 'finance', description: '', requiresApproval: true },
+        { id: 'p_create_pay', label: 'Create Payroll', app: 'hr', description: '', requiresApproval: false },
+        { id: 'p_approve_lv', label: 'Approve Leave Request', app: 'hr', description: '', requiresApproval: true },
+        { id: 'p_assign_wf', label: 'Assign Workforce', app: 'construction', description: '', requiresApproval: false },
+        { id: 'p_create_proj', label: 'Create Project', app: 'construction', description: '', requiresApproval: false },
+        { id: 'p_approve_bud', label: 'Approve Project Budget', app: 'construction', description: '', requiresApproval: true },
+        { id: 'p_gen_rpt', label: 'Generate Reports', app: 'admin', description: '', requiresApproval: false },
+        { id: 'p_manage_usr', label: 'Manage Users', app: 'admin', description: '', requiresApproval: false },
+    ];
+
     private buildFullAdminPermissions(processCatalog: any[]) {
         const processPermissions = Object.fromEntries(
             (Array.isArray(processCatalog) ? processCatalog : []).map((proc: any) => [
@@ -105,7 +120,9 @@ export class AdminExtrasService {
 
     async findProcessCatalog() {
         const settings = await this.readAdminSettings();
-        return settings.processCatalog;
+        return settings.processCatalog.length > 0
+            ? settings.processCatalog
+            : this.defaultProcessCatalog;
     }
 
     async createProcessCatalogItem(data: any) {
