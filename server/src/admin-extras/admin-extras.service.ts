@@ -21,6 +21,8 @@ export class AdminExtrasService {
 
     private settingsFilePath = path.join(process.cwd(), 'data', 'admin-settings.json');
 
+    private readonly pendingInviteStatuses = ['pending_invite', 'invited', 'pending invite'];
+
     private allApps = ['construction', 'finance', 'hr', 'procurement', 'admin', 'ess', 'storefront'];
     private readonly rolePermissionKeys = ['view', 'create', 'edit', 'approve', 'delete'];
 
@@ -160,6 +162,88 @@ export class AdminExtrasService {
             processPermissions,
             appAccess,
             navAccess,
+        };
+    }
+
+    private normalizeBaseUrl(value: string): string {
+        return String(value || '').trim().replace(/\/$/, '');
+    }
+
+    private normalizeStatus(status: unknown): string {
+        const raw = String(status ?? '').trim().toLowerCase();
+        if (raw === 'active') return 'Active';
+        if (raw === 'inactive') return 'Inactive';
+        if (this.pendingInviteStatuses.includes(raw)) return 'pending_invite';
+        return String(status ?? '').trim();
+    }
+
+    private isPendingInviteStatus(status: unknown): boolean {
+        const raw = String(status ?? '').trim().toLowerCase();
+        return this.pendingInviteStatuses.includes(raw);
+    }
+
+    private async resolveCompanyUserIdPrefix(): Promise<string> {
+        const profile = await this.prisma.companyProfile
+            .findUnique({ where: { id: 'singleton' }, select: { name: true } })
+            .catch(() => null);
+
+        const words = String(profile?.name ?? 'BuildOS')
+            .replace(/[^a-zA-Z0-9\s]/g, ' ')
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
+
+        const prefix = words.length > 1
+            ? words.map((word) => word[0]).join('')
+            : String(words[0] ?? 'BOS').slice(0, 3);
+
+        return prefix.toUpperCase().slice(0, 4) || 'BOS';
+    }
+
+    private formatBusinessUserId(user: { id: string; createdAt?: Date | string }, prefix: string): string {
+        const created = user.createdAt ? new Date(user.createdAt) : new Date();
+        const yymm = `${String(created.getUTCFullYear()).slice(-2)}${String(created.getUTCMonth() + 1).padStart(2, '0')}`;
+        const suffix = user.id.replace(/[^a-zA-Z0-9]/g, '').slice(-6).toUpperCase().padStart(6, '0');
+        return `${prefix}-${yymm}-${suffix}`;
+    }
+
+    private async ensureUserId(
+        user: { id: string; createdAt?: Date | string; userId?: string | null },
+        prefix: string,
+    ): Promise<string> {
+        const existing = String(user.userId ?? '').trim();
+        if (existing) {
+            return existing;
+        }
+
+        const generated = this.formatBusinessUserId(user, prefix);
+        await this.prisma.user.update({
+            where: { id: user.id },
+            data: { userId: generated },
+        });
+        return generated;
+    }
+
+    private shapeUserResponse(
+        user: {
+            id: string;
+            userId?: string | null;
+            name: string;
+            email: string;
+            role: string;
+            department: string | null;
+            phone: string | null;
+            status: string;
+            lastLogin?: Date | null;
+            assignedApps: string[];
+            createdAt: Date;
+        },
+        prefix: string,
+    ) {
+        return {
+            ...user,
+            status: this.normalizeStatus(user.status),
+            userId: String(user.userId ?? '').trim() || this.formatBusinessUserId(user, prefix),
         };
     }
 
@@ -428,7 +512,10 @@ export class AdminExtrasService {
             payload.attachments = logo.attachments;
         }
 
-        await resend.emails.send(payload);
+        const result = await resend.emails.send(payload);
+        if ((result as { error?: unknown }).error) {
+            throw new BadRequestException('Invite email provider rejected the message');
+        }
     }
 
     private resolveInviteLogo(
@@ -486,20 +573,22 @@ export class AdminExtrasService {
         };
     }
 
-        private getFrontendBaseUrl(): string {
-                const configured = String(process.env.FRONTEND_URL || '').trim();
-                if (configured) return configured.replace(/\/$/, '');
+    private getFrontendBaseUrl(): string {
+        const configured = this.normalizeBaseUrl(process.env.FRONTEND_URL || process.env.APP_WEB_URL || '');
+        if (configured) return configured;
 
-                const fallback = String(process.env.APP_URL || '').trim();
-                if (fallback) return fallback.replace(/\/$/, '');
-
-                // NOTE: Returning localhost as fallback. In production, ensure FRONTEND_URL environment variable is set.
-                // This is critical for invitation email links to work correctly in production environments.
-                // Without FRONTEND_URL, users will receive invite emails with localhost links that won't work.
-                const fallbackUrl = 'http://localhost:5173';
-                this.logger.warn(`FRONTEND_URL not configured. Using fallback: ${fallbackUrl}. Set FRONTEND_URL environment variable in production.`);
-                return fallbackUrl;
+        const appUrl = this.normalizeBaseUrl(process.env.APP_URL || '');
+        if (appUrl) {
+            this.logger.warn(`FRONTEND_URL not configured. Falling back to APP_URL for links: ${appUrl}`);
+            return appUrl;
         }
+
+        const fallbackUrl = process.env.NODE_ENV === 'production'
+            ? 'https://build-os-delta.vercel.app'
+            : 'http://localhost:5173';
+        this.logger.warn(`FRONTEND_URL not configured. Using fallback: ${fallbackUrl}.`);
+        return fallbackUrl;
+    }
 
         private buildActivationLink(token: string): string {
                 return `${this.getFrontendBaseUrl()}/auth/activate?token=${encodeURIComponent(token)}`;
@@ -514,7 +603,7 @@ export class AdminExtrasService {
                         .replace(/'/g, '&#39;');
         }
 
-    private normalizeStatus(status: string) {
+    private normalizeApprovalStatus(status: string) {
         const s = String(status || '').toLowerCase();
         if (s.includes('reject')) return 'rejected';
         if (s.includes('approve') || s.includes('paid') || s.includes('complete')) return 'approved';
@@ -564,7 +653,7 @@ export class AdminExtrasService {
                 project: r.employee.department?.name ?? 'HR',
                 requestedBy: `${r.employee.firstName} ${r.employee.lastName}`,
                 date: r.submittedAt,
-                status: this.normalizeStatus(r.status),
+                status: this.normalizeApprovalStatus(r.status),
                 urgency: r.days > 10 ? 'urgent' : 'normal',
                 description: r.notes ?? `${r.days} day leave request`,
             })));
@@ -584,7 +673,7 @@ export class AdminExtrasService {
                 requestedBy: `${c.employee.firstName} ${c.employee.lastName}`,
                 date: c.date,
                 amount: c.amount,
-                status: this.normalizeStatus(c.status),
+                status: this.normalizeApprovalStatus(c.status),
                 urgency: c.amount >= 1000000 ? 'urgent' : 'normal',
                 description: c.description,
             })));
@@ -604,7 +693,7 @@ export class AdminExtrasService {
                 requestedBy: e.createdBy,
                 date: e.date,
                 amount: e.amount,
-                status: this.normalizeStatus(e.status),
+                status: this.normalizeApprovalStatus(e.status),
                 urgency: e.amount >= 1000000 ? 'urgent' : 'normal',
                 description: e.description,
             })));
@@ -627,7 +716,7 @@ export class AdminExtrasService {
                 project: r.projectName ?? r.storeName,
                 requestedBy: r.requestedBy,
                 date: r.requestDate,
-                status: this.normalizeStatus(r.status),
+                status: this.normalizeApprovalStatus(r.status),
                 urgency: String(r.priority).toLowerCase().includes('urgent') ? 'urgent' : 'normal',
                 description: r.purpose ?? r.notes ?? '',
             })));
@@ -639,7 +728,7 @@ export class AdminExtrasService {
                 project: r.projectName ?? 'Procurement',
                 requestedBy: r.requestedBy,
                 date: r.createdAt,
-                status: this.normalizeStatus(r.status),
+                status: this.normalizeApprovalStatus(r.status),
                 urgency: String(r.priority).toLowerCase().includes('urgent') ? 'urgent' : 'normal',
                 description: r.notes ?? '',
             })));
@@ -652,7 +741,7 @@ export class AdminExtrasService {
                 requestedBy: o.createdBy,
                 date: o.createdDate,
                 amount: o.totalValue,
-                status: this.normalizeStatus(o.status),
+                status: this.normalizeApprovalStatus(o.status),
                 urgency: 'normal',
                 description: `Expected ${o.expectedDate.toISOString().slice(0, 10)}`,
             })));
@@ -871,6 +960,9 @@ export class AdminExtrasService {
             },
         });
 
+        const userIdPrefix = await this.resolveCompanyUserIdPrefix();
+        const persistedUserId = await this.ensureUserId(user, userIdPrefix);
+
         const activationLink = this.buildActivationLink(token);
 
         try {
@@ -884,6 +976,7 @@ export class AdminExtrasService {
 
         return {
             id: user.id,
+            userId: persistedUserId,
             email: user.email,
             status: user.status,
             assignedApps: user.assignedApps,
@@ -914,12 +1007,16 @@ export class AdminExtrasService {
             },
         });
 
+        const userIdPrefix = await this.resolveCompanyUserIdPrefix();
+        const persistedUserId = await this.ensureUserId(updated, userIdPrefix);
+
         const activationLink = this.buildActivationLink(token);
 
         await this.sendInviteEmail(updated.email, updated.name, activationLink);
 
         return {
             id: updated.id,
+            userId: persistedUserId,
             email: updated.email,
             status: updated.status,
             activationLink,
@@ -946,8 +1043,8 @@ export class AdminExtrasService {
         return { message: 'Account activated. You can now log in.' };
     }
 
-    findAllUsers(search?: string) {
-        return this.prisma.user.findMany({
+    async findAllUsers(search?: string) {
+        const users = await this.prisma.user.findMany({
             where: search
                 ? {
                     OR: [
@@ -957,25 +1054,38 @@ export class AdminExtrasService {
                 }
                 : {},
             select: {
-                id: true, name: true, email: true, role: true,
+                id: true, userId: true, name: true, email: true, role: true,
                 department: true, phone: true, status: true, lastLogin: true,
                 assignedApps: true,
                 createdAt: true,
             },
             orderBy: { name: 'asc' },
         });
+
+        const userIdPrefix = await this.resolveCompanyUserIdPrefix();
+        const usersWithIds = await Promise.all(
+            users.map(async (user) => {
+                const userId = await this.ensureUserId(user, userIdPrefix);
+                return { ...user, userId };
+            }),
+        );
+        return usersWithIds.map((user) => this.shapeUserResponse(user, userIdPrefix));
     }
 
-    findUser(id: string) {
-        return this.prisma.user.findUniqueOrThrow({
+    async findUser(id: string) {
+        const user = await this.prisma.user.findUniqueOrThrow({
             where: { id },
             select: {
-                id: true, name: true, email: true, role: true,
+                id: true, userId: true, name: true, email: true, role: true,
                 department: true, phone: true, status: true, lastLogin: true,
                 assignedApps: true,
                 createdAt: true,
             },
         });
+
+        const userIdPrefix = await this.resolveCompanyUserIdPrefix();
+        const userId = await this.ensureUserId(user, userIdPrefix);
+        return this.shapeUserResponse({ ...user, userId }, userIdPrefix);
     }
 
     async createUser(data: any) {
@@ -993,13 +1103,17 @@ export class AdminExtrasService {
         const hashed = await bcrypt.hash(data.password || 'BuildOS@2025', 10);
         const role = String(data?.role ?? '').trim();
         const assignedApps = this.normalizeAssignedApps(data?.assignedApps, role);
-        return this.prisma.user.create({
+        const created = await this.prisma.user.create({
             data: { ...data, email: normalizedEmail, name, assignedApps, password: hashed },
             select: {
-                id: true, name: true, email: true, role: true,
+                id: true, userId: true, name: true, email: true, role: true,
                 department: true, phone: true, status: true, assignedApps: true, createdAt: true,
             },
         });
+
+        const userIdPrefix = await this.resolveCompanyUserIdPrefix();
+        const userId = await this.ensureUserId(created, userIdPrefix);
+        return this.shapeUserResponse({ ...created, userId }, userIdPrefix);
     }
 
     async updateUser(id: string, data: any) {
@@ -1018,6 +1132,14 @@ export class AdminExtrasService {
             update.email = normalizedEmail;
         }
 
+        if ('status' in data) {
+            const normalized = this.normalizeStatus(data.status);
+            if (!['Active', 'Inactive', 'pending_invite'].includes(normalized)) {
+                throw new BadRequestException('Unsupported user status');
+            }
+            update.status = normalized;
+        }
+
         if ('assignedApps' in data) {
             update.assignedApps = this.normalizeAssignedApps(data.assignedApps, data?.role);
         } else if (typeof data?.role === 'string' && data.role.trim().toLowerCase().includes('admin')) {
@@ -1027,17 +1149,30 @@ export class AdminExtrasService {
         }
 
         if (password) update.password = await bcrypt.hash(password, 10);
-        return this.prisma.user.update({
+        const updated = await this.prisma.user.update({
             where: { id },
             data: update,
             select: {
-                id: true, name: true, email: true, role: true,
-                department: true, phone: true, status: true, assignedApps: true, createdAt: true,
+                id: true, userId: true, name: true, email: true, role: true,
+                department: true, phone: true, status: true, lastLogin: true, assignedApps: true, createdAt: true,
             },
         });
+
+        const userIdPrefix = await this.resolveCompanyUserIdPrefix();
+        const userId = await this.ensureUserId(updated, userIdPrefix);
+        return this.shapeUserResponse({ ...updated, userId }, userIdPrefix);
     }
 
-    deleteUser(id: string) {
+    async deleteUser(id: string) {
+        const user = await this.prisma.user.findUnique({ where: { id } });
+        if (!user) {
+            throw new BadRequestException('User not found');
+        }
+
+        if (!this.isPendingInviteStatus(user.status)) {
+            throw new BadRequestException('Only users with pending invites can be deleted');
+        }
+
         return this.prisma.user.delete({ where: { id } });
     }
 

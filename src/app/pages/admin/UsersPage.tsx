@@ -4,6 +4,8 @@ import {
   inviteUser,
   resendInvite,
   updateUser,
+  activateUser,
+  deactivateUser,
   deleteUser,
   AppUser,
 } from "../../api/admin-extras";
@@ -31,6 +33,8 @@ import {
   BadgeCheck,
 } from "lucide-react";
 import { getReferenceData } from "../../api/reference-data";
+import { toast } from "sonner";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 type AppKey =
@@ -115,6 +119,7 @@ interface RequestEntry {
 
 interface UserRecord {
   id: string;
+  userId: string;
   name: string;
   email: string;
   phone: string;
@@ -130,6 +135,16 @@ interface UserRecord {
   requests: RequestEntry[];
   hasSignature?: boolean;
   signatureInitials?: string;
+}
+
+function deriveFallbackUserId(u: AppUser): string {
+  const created = u.createdAt ? new Date(u.createdAt) : new Date();
+  const yymm = `${String(created.getUTCFullYear()).slice(-2)}${String(created.getUTCMonth() + 1).padStart(2, "0")}`;
+  const suffix = String(u.id || "")
+    .replace(/[^a-zA-Z0-9]/g, "")
+    .slice(-4)
+    .toUpperCase();
+  return `BOS-${yymm}-${suffix || "0000"}`;
 }
 
 function userFromApi(u: AppUser): UserRecord {
@@ -159,6 +174,7 @@ function userFromApi(u: AppUser): UserRecord {
 
   return {
     id: u.id,
+    userId: String(u.userId || "").trim() || deriveFallbackUserId(u),
     name: u.name,
     email: u.email,
     phone: "",
@@ -901,7 +917,15 @@ function AddUserModal({
       }
 
       onCreated({
-        id: `pending-${Date.now()}`,
+        id: inviteResult.id,
+        userId:
+          String((inviteResult as { userId?: string }).userId || "").trim() ||
+          `BOS-${new Date().getUTCFullYear().toString().slice(-2)}${String(new Date().getUTCMonth() + 1).padStart(2, "0")}-${
+            inviteResult.id
+              .replace(/[^a-zA-Z0-9]/g, "")
+              .slice(-4)
+              .toUpperCase() || "0000"
+          }`,
         name: form.name,
         email: form.email,
         phone: "",
@@ -1081,11 +1105,18 @@ export function UsersPage() {
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [inviteWarning, setInviteWarning] = useState("");
+  const [pendingDeleteUser, setPendingDeleteUser] = useState<UserRecord | null>(
+    null,
+  );
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     getUsers()
       .then((data) => setUsers(data.map(userFromApi)))
-      .catch(console.error);
+      .catch((error) => {
+        console.error(error);
+        toast.error("Failed to load users.");
+      });
   }, []);
 
   const filtered = users.filter((u) => {
@@ -1118,10 +1149,49 @@ export function UsersPage() {
       {showAddModal && (
         <AddUserModal
           onClose={() => setShowAddModal(false)}
-          onCreated={(newUser) => setUsers((prev) => [newUser, ...prev])}
+          onCreated={(newUser) => {
+            setUsers((prev) => [newUser, ...prev]);
+            toast.success(`Invite sent to ${newUser.email}.`);
+          }}
           onInviteWarning={(message) => setInviteWarning(message)}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={Boolean(pendingDeleteUser)}
+        title="Delete pending user?"
+        description={
+          pendingDeleteUser
+            ? `This will permanently remove ${pendingDeleteUser.name}'s pending invite.`
+            : ""
+        }
+        confirmLabel="Delete User"
+        cancelLabel="Cancel"
+        isDangerous={true}
+        isLoading={deleteLoading}
+        onCancel={() => {
+          if (deleteLoading) return;
+          setPendingDeleteUser(null);
+        }}
+        onConfirm={async () => {
+          if (!pendingDeleteUser) return;
+          setDeleteLoading(true);
+          try {
+            await deleteUser(pendingDeleteUser.id);
+            setUsers((prev) =>
+              prev.filter((u) => u.id !== pendingDeleteUser.id),
+            );
+            toast.success("Pending user deleted.");
+            setPendingDeleteUser(null);
+          } catch (error) {
+            const message =
+              error instanceof Error ? error.message : "Failed to delete user.";
+            toast.error(message);
+          } finally {
+            setDeleteLoading(false);
+          }
+        }}
+      />
 
       {/* User Detail Modal */}
       {selectedUser && (
@@ -1130,10 +1200,19 @@ export function UsersPage() {
           onClose={() => setSelectedUser(null)}
           onUpdateSignature={() => {}}
           onUpdateApps={async (id, apps) => {
-            const updated = await updateUser(id, { assignedApps: apps });
-            const next = userFromApi(updated);
-            setUsers((prev) => prev.map((u) => (u.id === id ? next : u)));
-            setSelectedUser(next);
+            try {
+              const updated = await updateUser(id, { assignedApps: apps });
+              const next = userFromApi(updated);
+              setUsers((prev) => prev.map((u) => (u.id === id ? next : u)));
+              setSelectedUser(next);
+              toast.success("App access updated.");
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Failed to update app access.";
+              toast.error(message);
+            }
           }}
         />
       )}
@@ -1226,6 +1305,9 @@ export function UsersPage() {
                 User
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                User ID
+              </th>
+              <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
                 Role
               </th>
               <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
@@ -1263,6 +1345,11 @@ export function UsersPage() {
                       <p className="text-xs text-gray-400">{user.email}</p>
                     </div>
                   </div>
+                </td>
+                <td className="px-4 py-3.5">
+                  <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-semibold tracking-wide text-gray-700">
+                    {user.userId}
+                  </span>
                 </td>
                 <td className="px-4 py-3.5">
                   <div className="flex items-center gap-2">
@@ -1334,50 +1421,113 @@ export function UsersPage() {
                           onClick={() => {
                             navigator.clipboard
                               .writeText(user.email)
-                              .catch(() => {});
+                              .then(() => toast.success("Email copied."))
+                              .catch(() =>
+                                toast.error("Failed to copy email."),
+                              );
                             setOpenMenuId(null);
                           }}
                           className="w-full text-left px-2.5 py-2 rounded text-sm text-gray-700 hover:bg-gray-50"
                         >
                           Copy email
                         </button>
-                        <button
-                          onClick={async () => {
-                            try {
-                              await deleteUser(user.id);
-                              setUsers((prev) =>
-                                prev.filter((u) => u.id !== user.id),
-                              );
-                            } finally {
-                              setOpenMenuId(null);
-                            }
-                          }}
-                          className="w-full text-left px-2.5 py-2 rounded text-sm text-red-600 hover:bg-red-50"
-                        >
-                          Delete user
-                        </button>
-                        {user.status === "Pending" && (
+                        {user.status === "Active" && (
                           <button
                             onClick={async () => {
                               try {
-                                await resendInvite(user.id);
-                                setInviteWarning(
-                                  `Invite resent to ${user.email}.`,
+                                const updated = await deactivateUser(user.id);
+                                const next = userFromApi(updated);
+                                setUsers((prev) =>
+                                  prev.map((u) =>
+                                    u.id === user.id ? next : u,
+                                  ),
                                 );
-                              } catch (err) {
+                                if (selectedUser?.id === user.id) {
+                                  setSelectedUser(next);
+                                }
+                                toast.success(`${user.name} deactivated.`);
+                              } catch (error) {
                                 const message =
-                                  err instanceof Error
-                                    ? err.message
-                                    : "Failed to resend invite.";
-                                setInviteWarning(message);
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Failed to deactivate user.";
+                                toast.error(message);
                               } finally {
                                 setOpenMenuId(null);
                               }
                             }}
-                            className="w-full text-left px-2.5 py-2 rounded text-sm text-indigo-700 hover:bg-indigo-50"
+                            className="w-full text-left px-2.5 py-2 rounded text-sm text-amber-700 hover:bg-amber-50"
                           >
-                            Resend invite
+                            Deactivate user
                           </button>
+                        )}
+                        {user.status === "Inactive" && (
+                          <button
+                            onClick={async () => {
+                              try {
+                                const updated = await activateUser(user.id);
+                                const next = userFromApi(updated);
+                                setUsers((prev) =>
+                                  prev.map((u) =>
+                                    u.id === user.id ? next : u,
+                                  ),
+                                );
+                                if (selectedUser?.id === user.id) {
+                                  setSelectedUser(next);
+                                }
+                                toast.success(`${user.name} activated.`);
+                              } catch (error) {
+                                const message =
+                                  error instanceof Error
+                                    ? error.message
+                                    : "Failed to activate user.";
+                                toast.error(message);
+                              } finally {
+                                setOpenMenuId(null);
+                              }
+                            }}
+                            className="w-full text-left px-2.5 py-2 rounded text-sm text-emerald-700 hover:bg-emerald-50"
+                          >
+                            Activate user
+                          </button>
+                        )}
+                        {user.status === "Pending" && (
+                          <>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await resendInvite(user.id);
+                                  setInviteWarning(
+                                    `Invite resent to ${user.email}.`,
+                                  );
+                                  toast.success(
+                                    `Invite resent to ${user.email}.`,
+                                  );
+                                } catch (err) {
+                                  const message =
+                                    err instanceof Error
+                                      ? err.message
+                                      : "Failed to resend invite.";
+                                  setInviteWarning(message);
+                                  toast.error(message);
+                                } finally {
+                                  setOpenMenuId(null);
+                                }
+                              }}
+                              className="w-full text-left px-2.5 py-2 rounded text-sm text-indigo-700 hover:bg-indigo-50"
+                            >
+                              Resend invite
+                            </button>
+                            <button
+                              onClick={() => {
+                                setPendingDeleteUser(user);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full text-left px-2.5 py-2 rounded text-sm text-red-600 hover:bg-red-50"
+                            >
+                              Delete user
+                            </button>
+                          </>
                         )}
                       </div>
                     )}

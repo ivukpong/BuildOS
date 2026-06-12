@@ -466,10 +466,10 @@ export function RolesPage() {
               users: counts[normalizeRoleKey(r.name)] ?? 0,
               isSuper: Boolean(
                 r.isSuper ??
-                  r.isSystem ??
-                  String(r.name ?? "")
-                    .trim()
-                    .toLowerCase() === "admin",
+                r.isSystem ??
+                String(r.name ?? "")
+                  .trim()
+                  .toLowerCase() === "admin",
               ),
               permissions: persisted.processPermissions ?? {},
               appAccess: {
@@ -1044,7 +1044,9 @@ export function RolesPage() {
                         {(expandedRoleTab[role.id] ?? "app") === "nav" && (
                           <div className="grid grid-cols-3 gap-4">
                             {(Object.keys(NAV_ITEMS) as AppKey[])
-                              .filter((app) => role.isSuper || role.appAccess[app])
+                              .filter(
+                                (app) => role.isSuper || role.appAccess[app],
+                              )
                               .map((app) => (
                                 <div key={app} className="space-y-1.5">
                                   <p
@@ -1092,7 +1094,10 @@ export function RolesPage() {
                             ).length > 0 && (
                               <div className="col-span-3 text-xs text-gray-400 italic">
                                 {(Object.keys(NAV_ITEMS) as AppKey[])
-                                  .filter((app) => !role.isSuper && !role.appAccess[app])
+                                  .filter(
+                                    (app) =>
+                                      !role.isSuper && !role.appAccess[app],
+                                  )
                                   .map((a) => APP_LABELS[a])
                                   .join(", ")}{" "}
                                 app(s) not accessible — grant app access in
@@ -1204,9 +1209,7 @@ export function RolesPage() {
         cancelLabel="Cancel"
         isDangerous
         isLoading={
-          roleToDelete
-            ? actionLoading.has(`delete-${roleToDelete.id}`)
-            : false
+          roleToDelete ? actionLoading.has(`delete-${roleToDelete.id}`) : false
         }
         onConfirm={confirmDeleteRole}
         onCancel={() => setRoleToDelete(null)}

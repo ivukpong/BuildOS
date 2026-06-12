@@ -2,6 +2,7 @@ import { apiFetch } from './client';
 
 export interface AppUser {
     id: string; name: string; email: string; role: string;
+    userId?: string;
     department?: string; position?: string; status: string;
     assignedApps?: string[];
     lastLogin?: string; createdAt: string;
@@ -143,6 +144,10 @@ export const updateUser = (id: string, data: Partial<AppUser> & { password?: str
     apiFetch<AppUser>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 export const deleteUser = (id: string) =>
     apiFetch<void>(`/admin/users/${id}`, { method: 'DELETE' });
+export const activateUser = (id: string) =>
+    apiFetch<AppUser>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'Active' }) });
+export const deactivateUser = (id: string) =>
+    apiFetch<AppUser>(`/admin/users/${id}`, { method: 'PUT', body: JSON.stringify({ status: 'Inactive' }) });
 
 // App Roles
 export const getAppRoles = () => apiFetch<AppRole[]>('/admin/roles');
