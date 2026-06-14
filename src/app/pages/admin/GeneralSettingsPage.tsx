@@ -14,6 +14,8 @@ import {
 import { useEffect, useState } from "react";
 import { CreatableSelect } from "../../components/CreatableSelect";
 import {
+  getAdminGeneralSettings,
+  updateAdminGeneralSettings,
   createChangeCategory,
   createIssueType,
   deleteChangeCategory,
@@ -23,6 +25,7 @@ import {
   updateChangeCategory,
   updateIssueType,
 } from "../../api/admin-extras";
+import { toast } from "sonner";
 
 // ── Issue Types ──────────────────────────────────────────────────────────────
 const IT_COLORS = [
@@ -274,6 +277,7 @@ export function GeneralSettingsPage() {
   const [currencyOptions, setCurrencyOptions] = useState(
     defaultCurrencyOptions,
   );
+  const [savingGeneralSettings, setSavingGeneralSettings] = useState(false);
   const handleChange = (field: string, value: string) =>
     setSettings((prev) => {
       const next = { ...prev, [field]: value };
@@ -289,12 +293,48 @@ export function GeneralSettingsPage() {
       return next;
     });
   };
-  const handleSave = () => {
+  const handleSave = async () => {
+    setSavingGeneralSettings(true);
+    // Persist locally first so the change is guaranteed and immediately
+    // reflected across the app (currency symbol, number/date formatting, etc.)
+    // regardless of whether the backend sync succeeds.
     localStorage.setItem("buildos_general_settings", JSON.stringify(settings));
     localStorage.setItem(
       "buildos_currency_options",
       JSON.stringify(currencyOptions),
     );
+    window.dispatchEvent(new Event("buildos:general-settings-changed"));
+
+    try {
+      const payload = {
+        generalSettings: settings,
+        currencyOptions,
+      };
+      const saved = await updateAdminGeneralSettings(payload);
+
+      setSettings(saved.generalSettings);
+      setCurrencyOptions(saved.currencyOptions as CurrencyOption[]);
+      localStorage.setItem(
+        "buildos_general_settings",
+        JSON.stringify(saved.generalSettings),
+      );
+      localStorage.setItem(
+        "buildos_currency_options",
+        JSON.stringify(saved.currencyOptions),
+      );
+      window.dispatchEvent(new Event("buildos:general-settings-changed"));
+      toast.success("General settings saved.");
+    } catch (error) {
+      // The settings were already saved locally above, so the change still
+      // takes effect — surface a non-blocking warning about server sync.
+      const message =
+        error instanceof Error && error.message
+          ? `Saved locally. Server sync failed: ${error.message}`
+          : "Saved locally. Could not sync to the server.";
+      toast.warning(message);
+    } finally {
+      setSavingGeneralSettings(false);
+    }
   };
 
   // ── Issue Types state ────────────────────────────────────────────────────
@@ -409,10 +449,19 @@ export function GeneralSettingsPage() {
         setCategories((prev) =>
           prev.map((c) => (c.id === data.id ? updated : c)),
         );
+        toast.success("Change category updated.");
       } else {
         const created = await createChangeCategory(data);
         setCategories((prev) => [...prev, created]);
+        toast.success("Change category added.");
       }
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Failed to save change category.";
+      toast.error(message);
+      throw error;
     } finally {
       setCatSaving(false);
     }
@@ -436,6 +485,22 @@ export function GeneralSettingsPage() {
         // no-op
       }
     }
+    getAdminGeneralSettings()
+      .then((saved) => {
+        setSettings(saved.generalSettings);
+        setCurrencyOptions(saved.currencyOptions as CurrencyOption[]);
+        localStorage.setItem(
+          "buildos_general_settings",
+          JSON.stringify(saved.generalSettings),
+        );
+        localStorage.setItem(
+          "buildos_currency_options",
+          JSON.stringify(saved.currencyOptions),
+        );
+      })
+      .catch(() => {
+        // Keep localStorage/default fallback if API is not reachable.
+      });
     getIssueTypes()
       .then(setIssueTypes)
       .catch(() => setIssueTypes([]));
@@ -471,9 +536,11 @@ export function GeneralSettingsPage() {
         {activeTab === "general" && (
           <button
             onClick={handleSave}
+            disabled={savingGeneralSettings}
             className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
           >
-            <Save className="w-4 h-4" /> Save Changes
+            <Save className="w-4 h-4" />
+            {savingGeneralSettings ? "Saving..." : "Save Changes"}
           </button>
         )}
         {activeTab === "issue_types" && (
@@ -1045,7 +1112,7 @@ export function GeneralSettingsPage() {
                       {cat.description || "—"}
                     </td>
                     <td className="px-4 py-3">
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={() => {
                             setEditingCat(cat);
@@ -1093,6 +1160,13 @@ export function GeneralSettingsPage() {
                   setCategories((prev) =>
                     prev.filter((c) => c.id !== deletingCat.id),
                   );
+                  toast.success("Change category deleted.");
+                } catch (error) {
+                  const message =
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to delete change category.";
+                  toast.error(message);
                 } finally {
                   setCatDeleting(false);
                   setDeletingCat(null);

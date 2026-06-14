@@ -15,6 +15,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 
 type BudgetScope = "Project" | "Department";
 type BudgetStatus =
@@ -98,11 +99,7 @@ export function BudgetManagementPage() {
   }, []);
 
   const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-    }).format(n);
+    formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
   const pct = (spent: number, total: number) =>
     total > 0 ? Math.round((spent / total) * 100) : 0;
 

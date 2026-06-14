@@ -21,6 +21,7 @@ import {
   deleteProcessWorkflow,
   type ProcessWorkflow,
 } from "../../api/admin-extras";
+import { toast } from "sonner";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ApprovalType = "single" | "group" | "tier";
@@ -344,6 +345,7 @@ function ConfigureWorkflowModal({
     ],
   );
   const [saving, setSaving] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   const toggleGroup = (user: string) => {
     setGroupApprovers((prev) =>
@@ -362,9 +364,30 @@ function ConfigureWorkflowModal({
     const selectedCatalogProcess = availableProcesses.find(
       (p) => p.label === selectedProcess && p.app === selectedApp,
     );
-    if (!selectedCatalogProcess) return;
+    if (!selectedCatalogProcess) {
+      setFormError("Please select a valid process.");
+      return;
+    }
+    if (wfType === "single" && !approver.trim()) {
+      setFormError("Please select an approver.");
+      return;
+    }
+    if (wfType === "group" && groupApprovers.length === 0) {
+      setFormError("Please select at least one group approver.");
+      return;
+    }
+    if (
+      wfType === "tier" &&
+      tierLevels.some(
+        (level) => !level.approver.trim() || !level.condition.trim(),
+      )
+    ) {
+      setFormError("Each tier level requires an approver and a condition.");
+      return;
+    }
 
     setSaving(true);
+    setFormError(null);
     try {
       await onSave({
         id: existing?.id ?? `wf_${Date.now()}`,
@@ -403,6 +426,11 @@ function ConfigureWorkflowModal({
         </div>
 
         <div className="p-6 space-y-5 overflow-y-auto max-h-[70vh]">
+          {formError && (
+            <p className="text-sm text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {formError}
+            </p>
+          )}
           {/* Select process */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -916,7 +944,7 @@ export function ProjectConfigurationPage() {
                             {wf.tierLevels?.length ?? 0} levels
                           </span>
                         )}
-                        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex items-center gap-1">
                           <button
                             onClick={() => {
                               setEditingWf(wf);
@@ -934,10 +962,12 @@ export function ProjectConfigurationPage() {
                                   prev.filter((w) => w.id !== wf.id),
                                 );
                                 setWorkflowError(null);
+                                toast.success("Workflow deleted.");
                               } catch {
                                 setWorkflowError(
                                   "Failed to delete workflow. Please try again.",
                                 );
+                                toast.error("Failed to delete workflow.");
                               }
                             }}
                             className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
@@ -1020,6 +1050,14 @@ export function ProjectConfigurationPage() {
           availableProcesses={availableProcesses}
           availableUsers={availableUsers}
           onSave={async (wf) => {
+            const duplicate = workflows.find(
+              (item) => item.processId === wf.processId && item.id !== wf.id,
+            );
+            if (duplicate) {
+              toast.error("A workflow already exists for this process.");
+              throw new Error("Duplicate process workflow");
+            }
+
             if (editingWf) {
               try {
                 const updated = await updateProcessWorkflow(wf.id, {
@@ -1035,10 +1073,12 @@ export function ProjectConfigurationPage() {
                   prev.map((w) => (w.id === updated.id ? updated : w)),
                 );
                 setWorkflowError(null);
+                toast.success("Workflow updated.");
               } catch {
                 setWorkflowError(
                   "Failed to update workflow. Please try again.",
                 );
+                toast.error("Failed to update workflow.");
                 throw new Error("Failed to update workflow");
               }
               return;
@@ -1056,8 +1096,10 @@ export function ProjectConfigurationPage() {
               });
               setWorkflows((prev) => [...prev, created]);
               setWorkflowError(null);
+              toast.success("Workflow created.");
             } catch {
               setWorkflowError("Failed to create workflow. Please try again.");
+              toast.error("Failed to create workflow.");
               throw new Error("Failed to create workflow");
             }
           }}

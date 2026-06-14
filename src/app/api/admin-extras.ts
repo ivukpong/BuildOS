@@ -102,6 +102,28 @@ export interface ProcessWorkflow {
     tierLevels?: ProcessWorkflowTierLevel[];
 }
 
+export interface CurrencyOptionConfig {
+    label: string;
+    value: string;
+    meta?: string;
+}
+
+export interface GeneralSettingsConfig {
+    currency: string;
+    currencySymbol: string;
+    timezone: string;
+    dateFormat: string;
+    timeFormat: string;
+    numberFormat: string;
+    fiscalYearStart: string;
+    language: string;
+}
+
+export interface AdminGeneralSettingsPayload {
+    generalSettings: GeneralSettingsConfig;
+    currencyOptions: CurrencyOptionConfig[];
+}
+
 export const getAdminSystemSummary = () =>
     apiFetch<AdminSystemSummary>('/admin/system-summary');
 export const getAdminActivityLog = () =>
@@ -196,6 +218,15 @@ export const updateProcessWorkflow = (id: string, data: Partial<Omit<ProcessWork
     apiFetch<ProcessWorkflow>(`/admin/process-workflows/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteProcessWorkflow = (id: string) =>
     apiFetch<{ ok: boolean }>(`/admin/process-workflows/${id}`, { method: 'DELETE' });
+
+// General Settings
+export const getAdminGeneralSettings = () =>
+    apiFetch<AdminGeneralSettingsPayload>('/admin/general-settings');
+export const updateAdminGeneralSettings = (data: AdminGeneralSettingsPayload) =>
+    apiFetch<AdminGeneralSettingsPayload>('/admin/general-settings', {
+        method: 'PUT',
+        body: JSON.stringify(data),
+    });
 
 // Units of Measurement
 export const getUnits = () => apiFetch<UnitOfMeasurement[]>('/admin/units');

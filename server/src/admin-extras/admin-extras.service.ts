@@ -41,6 +41,30 @@ export class AdminExtrasService {
         { id: 'p_manage_usr', label: 'Manage Users', app: 'admin', description: '', requiresApproval: false },
     ];
 
+    private readonly defaultGeneralSettings = {
+        currency: 'USD',
+        currencySymbol: '$',
+        timezone: 'America/New_York',
+        dateFormat: 'MM/DD/YYYY',
+        timeFormat: '12',
+        numberFormat: '1,234.56',
+        fiscalYearStart: '01',
+        language: 'en',
+    };
+
+    private readonly defaultCurrencyOptions = [
+        { label: 'US Dollar', value: 'USD', meta: '$' },
+        { label: 'Euro', value: 'EUR', meta: '€' },
+        { label: 'British Pound', value: 'GBP', meta: '£' },
+        { label: 'Japanese Yen', value: 'JPY', meta: '¥' },
+        { label: 'Chinese Yuan', value: 'CNY', meta: '¥' },
+        { label: 'Indian Rupee', value: 'INR', meta: '₹' },
+        { label: 'Nigerian Naira', value: 'NGN', meta: '₦' },
+        { label: 'UAE Dirham', value: 'AED', meta: 'د.إ' },
+        { label: 'Saudi Riyal', value: 'SAR', meta: '﷼' },
+        { label: 'South African Rand', value: 'ZAR', meta: 'R' },
+    ];
+
     private buildFullAdminPermissions(processCatalog: any[]) {
         const processPermissions = Object.fromEntries(
             (Array.isArray(processCatalog) ? processCatalog : []).map((proc: any) => [
@@ -286,15 +310,84 @@ export class AdminExtrasService {
                 changeCategories: Array.isArray(parsed.changeCategories) ? parsed.changeCategories : [],
                 processCatalog: Array.isArray(parsed.processCatalog) ? parsed.processCatalog : [],
                 processWorkflows: Array.isArray(parsed.processWorkflows) ? parsed.processWorkflows : [],
+                generalSettings: parsed?.generalSettings && typeof parsed.generalSettings === 'object'
+                    ? { ...this.defaultGeneralSettings, ...parsed.generalSettings }
+                    : { ...this.defaultGeneralSettings },
+                currencyOptions: Array.isArray(parsed?.currencyOptions)
+                    ? parsed.currencyOptions
+                        .map((item: any) => ({
+                            label: String(item?.label ?? '').trim(),
+                            value: String(item?.value ?? '').trim().toUpperCase(),
+                            meta: String(item?.meta ?? '').trim(),
+                        }))
+                        .filter((item: any) => item.label && item.value)
+                    : [...this.defaultCurrencyOptions],
             };
         } catch {
-            return { issueTypes: [], changeCategories: [], processCatalog: [], processWorkflows: [] };
+            return {
+                issueTypes: [],
+                changeCategories: [],
+                processCatalog: [],
+                processWorkflows: [],
+                generalSettings: { ...this.defaultGeneralSettings },
+                currencyOptions: [...this.defaultCurrencyOptions],
+            };
         }
     }
 
-    private async writeAdminSettings(data: { issueTypes: any[]; changeCategories: any[]; processCatalog: any[]; processWorkflows: any[] }) {
+    private async writeAdminSettings(data: {
+        issueTypes: any[];
+        changeCategories: any[];
+        processCatalog: any[];
+        processWorkflows: any[];
+        generalSettings: any;
+        currencyOptions: any[];
+    }) {
         await fs.mkdir(path.dirname(this.settingsFilePath), { recursive: true });
         await fs.writeFile(this.settingsFilePath, JSON.stringify(data, null, 2), 'utf-8');
+    }
+
+    async getGeneralSettings() {
+        const settings = await this.readAdminSettings();
+        return {
+            generalSettings: settings.generalSettings,
+            currencyOptions: settings.currencyOptions,
+        };
+    }
+
+    async updateGeneralSettings(data: any) {
+        const settings = await this.readAdminSettings();
+        const nextGeneralSettings = {
+            ...this.defaultGeneralSettings,
+            ...(data?.generalSettings ?? {}),
+        };
+
+        const rawCurrencyOptions = Array.isArray(data?.currencyOptions)
+            ? data.currencyOptions
+            : settings.currencyOptions;
+        const normalizedCurrencyOptions = rawCurrencyOptions
+            .map((item: any) => ({
+                label: String(item?.label ?? '').trim(),
+                value: String(item?.value ?? '').trim().toUpperCase(),
+                meta: String(item?.meta ?? '').trim(),
+            }))
+            .filter((item: any) => item.label && item.value);
+
+        if (!nextGeneralSettings.currency) {
+            throw new BadRequestException('Default currency is required');
+        }
+        if (!normalizedCurrencyOptions.some((item: any) => item.value === nextGeneralSettings.currency)) {
+            throw new BadRequestException('Default currency must exist in currency options');
+        }
+
+        settings.generalSettings = nextGeneralSettings;
+        settings.currencyOptions = normalizedCurrencyOptions;
+        await this.writeAdminSettings(settings);
+
+        return {
+            generalSettings: settings.generalSettings,
+            currencyOptions: settings.currencyOptions,
+        };
     }
 
     private normalizeProcessCatalogItem(input: any) {
@@ -412,6 +505,9 @@ export class AdminExtrasService {
         if (settings.processWorkflows.some((item: any) => item.id === next.id)) {
             throw new ConflictException('Workflow id already exists');
         }
+        if (settings.processWorkflows.some((item: any) => item.processId === next.processId)) {
+            throw new ConflictException('A workflow is already configured for this process');
+        }
 
         settings.processWorkflows.push(next);
         await this.writeAdminSettings(settings);
@@ -428,7 +524,11 @@ export class AdminExtrasService {
             ...data,
             id,
         };
-        settings.processWorkflows[idx] = this.normalizeProcessWorkflowItem(merged);
+        const normalized = this.normalizeProcessWorkflowItem(merged);
+        if (settings.processWorkflows.some((item: any, i: number) => i !== idx && item.processId === normalized.processId)) {
+            throw new ConflictException('A workflow is already configured for this process');
+        }
+        settings.processWorkflows[idx] = normalized;
         await this.writeAdminSettings(settings);
         return settings.processWorkflows[idx];
     }

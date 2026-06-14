@@ -156,6 +156,15 @@ export class AdminExtrasController {
     @Roles('admin')
     deleteProcessWorkflow(@Param('id') id: string) { return this.svc.deleteProcessWorkflow(id); }
 
+    // ── General Settings ──
+    @Get('general-settings')
+    @Roles('admin')
+    getGeneralSettings() { return this.svc.getGeneralSettings(); }
+
+    @Put('general-settings')
+    @Roles('admin')
+    updateGeneralSettings(@Body() body: any) { return this.svc.updateGeneralSettings(body); }
+
     // ── Company Profile ──
     @Get('company-profile')
     @Roles('admin')

@@ -885,7 +885,7 @@ export function RolesPage() {
                             </span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 shrink-0">
+                        <div className="flex items-center gap-0.5 shrink-0">
                           <button
                             onClick={() => setEditingRole(role)}
                             className="p-1 rounded hover:bg-gray-100 text-gray-400 hover:text-gray-600"
@@ -901,16 +901,20 @@ export function RolesPage() {
                           >
                             <Copy className="w-3.5 h-3.5" />
                           </button>
-                          {!role.isSuper && (
-                            <button
-                              onClick={() => requestDeleteRole(role)}
-                              disabled={actionLoading.has(`delete-${role.id}`)}
-                              className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          )}
+                          {!role.isSuper &&
+                            (roleUserCounts[normalizeRoleKey(role.name)] ??
+                              0) === 0 && (
+                              <button
+                                onClick={() => requestDeleteRole(role)}
+                                disabled={actionLoading.has(
+                                  `delete-${role.id}`,
+                                )}
+                                className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            )}
                         </div>
                       </div>
                     </td>

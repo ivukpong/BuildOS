@@ -16,6 +16,10 @@ import { fetchIncome } from "../../api/income";
 import { fetchBudgets } from "../../api/budgets";
 import { getTransactions } from "../../api/finance-extras";
 import { getApprovals, type ApprovalItem } from "../../api/approvals";
+import {
+  formatCurrencyByGeneralSettings,
+  getCurrencySymbol,
+} from "../../utils/generalSettings";
 
 export function FinanceDashboardPage() {
   const [allExpenses, setAllExpenses] = useState<any[]>([]);
@@ -43,15 +47,12 @@ export function FinanceDashboardPage() {
   }, []);
 
   const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", {
-      style: "currency",
-      currency: "USD",
-      minimumFractionDigits: 0,
-    }).format(Math.abs(n));
+    formatCurrencyByGeneralSettings(Math.abs(n), { minimumFractionDigits: 0 });
 
   function fmtShort(n: number): string {
     const abs = Math.abs(n);
-    const sign = n < 0 ? "-₦" : "₦";
+    const symbol = getCurrencySymbol();
+    const sign = n < 0 ? `-${symbol}` : symbol;
     if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)}M`;
     if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(0)}K`;
     return `${sign}${abs.toLocaleString()}`;

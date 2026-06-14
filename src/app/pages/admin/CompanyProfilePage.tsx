@@ -123,9 +123,6 @@ export function CompanyProfilePage() {
     null,
   );
   const [editingDepartmentName, setEditingDepartmentName] = useState("");
-  const [deletingDepartmentId, setDeletingDepartmentId] = useState<
-    string | null
-  >(null);
   const [departmentToDelete, setDepartmentToDelete] = useState<{
     id: string;
     name: string;

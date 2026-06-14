@@ -17,6 +17,7 @@ import {
   ArrowUpRight,
   Layers,
 } from "lucide-react";
+import { formatCurrencyByGeneralSettings } from "../utils/generalSettings";
 import { useAuthUser } from "../utils/useAuthUser";
 import { fetchProjects } from "../api/projects";
 import { getTasks } from "../api/tasks";
@@ -223,14 +224,10 @@ function mapCatalogItem(item: AppCatalogItem): AppDef {
 
 // ─── Formatting helpers ───────────────────────────────────────────────────────
 
-const currency = new Intl.NumberFormat("en-NG", {
-  style: "currency",
-  currency: "NGN",
-  maximumFractionDigits: 0,
-});
-
 function formatCurrency(amount: number) {
-  return currency.format(Number.isFinite(amount) ? amount : 0);
+  return formatCurrencyByGeneralSettings(Number.isFinite(amount) ? amount : 0, {
+    maximumFractionDigits: 0,
+  });
 }
 
 function average(values: number[]) {

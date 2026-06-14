@@ -51,15 +51,16 @@ export const withProtection = (
   Component: React.ComponentType<any>,
   protection?: RouteProtection
 ) => {
-  return (props: any) => (
-    <ProtectedRoute
-      requiredRoles={protection?.requiredRoles}
-      requiredPermissions={protection?.requiredPermissions}
-      fallbackPath={protection?.fallbackPath}
-    >
-      <Component {...props} />
-    </ProtectedRoute>
-  );
+  return (props: any) =>
+    React.createElement(
+      ProtectedRoute as React.ComponentType<any>,
+      {
+        requiredRoles: protection?.requiredRoles,
+        requiredPermissions: protection?.requiredPermissions,
+        fallbackPath: protection?.fallbackPath,
+      },
+      React.createElement(Component, props),
+    );
 };
 
 /**

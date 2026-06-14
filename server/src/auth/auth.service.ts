@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException, BadRequestExcepti
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcryptjs';
+import * as crypto from 'crypto';
 import { Resend } from 'resend';
 import { PrismaService } from '../prisma/prisma.service';
 import type { User } from '@prisma/client';
@@ -9,6 +10,7 @@ import type { User } from '@prisma/client';
 @Injectable()
 export class AuthService {
     private readonly logger = new Logger(AuthService.name);
+    private passwordHistoryTableReady = false;
 
     constructor(
         private prisma: PrismaService,
@@ -186,6 +188,72 @@ export class AuthService {
         });
 
         return updated;
+    }
+
+    private async ensurePasswordHistoryTable() {
+        if (this.passwordHistoryTableReady) return;
+
+        await this.prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS user_password_history (
+                id TEXT PRIMARY KEY,
+                user_id TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+                password_hash TEXT NOT NULL,
+                created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+            )
+        `);
+        await this.prisma.$executeRawUnsafe(`
+            CREATE INDEX IF NOT EXISTS idx_user_password_history_user_id_created_at
+            ON user_password_history (user_id, created_at DESC)
+        `);
+
+        this.passwordHistoryTableReady = true;
+    }
+
+    private async getRecentPasswordHashes(userId: string, limit = 3): Promise<string[]> {
+        await this.ensurePasswordHistoryTable();
+
+        const rows = await this.prisma.$queryRawUnsafe<Array<{ password_hash: string }>>(
+            `
+            SELECT password_hash
+            FROM user_password_history
+            WHERE user_id = $1
+            ORDER BY created_at DESC
+            LIMIT $2
+            `,
+            userId,
+            limit,
+        );
+
+        return rows.map((row) => row.password_hash);
+    }
+
+    private async addPasswordHistoryEntry(userId: string, passwordHash: string) {
+        await this.ensurePasswordHistoryTable();
+
+        await this.prisma.$executeRawUnsafe(
+            `
+            INSERT INTO user_password_history (id, user_id, password_hash)
+            VALUES ($1, $2, $3)
+            `,
+            crypto.randomUUID(),
+            userId,
+            passwordHash,
+        );
+
+        await this.prisma.$executeRawUnsafe(
+            `
+            DELETE FROM user_password_history
+            WHERE user_id = $1
+              AND id NOT IN (
+                SELECT id
+                FROM user_password_history
+                WHERE user_id = $1
+                ORDER BY created_at DESC
+                LIMIT 3
+              )
+            `,
+            userId,
+        );
     }
 
     private async issueTokenPair(user: { id: string; email: string; role: string }) {
@@ -430,6 +498,19 @@ export class AuthService {
             throw new UnauthorizedException('Invalid reset token');
         }
 
+        const isCurrentPassword = await bcrypt.compare(password, user.password);
+        if (isCurrentPassword) {
+            throw new BadRequestException('You cannot reuse your current password');
+        }
+
+        const recentPasswordHashes = await this.getRecentPasswordHashes(user.id, 3);
+        for (const previousHash of recentPasswordHashes) {
+            const isReused = await bcrypt.compare(password, previousHash);
+            if (isReused) {
+                throw new BadRequestException('You cannot reuse any of your last 3 passwords');
+            }
+        }
+
         const hashedPassword = await bcrypt.hash(password, 10);
         await this.prisma.user.update({
             where: { id: user.id },
@@ -439,6 +520,8 @@ export class AuthService {
                 refreshTokenExpiresAt: null,
             },
         });
+
+        await this.addPasswordHistoryEntry(user.id, user.password);
 
         return { success: true, message: 'Password has been reset successfully' };
     }

@@ -25,7 +25,6 @@ import {
   XCircle,
   Clock,
   Edit,
-  Copy,
   Trash2,
   Lock,
   Eye,
@@ -245,11 +244,22 @@ function UserDetailPanel({
   onClose,
   onUpdateSignature,
   onUpdateApps,
+  onEditUser,
+  onResetPassword,
+  onDeactivateUser,
+  onActivateUser,
 }: {
   user: UserRecord;
   onClose: () => void;
   onUpdateSignature: (id: string, has: boolean, initials?: string) => void;
   onUpdateApps: (id: string, apps: AppKey[]) => Promise<void>;
+  onEditUser: (
+    id: string,
+    payload: { name: string; role: string; department: string },
+  ) => Promise<void>;
+  onResetPassword: (email: string) => Promise<void>;
+  onDeactivateUser: (id: string) => Promise<void>;
+  onActivateUser: (id: string) => Promise<void>;
 }) {
   const [tab, setTab] = useState<
     "info" | "apps" | "permissions" | "activity" | "requests" | "signature"
@@ -268,6 +278,7 @@ function UserDetailPanel({
     user.apps.length > 0 ? user.apps : ["ess"],
   );
   const [savingApps, setSavingApps] = useState(false);
+  const [ctaBusy, setCtaBusy] = useState(false);
 
   const tabs = [
     { key: "info", label: "Basic Info" },
@@ -773,23 +784,77 @@ function UserDetailPanel({
 
         {/* Footer actions */}
         <div className="px-6 py-3 border-t border-gray-100 flex items-center gap-2 shrink-0 bg-gray-50">
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-white transition-colors">
+          <button
+            onClick={async () => {
+              const nextName = window.prompt("Update full name", user.name);
+              if (!nextName || nextName.trim() === user.name.trim()) return;
+              setCtaBusy(true);
+              try {
+                await onEditUser(user.id, {
+                  name: nextName.trim(),
+                  role: user.role,
+                  department: user.department,
+                });
+              } finally {
+                setCtaBusy(false);
+              }
+            }}
+            disabled={ctaBusy}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-white transition-colors disabled:opacity-60"
+          >
             <Edit className="w-4 h-4" />
             Edit User
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-white transition-colors">
+          <button
+            onClick={async () => {
+              setCtaBusy(true);
+              try {
+                await onResetPassword(user.email);
+              } finally {
+                setCtaBusy(false);
+              }
+            }}
+            disabled={ctaBusy}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-white transition-colors disabled:opacity-60"
+          >
             <Lock className="w-4 h-4" />
             Reset Password
           </button>
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-gray-300 rounded-lg text-gray-700 hover:bg-white transition-colors">
-            <Copy className="w-4 h-4" />
-            Duplicate
-          </button>
           <div className="flex-1" />
-          <button className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-red-200 rounded-lg text-red-600 hover:bg-red-50 transition-colors">
-            <Trash2 className="w-4 h-4" />
-            Delete
-          </button>
+          {user.status === "Active" && (
+            <button
+              onClick={async () => {
+                setCtaBusy(true);
+                try {
+                  await onDeactivateUser(user.id);
+                } finally {
+                  setCtaBusy(false);
+                }
+              }}
+              disabled={ctaBusy}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-red-200 rounded-lg text-red-600 hover:bg-red-50 transition-colors disabled:opacity-60"
+            >
+              <Trash2 className="w-4 h-4" />
+              Deactivate User
+            </button>
+          )}
+          {user.status === "Inactive" && (
+            <button
+              onClick={async () => {
+                setCtaBusy(true);
+                try {
+                  await onActivateUser(user.id);
+                } finally {
+                  setCtaBusy(false);
+                }
+              }}
+              disabled={ctaBusy}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-sm border border-emerald-200 rounded-lg text-emerald-700 hover:bg-emerald-50 transition-colors disabled:opacity-60"
+            >
+              <CheckCircle2 className="w-4 h-4" />
+              Activate User
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -1110,6 +1175,21 @@ export function UsersPage() {
   );
   const [deleteLoading, setDeleteLoading] = useState(false);
 
+  const requestPasswordReset = async (email: string) => {
+    const baseUrl = (
+      import.meta.env.VITE_API_URL || "http://localhost:3001/api"
+    ).replace(/\/$/, "");
+    const response = await fetch(`${baseUrl}/auth/forgot-password`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email }),
+    });
+    if (!response.ok) {
+      const raw = await response.text();
+      throw new Error(raw || "Failed to send reset password email.");
+    }
+  };
+
   useEffect(() => {
     getUsers()
       .then((data) => setUsers(data.map(userFromApi)))
@@ -1118,6 +1198,27 @@ export function UsersPage() {
         toast.error("Failed to load users.");
       });
   }, []);
+
+  useEffect(() => {
+    if (!openMenuId) return;
+
+    const handleMouseDown = (event: MouseEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("[data-users-action-menu]")) return;
+      setOpenMenuId(null);
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpenMenuId(null);
+    };
+
+    document.addEventListener("mousedown", handleMouseDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleMouseDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [openMenuId]);
 
   const filtered = users.filter((u) => {
     const q = search.toLowerCase();
@@ -1211,6 +1312,63 @@ export function UsersPage() {
                 error instanceof Error
                   ? error.message
                   : "Failed to update app access.";
+              toast.error(message);
+            }
+          }}
+          onEditUser={async (id, payload) => {
+            try {
+              const updated = await updateUser(id, payload);
+              const next = userFromApi(updated);
+              setUsers((prev) => prev.map((u) => (u.id === id ? next : u)));
+              setSelectedUser(next);
+              toast.success("User profile updated.");
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Failed to update user profile.";
+              toast.error(message);
+            }
+          }}
+          onResetPassword={async (email) => {
+            try {
+              await requestPasswordReset(email);
+              toast.success("Password reset email sent.");
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Failed to send password reset email.";
+              toast.error(message);
+            }
+          }}
+          onDeactivateUser={async (id) => {
+            try {
+              const updated = await deactivateUser(id);
+              const next = userFromApi(updated);
+              setUsers((prev) => prev.map((u) => (u.id === id ? next : u)));
+              setSelectedUser(next);
+              toast.success("User deactivated.");
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Failed to deactivate user.";
+              toast.error(message);
+            }
+          }}
+          onActivateUser={async (id) => {
+            try {
+              const updated = await activateUser(id);
+              const next = userFromApi(updated);
+              setUsers((prev) => prev.map((u) => (u.id === id ? next : u)));
+              setSelectedUser(next);
+              toast.success("User activated.");
+            } catch (error) {
+              const message =
+                error instanceof Error
+                  ? error.message
+                  : "Failed to activate user.";
               toast.error(message);
             }
           }}
@@ -1397,7 +1555,10 @@ export function UsersPage() {
                   className="px-4 py-3.5"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className="relative flex justify-end">
+                  <div
+                    className="relative flex justify-end"
+                    data-users-action-menu
+                  >
                     <button
                       onClick={() =>
                         setOpenMenuId(openMenuId === user.id ? null : user.id)
