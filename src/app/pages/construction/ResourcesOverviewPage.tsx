@@ -90,13 +90,20 @@ export function ResourcesOverviewPage() {
 
   useEffect(() => {
     fetchEmployees()
-      .then((d) => { if (d.length > 0) setHrEmployees(d as unknown as typeof mockHrEmployees); })
+      .then((d) => {
+        if (d.length > 0)
+          setHrEmployees(d as unknown as typeof mockHrEmployees);
+      })
       .catch(() => {});
     listMaterialResources()
-      .then((d) => { if (d.length > 0) setStubMaterials(d as typeof mockStubMaterials); })
+      .then((d) => {
+        if (d.length > 0) setStubMaterials(d as typeof mockStubMaterials);
+      })
       .catch(() => {});
     listEquipmentResources()
-      .then((d) => { if (d.length > 0) setStubEquipment(d as typeof mockStubEquipment); })
+      .then((d) => {
+        if (d.length > 0) setStubEquipment(d as typeof mockStubEquipment);
+      })
       .catch(() => {});
   }, []);
 
