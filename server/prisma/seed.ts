@@ -662,6 +662,7 @@ async function main() {
 
   const adminEmail = (process.env.SEED_ADMIN_EMAIL || 'admin@buildos.ng').trim().toLowerCase();
   const adminName = (process.env.SEED_ADMIN_NAME || 'Admin User').trim();
+  const adminPassword = process.env.SEED_ADMIN_PASSWORD || 'BuildOS@2025';
   const adminAssignedApps = ['construction', 'finance', 'hr', 'procurement', 'admin', 'ess', 'storefront'];
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
