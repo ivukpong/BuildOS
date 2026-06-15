@@ -658,6 +658,114 @@ async function main() {
     ],
   });
 
+  await prisma.earnedValueRecord.createMany({
+    data: [
+      { projectId: cProjectId, period: '2026-01', plannedValue: 8_000_000, earnedValue: 7_400_000, actualCost: 7_900_000 },
+      { projectId: cProjectId, period: '2026-02', plannedValue: 16_000_000, earnedValue: 15_100_000, actualCost: 16_200_000 },
+      { projectId: cProjectId, period: '2026-03', plannedValue: 24_000_000, earnedValue: 22_300_000, actualCost: 24_900_000 },
+      { projectId: cProjectId, period: '2026-04', plannedValue: 32_000_000, earnedValue: 29_800_000, actualCost: 33_100_000 },
+      { projectId: cProjectId2, period: '2026-01', plannedValue: 5_000_000, earnedValue: 4_900_000, actualCost: 5_050_000 },
+      { projectId: cProjectId2, period: '2026-02', plannedValue: 10_000_000, earnedValue: 9_600_000, actualCost: 10_200_000 },
+    ],
+  });
+
+  await prisma.constructionBaseline.create({
+    data: {
+      projectId: cProjectId, version: 1, label: 'Baseline v1 (Contract)', lockedAt: '2025-01-15T00:00:00Z', lockedBy: 'Amaka Osei',
+      taskSnapshots: [
+        { taskId: 'T-001', name: 'Substructure', plannedStart: '2025-02-01', plannedEnd: '2025-04-30' },
+        { taskId: 'T-002', name: 'Superstructure', plannedStart: '2025-05-01', plannedEnd: '2025-11-30' },
+      ],
+    },
+  });
+
+  await prisma.constructionCalendar.create({
+    data: {
+      projectId: cProjectId, workingDays: [1, 2, 3, 4, 5, 6], workingHoursStart: '08:00', workingHoursEnd: '17:00',
+      holidays: [{ date: '2026-10-01', name: 'Independence Day' }, { date: '2026-12-25', name: 'Christmas' }],
+      shutdowns: [{ start: '2026-12-24', end: '2027-01-02', reason: 'Year-end break' }],
+    },
+  });
+
+  await prisma.constructionSetting.upsert({
+    where: { scope: 'global' },
+    update: {},
+    create: {
+      scope: 'global',
+      scheduleLevels: [
+        { level: 1, name: 'Project', color: '#1e40af' },
+        { level: 2, name: 'Phase', color: '#0e7490' },
+        { level: 3, name: 'Work Package', color: '#15803d' },
+        { level: 4, name: 'Activity', color: '#a16207' },
+      ],
+      weatherConfig: [
+        { condition: 'Sunny', impact: 'none' },
+        { condition: 'Rainy', impact: 'moderate' },
+        { condition: 'Storm', impact: 'severe' },
+      ],
+      projectTypes: [
+        { sector: 'Residential', categories: ['Apartment', 'Villa', 'Estate'] },
+        { sector: 'Commercial', categories: ['Office', 'Retail', 'Mixed-Use'] },
+        { sector: 'Infrastructure', categories: ['Road', 'Bridge', 'Utilities'] },
+      ],
+    },
+  });
+
+  const wbsParent = await prisma.constructionTask.create({
+    data: {
+      projectId: cProjectId, level: 1, name: 'Superstructure', wbsNumber: '1',
+      plannedStart: '2025-05-01', plannedEnd: '2025-11-30', plannedDuration: 214,
+      percentComplete: 65, lagDays: 0, subVendorIds: [], ragStatus: 'amber', ragOverride: false,
+      isMilestone: false, isCritical: true,
+    },
+  });
+  await prisma.constructionTask.createMany({
+    data: [
+      {
+        projectId: cProjectId, parentTaskId: wbsParent.id, level: 2, name: 'Columns L1-L5', wbsNumber: '1.1',
+        plannedStart: '2025-05-01', plannedEnd: '2025-07-15', plannedDuration: 75,
+        percentComplete: 90, lagDays: 0, subVendorIds: [], ragStatus: 'green', ragOverride: false,
+        isMilestone: false, isCritical: true,
+      },
+      {
+        projectId: cProjectId, parentTaskId: wbsParent.id, level: 2, name: 'Slabs L1-L5', wbsNumber: '1.2',
+        plannedStart: '2025-07-16', plannedEnd: '2025-09-30', plannedDuration: 76,
+        percentComplete: 55, lagDays: 0, subVendorIds: [], ragStatus: 'amber', ragOverride: false,
+        isMilestone: false, isCritical: false,
+      },
+      {
+        projectId: cProjectId, parentTaskId: wbsParent.id, level: 2, name: 'Topping Out', wbsNumber: '1.3',
+        plannedStart: '2025-11-28', plannedEnd: '2025-11-30', plannedDuration: 2,
+        percentComplete: 0, lagDays: 0, subVendorIds: [], ragStatus: 'green', ragOverride: false,
+        isMilestone: true, isCritical: true,
+      },
+    ],
+  });
+
+  await prisma.humanResource.createMany({
+    data: [
+      { projectId: cProjectId, source: 'vendor', name: 'Sahara Steel Fixers Ltd', trade: 'Steel Fixing', contractType: 'subcontract', isNominated: false, contractSum: 12_000_000, skilledCount: 6, unskilledCount: 4, subVendorIds: [], assignedWorkPackages: ['1.1'], blockAssignment: 'Block A', mandaysEstimate: 240 },
+      { projectId: cProjectId, source: 'contractor', name: 'In-house Masonry Crew', trade: 'Masonry', payRate: 6_500, payRateUnit: 'daily', skilledCount: 12, unskilledCount: 8, subVendorIds: [], assignedWorkPackages: ['1.2'], blockAssignment: 'Block A', mandaysEstimate: 400 },
+      { projectId: cProjectId, source: 'staff', name: 'James Okoro', trade: 'Site Engineer', employeeId: 'EMP-1021', dailyRate: 18_000, status: 'active', subVendorIds: [], assignedWorkPackages: ['1'], blockAssignment: 'All', mandaysEstimate: 214 },
+    ],
+  });
+
+  await prisma.materialResource.createMany({
+    data: [
+      { projectId: cProjectId, name: 'Grade 30 Concrete', category: 'Concrete', unit: 'm³', estimatedQty: 1_200, estimatedUnitCost: 45_000, totalEstimatedCost: 54_000_000, procurementSource: 'supplier', supplierId: 'SUP-001' },
+      { projectId: cProjectId, name: 'Y16 Rebar', category: 'Steel', unit: 'tonnes', estimatedQty: 85, estimatedUnitCost: 850_000, totalEstimatedCost: 72_250_000, procurementSource: 'supplier', supplierId: 'SUP-002' },
+      { projectId: cProjectId, name: 'Formwork Plywood', category: 'Formwork', unit: 'sheets', estimatedQty: 600, estimatedUnitCost: 12_000, totalEstimatedCost: 7_200_000, procurementSource: 'supplier' },
+    ],
+  });
+
+  await prisma.equipmentResource.createMany({
+    data: [
+      { projectId: cProjectId, name: 'Tower Crane TC-01', category: 'Lifting', ownership: 'rented', rentalCostPerDay: 180_000, rentalSupplier: 'CraneCo NG', estimatedDays: 214, totalEstimatedCost: 38_520_000, status: 'active' },
+      { projectId: cProjectId, name: 'Concrete Pump CP-01', category: 'Concreting', ownership: 'rented', rentalCostPerDay: 95_000, rentalSupplier: 'PumpRent Ltd', estimatedDays: 120, totalEstimatedCost: 11_400_000, status: 'active' },
+      { projectId: cProjectId, name: 'Excavator EX-01', category: 'Earthworks', ownership: 'owned', internalCostPerDay: 40_000, estimatedDays: 60, totalEstimatedCost: 2_400_000, status: 'idle' },
+    ],
+  });
+
   console.log('Construction module seeded.');
 
   const adminEmail = (process.env.SEED_ADMIN_EMAIL || 'admin@buildos.ng').trim().toLowerCase();
