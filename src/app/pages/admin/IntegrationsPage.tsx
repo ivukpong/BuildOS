@@ -1,6 +1,8 @@
-import { Plus, Copy, Eye, EyeOff, Trash2, Key, Webhook } from "lucide-react";
+import { Plus, Copy, Eye, EyeOff, Trash2, Key, Webhook, X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import { apiFetch } from "../../api/client";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 
 type ApiKey = {
   id: string;
@@ -26,10 +28,23 @@ export function IntegrationsPage() {
 
   const [showKey, setShowKey] = useState<Record<string, boolean>>({});
 
+  // Modal state
+  const [keyModalOpen, setKeyModalOpen] = useState(false);
+  const [keyName, setKeyName] = useState("");
+  const [webhookModalOpen, setWebhookModalOpen] = useState(false);
+  const [webhookName, setWebhookName] = useState("");
+  const [webhookUrl, setWebhookUrl] = useState("");
+  const [webhookEvents, setWebhookEvents] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<
+    { type: "key" | "webhook"; id: string } | null
+  >(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     Promise.all([
-      apiFetch<ApiKey[]>("/api-keys"),
-      apiFetch<WebhookConfig[]>("/webhooks"),
+      apiFetch<ApiKey[]>("/admin/api-keys"),
+      apiFetch<WebhookConfig[]>("/admin/webhooks"),
     ])
       .then(([keys, hooks]) => {
         setApiKeys(keys ?? []);
@@ -49,72 +64,105 @@ export function IntegrationsPage() {
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard");
   };
 
   const maskKey = (key: string) => {
     return key.slice(0, 7) + "..." + key.slice(-4);
   };
 
-  const randomToken = (len: number) =>
-    Array.from(
-      { length: len },
-      () =>
-        "abcdefghijklmnopqrstuvwxyz0123456789"[Math.floor(Math.random() * 36)],
-    ).join("");
-
-  const generateApiKey = () => {
-    const name = window.prompt("API key name", "New API Key")?.trim();
-    if (!name) return;
-    const now = new Date().toISOString();
-    setApiKeys((prev) => [
-      {
-        id: `key-${Date.now()}`,
-        name,
-        key: `sk_live_${randomToken(24)}`,
-        created: now,
-        status: "active",
-      },
-      ...prev,
-    ]);
+  const openKeyModal = () => {
+    setKeyName("");
+    setKeyModalOpen(true);
   };
 
-  const addWebhook = () => {
-    const name = window.prompt("Webhook name", "New Webhook")?.trim();
-    if (!name) return;
-    const url = window
-      .prompt("Webhook URL", "https://example.com/webhook")
-      ?.trim();
-    if (!url) return;
-    const eventsRaw = window.prompt(
-      "Events (comma-separated)",
-      "project.updated,approval.submitted",
-    );
-    const events = (eventsRaw ?? "")
+  const submitApiKey = () => {
+    const name = keyName.trim();
+    if (!name) {
+      toast.error("Please enter a name for the API key.");
+      return;
+    }
+    setSaving(true);
+    apiFetch<ApiKey>("/admin/api-keys", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    })
+      .then((created) => {
+        setApiKeys((prev) => [created, ...prev]);
+        setKeyModalOpen(false);
+        toast.success("API key generated");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to generate API key.");
+      })
+      .finally(() => setSaving(false));
+  };
+
+  const openWebhookModal = () => {
+    setWebhookName("");
+    setWebhookUrl("");
+    setWebhookEvents("");
+    setWebhookModalOpen(true);
+  };
+
+  const submitWebhook = () => {
+    const name = webhookName.trim();
+    const url = webhookUrl.trim();
+    const events = webhookEvents
       .split(",")
       .map((e) => e.trim())
       .filter(Boolean);
-    if (events.length === 0) return;
-
-    setWebhooks((prev) => [
-      {
-        id: `wh-${Date.now()}`,
-        name,
-        url,
-        events,
-        status: "active",
-      },
-      ...prev,
-    ]);
+    if (!name) {
+      toast.error("Please enter a webhook name.");
+      return;
+    }
+    if (!url) {
+      toast.error("Please enter a webhook URL.");
+      return;
+    }
+    if (events.length === 0) {
+      toast.error("Please enter at least one event.");
+      return;
+    }
+    setSaving(true);
+    apiFetch<WebhookConfig>("/admin/webhooks", {
+      method: "POST",
+      body: JSON.stringify({ name, url, events }),
+    })
+      .then((created) => {
+        setWebhooks((prev) => [created, ...prev]);
+        setWebhookModalOpen(false);
+        toast.success("Webhook added");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to add webhook.");
+      })
+      .finally(() => setSaving(false));
   };
 
-  const deleteApiKey = (id: string) => {
-    if (!window.confirm("Delete this API key?")) return;
-    setApiKeys((prev) => prev.filter((k) => k.id !== id));
-  };
-
-  const deleteWebhook = (id: string) => {
-    if (!window.confirm("Delete this webhook?")) return;
-    setWebhooks((prev) => prev.filter((w) => w.id !== id));
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    const { type, id } = deleteTarget;
+    setDeleting(true);
+    const path = type === "key" ? `/admin/api-keys/${id}` : `/admin/webhooks/${id}`;
+    apiFetch(path, { method: "DELETE" })
+      .then(() => {
+        if (type === "key") {
+          setApiKeys((prev) => prev.filter((k) => k.id !== id));
+          toast.success("API key deleted");
+        } else {
+          setWebhooks((prev) => prev.filter((w) => w.id !== id));
+          toast.success("Webhook deleted");
+        }
+        setDeleteTarget(null);
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to delete. Please try again.");
+      })
+      .finally(() => setDeleting(false));
   };
 
   const fmtDate = (v?: string) => {
@@ -141,7 +189,7 @@ export function IntegrationsPage() {
             <h2 className="text-lg font-semibold text-gray-900">API Keys</h2>
           </div>
           <button
-            onClick={generateApiKey}
+            onClick={openKeyModal}
             className="flex items-center gap-2 bg-gray-700 text-white px-4 py-2 rounded-md hover:bg-gray-800 transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -207,7 +255,7 @@ export function IntegrationsPage() {
                 </div>
 
                 <button
-                  onClick={() => deleteApiKey(apiKey.id)}
+                  onClick={() => setDeleteTarget({ type: "key", id: apiKey.id })}
                   className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors ml-4"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -233,7 +281,7 @@ export function IntegrationsPage() {
             <h2 className="text-lg font-semibold text-gray-900">Webhooks</h2>
           </div>
           <button
-            onClick={addWebhook}
+            onClick={openWebhookModal}
             className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors"
           >
             <Plus className="w-4 h-4" />
@@ -285,7 +333,7 @@ export function IntegrationsPage() {
                 </div>
 
                 <button
-                  onClick={() => deleteWebhook(webhook.id)}
+                  onClick={() => setDeleteTarget({ type: "webhook", id: webhook.id })}
                   className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors ml-4"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -325,6 +373,135 @@ export function IntegrationsPage() {
           ))}
         </div>
       </div>
+
+      {/* Generate API Key Modal */}
+      {keyModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Generate New API Key
+              </h3>
+              <button
+                onClick={() => setKeyModalOpen(false)}
+                className="p-1 text-gray-500 hover:text-gray-900"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Key Name
+              </label>
+              <input
+                type="text"
+                value={keyName}
+                onChange={(e) => setKeyName(e.target.value)}
+                placeholder="e.g. Production Integration"
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && submitApiKey()}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setKeyModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitApiKey}
+                disabled={saving}
+                className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 disabled:opacity-50"
+              >
+                {saving ? "Generating..." : "Generate Key"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Webhook Modal */}
+      {webhookModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Add Webhook
+              </h3>
+              <button
+                onClick={() => setWebhookModalOpen(false)}
+                className="p-1 text-gray-500 hover:text-gray-900"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <input
+                type="text"
+                value={webhookName}
+                onChange={(e) => setWebhookName(e.target.value)}
+                placeholder="e.g. Project Updates"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                URL
+              </label>
+              <input
+                type="url"
+                value={webhookUrl}
+                onChange={(e) => setWebhookUrl(e.target.value)}
+                placeholder="https://example.com/webhook"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Events (comma-separated)
+              </label>
+              <input
+                type="text"
+                value={webhookEvents}
+                onChange={(e) => setWebhookEvents(e.target.value)}
+                placeholder="project.updated, approval.submitted"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+              />
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                onClick={() => setWebhookModalOpen(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitWebhook}
+                disabled={saving}
+                className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800 disabled:opacity-50"
+              >
+                {saving ? "Adding..." : "Add Webhook"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmationModal
+        isOpen={deleteTarget !== null}
+        title={deleteTarget?.type === "key" ? "Delete API Key?" : "Delete Webhook?"}
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        isDangerous
+        isLoading={deleting}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Plus, Mail, Trash2, Edit2, Check, X } from "lucide-react";
+import { toast } from "sonner";
 import { apiFetch } from "../../api/client";
 
 type TriggerModule =
@@ -164,6 +165,15 @@ export function EmailConfigPage() {
   const [form, setForm] = useState({ ...BLANK_FORM });
   const [saved, setSaved] = useState(false);
 
+  useEffect(() => {
+    apiFetch<EmailConfig[]>("/admin/email-config")
+      .then((data) => setConfigs(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error("Failed to load email configs:", err);
+        setConfigs([]);
+      });
+  }, []);
+
   function openAdd() {
     setForm({ ...BLANK_FORM });
     setEditId(null);
@@ -179,54 +189,74 @@ export function EmailConfigPage() {
 
   function saveConfig() {
     if (editId) {
-      apiFetch(`/admin/email-config/${editId}`, {
+      apiFetch<EmailConfig>(`/admin/email-config/${editId}`, {
         method: "PATCH",
         body: JSON.stringify(form),
       })
-        .then(() => {
+        .then((updated) => {
           setConfigs((prev) =>
-            prev.map((c) => (c.id === editId ? { ...form, id: editId } : c)),
+            prev.map((c) =>
+              c.id === editId ? { ...form, ...updated, id: editId } : c,
+            ),
           );
           setShowModal(false);
           setSaved(true);
           setTimeout(() => setSaved(false), 2500);
+          toast.success("Email configuration updated");
         })
         .catch((err) => {
-          alert("Failed to save email config. Please try again.");
+          toast.error("Failed to save email config. Please try again.");
           console.error(err);
         });
     } else {
-      apiFetch("/admin/email-config", {
+      apiFetch<EmailConfig>("/admin/email-config", {
         method: "POST",
         body: JSON.stringify(form),
       })
-        .then(() => {
-          setConfigs([
-            ...configs,
-            {
-              ...form,
-              id: `EC-${String(configs.length + 1).padStart(3, "0")}`,
-            },
-          ]);
+        .then((created) => {
+          setConfigs((prev) => [...prev, { ...form, ...created }]);
           setShowModal(false);
           setSaved(true);
           setTimeout(() => setSaved(false), 2500);
+          toast.success("Email configuration created");
         })
         .catch((err) => {
-          alert("Failed to create email config. Please try again.");
+          toast.error("Failed to create email config. Please try again.");
           console.error(err);
         });
     }
   }
 
   function toggleEnabled(id: string) {
-    setConfigs((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, enabled: !c.enabled } : c)),
-    );
+    const current = configs.find((c) => c.id === id);
+    if (!current) return;
+    const nextEnabled = !current.enabled;
+    apiFetch<EmailConfig>(`/admin/email-config/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify({ enabled: nextEnabled }),
+    })
+      .then(() => {
+        setConfigs((prev) =>
+          prev.map((c) => (c.id === id ? { ...c, enabled: nextEnabled } : c)),
+        );
+        toast.success(nextEnabled ? "Email enabled" : "Email disabled");
+      })
+      .catch((err) => {
+        toast.error("Failed to update email config");
+        console.error(err);
+      });
   }
 
   function deleteConfig(id: string) {
-    setConfigs((prev) => prev.filter((c) => c.id !== id));
+    apiFetch(`/admin/email-config/${id}`, { method: "DELETE" })
+      .then(() => {
+        setConfigs((prev) => prev.filter((c) => c.id !== id));
+        toast.success("Email configuration deleted");
+      })
+      .catch((err) => {
+        toast.error("Failed to delete email config");
+        console.error(err);
+      });
   }
 
   return (

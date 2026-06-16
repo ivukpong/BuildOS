@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { RootLayout } from "./layouts/RootLayout";
 import { AuthLayout } from "./layouts/AuthLayout";
 import { AppLayout } from "./layouts/AppLayout";
@@ -376,8 +376,9 @@ export const router = createBrowserRouter([
             path: "ess",
             Component: ESSLayout,
             children: [
-              { index: true, Component: MyRequestsPage },
+              { index: true, element: <Navigate to="dashboard" replace /> },
               { path: "dashboard", Component: ESSDashboardPage },
+              { path: "requests", Component: MyRequestsPage },
               { path: "submit", Component: SubmitRequestPage },
               { path: "projects", Component: MyProjectsPage },
               { path: "profile", Component: MyProfilePage },

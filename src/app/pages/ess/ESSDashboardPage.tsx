@@ -61,7 +61,7 @@ export function ESSDashboardPage() {
     initials: authInitials,
   } = useAuthUser();
   const [allProjects, setAllProjects] = useState<any[]>([]);
-  const [recentRequests, setRecentRequests] = useState<RecentRequest[]>([]);
+  const [allRequests, setAllRequests] = useState<RecentRequest[]>([]);
   const [notifications] = useState<Notification[]>([]);
   const unreadNotifs = notifications.filter((n) => !n.read).length;
 
@@ -71,8 +71,8 @@ export function ESSDashboardPage() {
       .catch(() => {});
     getPurchaseRequests()
       .then((data) =>
-        setRecentRequests(
-          data.slice(0, 5).map((r) => ({
+        setAllRequests(
+          data.map((r) => ({
             id: r.prRef || r.id,
             type: "Material Request",
             title: r.title,
@@ -85,9 +85,14 @@ export function ESSDashboardPage() {
       .catch(() => {});
   }, []);
 
-  const pendingCount = recentRequests.filter(
+  const recentRequests = allRequests.slice(0, 5);
+  const pendingCount = allRequests.filter(
     (r) => r.status === "pending",
   ).length;
+  const approvedCount = allRequests.filter(
+    (r) => r.status === "approved",
+  ).length;
+  const totalRequests = allRequests.length;
 
   const myProjects = allProjects.map((p) => ({
     id: p.id,
@@ -103,7 +108,7 @@ export function ESSDashboardPage() {
   const displayInitials = authInitials || "?";
 
   return (
-    <div className="space-y-6 max-w-5xl">
+    <div className="space-y-6">
       {/* Welcome bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -132,7 +137,7 @@ export function ESSDashboardPage() {
             <p className="text-xs text-gray-500">Total Requests</p>
             <FileText className="w-4 h-4 text-teal-500" />
           </div>
-          <p className="text-3xl font-bold text-gray-900">24</p>
+          <p className="text-3xl font-bold text-gray-900">{totalRequests}</p>
           <p className="text-xs text-gray-400 mt-0.5">All time</p>
         </div>
         <div className="bg-white rounded-xl border border-amber-200 p-4">
@@ -148,8 +153,8 @@ export function ESSDashboardPage() {
             <p className="text-xs text-gray-500">Approved</p>
             <CheckCircle className="w-4 h-4 text-green-500" />
           </div>
-          <p className="text-3xl font-bold text-green-600">19</p>
-          <p className="text-xs text-green-500 mt-0.5">This month: 5</p>
+          <p className="text-3xl font-bold text-green-600">{approvedCount}</p>
+          <p className="text-xs text-green-500 mt-0.5">All time</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <div className="flex items-center justify-between mb-2">
@@ -171,20 +176,25 @@ export function ESSDashboardPage() {
               Recent Requests
             </h2>
             <button
-              onClick={() => navigate("/apps/ess")}
+              onClick={() => navigate("/apps/ess/requests")}
               className="text-xs text-teal-600 hover:text-teal-700 font-medium flex items-center gap-1"
             >
               View all <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </div>
           <div className="divide-y divide-gray-100">
+            {recentRequests.length === 0 && (
+              <p className="px-5 py-8 text-center text-sm text-gray-400">
+                No requests yet.
+              </p>
+            )}
             {recentRequests.map((r) => {
               const sc = statusConfig[r.status];
               return (
                 <div
                   key={r.id}
                   className="flex items-center gap-4 px-5 py-3.5 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => navigate("/apps/ess")}
+                  onClick={() => navigate("/apps/ess/requests")}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
@@ -242,6 +252,11 @@ export function ESSDashboardPage() {
               </button>
             </div>
             <div className="divide-y divide-gray-100">
+              {myProjects.length === 0 && (
+                <p className="px-4 py-6 text-center text-sm text-gray-400">
+                  No projects assigned.
+                </p>
+              )}
               {myProjects.map((p) => (
                 <div key={p.id} className="px-4 py-3">
                   <p className="text-sm font-medium text-gray-900 truncate">
@@ -286,6 +301,11 @@ export function ESSDashboardPage() {
               <Bell className="w-4 h-4 text-gray-400" />
             </div>
             <div className="divide-y divide-gray-100 max-h-52 overflow-y-auto">
+              {notifications.length === 0 && (
+                <p className="px-4 py-6 text-center text-sm text-gray-400">
+                  No notifications.
+                </p>
+              )}
               {notifications.map((n) => {
                 const nc = notifConfig[n.type];
                 return (

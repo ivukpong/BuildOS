@@ -10,12 +10,7 @@ export class AuditLogMiddleware implements NestMiddleware {
     const user = req.user as any;
     const userId = user?.id || null;
     const ipAddress = req.ip || req.connection.remoteAddress;
-
-    // Capture the original request body
-    let requestBody = '';
-    if (req.method !== 'GET' && req.body) {
-      requestBody = JSON.stringify(req.body);
-    }
+    const auditLogService = this.auditLogService;
 
     // Intercept the response to capture status and potentially log data changes
     const originalSend = res.send;
@@ -45,18 +40,20 @@ export class AuditLogMiddleware implements NestMiddleware {
         if (res.statusCode < 400) {
           // Schedule audit log in background - don't wait for it
           Promise.resolve().then(() => {
-            this.auditLogService.logAction(
-              userId,
-              entity,
-              null,
-              action,
-              `${req.method} ${req.path}`,
-              null,
-              data ? JSON.stringify(data).substring(0, 500) : null,
-              ipAddress,
-            ).catch((err) => {
-              console.error('Failed to log audit:', err);
-            });
+            auditLogService
+              .logAction(
+                userId,
+                entity,
+                null,
+                action,
+                `${req.method} ${req.path}`,
+                null,
+                data ? JSON.stringify(data).substring(0, 500) : null,
+                ipAddress,
+              )
+              .catch((err) => {
+                console.error('Failed to log audit:', err);
+              });
           });
         }
       }

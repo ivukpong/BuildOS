@@ -1,7 +1,23 @@
 import { Filter } from "lucide-react";
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { DataTable } from "../../components/DataTable";
 import { getAuditLogs, getUsers } from "../../api/admin-extras";
+
+const ACTION_LABELS: Record<string, string> = {
+  CREATE: "Created",
+  UPDATE: "Updated",
+  DELETE: "Deleted",
+  READ: "Viewed",
+  LOGIN: "Login",
+  APPROVE: "Approved",
+  EXPORT: "Exported",
+};
+
+function normalizeAction(action: string): string {
+  if (!action) return "Unknown";
+  return ACTION_LABELS[action.toUpperCase()] ?? action;
+}
 
 interface AuditLog {
   id: string;
@@ -30,8 +46,10 @@ export function AuditLogsPage() {
               typeof log.user === "string"
                 ? log.user
                 : log.user?.name || log.userId || "System",
-            action: String(log.action || "Unknown"),
-            module: String(log.module || log.resource || "System"),
+            action: normalizeAction(String(log.action || "Unknown")),
+            module: String(
+              log.module || log.resource || log.entity || "System",
+            ),
             details: String(log.details || log.description || ""),
             ipAddress: String(log.ipAddress || "N/A"),
           })),
@@ -48,6 +66,7 @@ export function AuditLogsPage() {
       })
       .catch((err) => {
         console.error("Failed to load audit logs:", err);
+        toast.error("Failed to load audit logs.");
         setLogs([]);
         setActiveUsers(0);
       });

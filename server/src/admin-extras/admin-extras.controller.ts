@@ -237,10 +237,26 @@ export class AdminExtrasController {
     @Roles('admin')
     getApiKeys() { return this.svc.findApiKeys(); }
 
+    @Post('api-keys')
+    @Roles('admin')
+    createApiKey(@Body() body: any) { return this.svc.createApiKey(body); }
+
+    @Delete('api-keys/:id')
+    @Roles('admin')
+    deleteApiKey(@Param('id') id: string) { return this.svc.deleteApiKey(id); }
+
     // ── Webhooks ──
     @Get('webhooks')
     @Roles('admin')
     getWebhooks() { return this.svc.findWebhooks(); }
+
+    @Post('webhooks')
+    @Roles('admin')
+    createWebhook(@Body() body: any) { return this.svc.createWebhook(body); }
+
+    @Delete('webhooks/:id')
+    @Roles('admin')
+    deleteWebhook(@Param('id') id: string) { return this.svc.deleteWebhook(id); }
 
     // ── Email Templates ──
     @Get('email-templates')
@@ -277,4 +293,21 @@ export class AdminExtrasController {
     // ── Report Schedules ──
     @Get('report-schedules')
     getReportSchedules() { return this.svc.findReportSchedules(); }
+
+    // ── Report Templates ──
+    @Get('report-templates')
+    @Roles('admin')
+    getReportTemplates() { return this.svc.findReportTemplates(); }
+
+    @Post('report-templates')
+    @Roles('admin')
+    createReportTemplate(@Body() body: any) { return this.svc.createReportTemplate(body); }
+
+    @Patch('report-templates/:id')
+    @Roles('admin')
+    updateReportTemplate(@Param('id') id: string, @Body() body: any) { return this.svc.updateReportTemplate(id, body); }
+
+    @Delete('report-templates/:id')
+    @Roles('admin')
+    deleteReportTemplate(@Param('id') id: string) { return this.svc.deleteReportTemplate(id); }
 }

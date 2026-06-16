@@ -117,7 +117,7 @@ export function MyProjectsPage() {
   const doneTasks = myTasks.filter((t) => t.status === "done");
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">My Projects</h1>

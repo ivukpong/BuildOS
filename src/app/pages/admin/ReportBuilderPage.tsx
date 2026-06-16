@@ -1,4 +1,11 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import { toast } from "sonner";
+import {
+  getReportTemplates,
+  createReportTemplate,
+  updateReportTemplate,
+  deleteReportTemplate,
+} from "../../api/admin-extras";
 import {
   Play,
   Download,
@@ -510,6 +517,15 @@ export function ReportBuilderPage() {
   const source =
     DATA_SOURCES.find((s) => s.value === tplDataSource) ?? DATA_SOURCES[0];
 
+  useEffect(() => {
+    getReportTemplates<ReportTemplate>()
+      .then((data) => setTemplates(Array.isArray(data) ? data : []))
+      .catch((err) => {
+        console.error("Failed to load report templates:", err);
+        setTemplates([]);
+      });
+  }, []);
+
   // ── Library helpers ──
   const openNewTemplate = () => {
     setEditingId(null);
@@ -554,37 +570,71 @@ export function ReportBuilderPage() {
   };
 
   const duplicateTemplate = (tpl: ReportTemplate) => {
-    const copy: ReportTemplate = {
-      ...tpl,
-      id: Date.now().toString(),
+    const { id: _omit, ...rest } = tpl;
+    const copy = {
+      ...rest,
       name: `${tpl.name} (Copy)`,
-      status: "draft",
+      status: "draft" as ReportStatus,
       lastUpdated: "Just now",
-    };
-    setTemplates((prev) => [...prev, copy]);
+    } as ReportTemplate;
+    createReportTemplate<ReportTemplate>(copy)
+      .then((saved) => {
+        setTemplates((prev) => [...prev, saved]);
+        toast.success("Template duplicated");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to duplicate template");
+      });
     setOpenDropdownId(null);
   };
 
   const archiveTemplate = (id: string) => {
-    setTemplates((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, status: "archived", lastUpdated: "Just now" } : t,
-      ),
-    );
+    updateReportTemplate<Partial<ReportTemplate>>(id, {
+      status: "archived",
+      lastUpdated: "Just now",
+    } as ReportTemplate)
+      .then((saved) => {
+        setTemplates((prev) =>
+          prev.map((t) => (t.id === id ? (saved as ReportTemplate) : t)),
+        );
+        toast.success("Template archived");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to archive template");
+      });
     setOpenDropdownId(null);
   };
 
   const restoreTemplate = (id: string) => {
-    setTemplates((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, status: "draft", lastUpdated: "Just now" } : t,
-      ),
-    );
+    updateReportTemplate<Partial<ReportTemplate>>(id, {
+      status: "draft",
+      lastUpdated: "Just now",
+    } as ReportTemplate)
+      .then((saved) => {
+        setTemplates((prev) =>
+          prev.map((t) => (t.id === id ? (saved as ReportTemplate) : t)),
+        );
+        toast.success("Template restored");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to restore template");
+      });
     setOpenDropdownId(null);
   };
 
   const deleteTemplate = (id: string) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== id));
+    deleteReportTemplate(id)
+      .then(() => {
+        setTemplates((prev) => prev.filter((t) => t.id !== id));
+        toast.success("Template deleted");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to delete template");
+      });
     setOpenDropdownId(null);
   };
 
@@ -611,24 +661,64 @@ export function ReportBuilderPage() {
 
   const saveDraft = () => {
     const tpl = buildTemplateData("draft");
-    setTemplates((prev) =>
-      editingId
-        ? prev.map((t) => (t.id === editingId ? tpl : t))
-        : [...prev, tpl],
-    );
-    setView("library");
+    if (editingId) {
+      updateReportTemplate<ReportTemplate>(editingId, tpl)
+        .then((saved) => {
+          setTemplates((prev) =>
+            prev.map((t) => (t.id === editingId ? saved : t)),
+          );
+          setView("library");
+          toast.success("Draft saved");
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Failed to save draft");
+        });
+    } else {
+      createReportTemplate<ReportTemplate>(tpl)
+        .then((saved) => {
+          setTemplates((prev) => [...prev, saved]);
+          setView("library");
+          toast.success("Draft saved");
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Failed to save draft");
+        });
+    }
   };
 
   const deployTemplate = () => {
     const tpl = buildTemplateData("deployed");
-    setTemplates((prev) =>
-      editingId
-        ? prev.map((t) => (t.id === editingId ? tpl : t))
-        : [...prev, tpl],
-    );
-    setDeployedNotice(tpl.name);
-    setTimeout(() => setDeployedNotice(null), 3500);
-    setView("library");
+    const onDeployed = (saved: ReportTemplate) => {
+      setDeployedNotice(saved.name);
+      setTimeout(() => setDeployedNotice(null), 3500);
+      setView("library");
+      toast.success("Template deployed");
+    };
+    if (editingId) {
+      updateReportTemplate<ReportTemplate>(editingId, tpl)
+        .then((saved) => {
+          setTemplates((prev) =>
+            prev.map((t) => (t.id === editingId ? saved : t)),
+          );
+          onDeployed(saved);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Failed to deploy template");
+        });
+    } else {
+      createReportTemplate<ReportTemplate>(tpl)
+        .then((saved) => {
+          setTemplates((prev) => [...prev, saved]);
+          onDeployed(saved);
+        })
+        .catch((err) => {
+          console.error(err);
+          toast.error("Failed to deploy template");
+        });
+    }
   };
 
   const isSelected = (key: string) => selectedFields.some((f) => f.key === key);

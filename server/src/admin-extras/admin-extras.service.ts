@@ -310,6 +310,10 @@ export class AdminExtrasService {
                 changeCategories: Array.isArray(parsed.changeCategories) ? parsed.changeCategories : [],
                 processCatalog: Array.isArray(parsed.processCatalog) ? parsed.processCatalog : [],
                 processWorkflows: Array.isArray(parsed.processWorkflows) ? parsed.processWorkflows : [],
+                emailConfigs: Array.isArray(parsed.emailConfigs) ? parsed.emailConfigs : [],
+                apiKeys: Array.isArray(parsed.apiKeys) ? parsed.apiKeys : [],
+                webhooks: Array.isArray(parsed.webhooks) ? parsed.webhooks : [],
+                reportTemplates: Array.isArray(parsed.reportTemplates) ? parsed.reportTemplates : [],
                 generalSettings: parsed?.generalSettings && typeof parsed.generalSettings === 'object'
                     ? { ...this.defaultGeneralSettings, ...parsed.generalSettings }
                     : { ...this.defaultGeneralSettings },
@@ -329,6 +333,10 @@ export class AdminExtrasService {
                 changeCategories: [],
                 processCatalog: [],
                 processWorkflows: [],
+                emailConfigs: [],
+                apiKeys: [],
+                webhooks: [],
+                reportTemplates: [],
                 generalSettings: { ...this.defaultGeneralSettings },
                 currencyOptions: [...this.defaultCurrencyOptions],
             };
@@ -340,6 +348,10 @@ export class AdminExtrasService {
         changeCategories: any[];
         processCatalog: any[];
         processWorkflows: any[];
+        emailConfigs?: any[];
+        apiKeys?: any[];
+        webhooks?: any[];
+        reportTemplates?: any[];
         generalSettings: any;
         currencyOptions: any[];
     }) {
@@ -1643,22 +1655,29 @@ export class AdminExtrasService {
     }
 
     // ── Email Config ──
-    findEmailConfigs() {
-        return this.emailConfigs;
+    async findEmailConfigs() {
+        const settings = await this.readAdminSettings();
+        return settings.emailConfigs;
     }
-    createEmailConfig(data: any) {
-        const created = { id: `EC-${Date.now()}`, ...data, createdAt: new Date(), updatedAt: new Date() };
-        this.emailConfigs.push(created);
+    async createEmailConfig(data: any) {
+        const settings = await this.readAdminSettings();
+        const created = { id: `EC-${Date.now()}`, ...data, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+        settings.emailConfigs.push(created);
+        await this.writeAdminSettings(settings);
         return created;
     }
-    updateEmailConfig(id: string, data: any) {
-        this.emailConfigs = this.emailConfigs.map((item) =>
-            item.id === id ? { ...item, ...data, id, updatedAt: new Date() } : item,
+    async updateEmailConfig(id: string, data: any) {
+        const settings = await this.readAdminSettings();
+        settings.emailConfigs = settings.emailConfigs.map((item: any) =>
+            item.id === id ? { ...item, ...data, id, updatedAt: new Date().toISOString() } : item,
         );
-        return this.emailConfigs.find((item) => item.id === id) ?? { id, ...data };
+        await this.writeAdminSettings(settings);
+        return settings.emailConfigs.find((item: any) => item.id === id) ?? { id, ...data };
     }
-    deleteEmailConfig(id: string) {
-        this.emailConfigs = this.emailConfigs.filter((item) => item.id !== id);
+    async deleteEmailConfig(id: string) {
+        const settings = await this.readAdminSettings();
+        settings.emailConfigs = settings.emailConfigs.filter((item: any) => item.id !== id);
+        await this.writeAdminSettings(settings);
         return { id, deleted: true };
     }
 
@@ -1683,13 +1702,55 @@ export class AdminExtrasService {
     }
 
     // ── API Keys ──
-    findApiKeys() {
-        return this.apiKeys;
+    async findApiKeys() {
+        const settings = await this.readAdminSettings();
+        return settings.apiKeys;
+    }
+    async createApiKey(data: any) {
+        const settings = await this.readAdminSettings();
+        const created = {
+            id: `key-${Date.now()}`,
+            name: String(data?.name ?? '').trim() || 'New API Key',
+            key: data?.key || `sk_live_${crypto.randomBytes(18).toString('hex')}`,
+            status: 'active',
+            created: new Date().toISOString(),
+            lastUsed: null,
+        };
+        settings.apiKeys.unshift(created);
+        await this.writeAdminSettings(settings);
+        return created;
+    }
+    async deleteApiKey(id: string) {
+        const settings = await this.readAdminSettings();
+        settings.apiKeys = settings.apiKeys.filter((item: any) => item.id !== id);
+        await this.writeAdminSettings(settings);
+        return { id, deleted: true };
     }
 
     // ── Webhooks ──
-    findWebhooks() {
-        return this.webhooks;
+    async findWebhooks() {
+        const settings = await this.readAdminSettings();
+        return settings.webhooks;
+    }
+    async createWebhook(data: any) {
+        const settings = await this.readAdminSettings();
+        const created = {
+            id: `wh-${Date.now()}`,
+            name: String(data?.name ?? '').trim() || 'New Webhook',
+            url: String(data?.url ?? '').trim(),
+            events: Array.isArray(data?.events) ? data.events : [],
+            status: 'active',
+            createdAt: new Date().toISOString(),
+        };
+        settings.webhooks.unshift(created);
+        await this.writeAdminSettings(settings);
+        return created;
+    }
+    async deleteWebhook(id: string) {
+        const settings = await this.readAdminSettings();
+        settings.webhooks = settings.webhooks.filter((item: any) => item.id !== id);
+        await this.writeAdminSettings(settings);
+        return { id, deleted: true };
     }
 
     // ── Email Templates ──
@@ -1741,5 +1802,42 @@ export class AdminExtrasService {
     // ── Report Schedules ──
     findReportSchedules() {
         return this.reportSchedules;
+    }
+
+    // ── Report Templates ──
+    async findReportTemplates() {
+        const settings = await this.readAdminSettings();
+        return settings.reportTemplates;
+    }
+    async createReportTemplate(data: any) {
+        const settings = await this.readAdminSettings();
+        const created = {
+            ...data,
+            id: String(data?.id ?? '').trim() || `rt-${Date.now()}`,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        };
+        settings.reportTemplates.push(created);
+        await this.writeAdminSettings(settings);
+        return created;
+    }
+    async updateReportTemplate(id: string, data: any) {
+        const settings = await this.readAdminSettings();
+        const idx = settings.reportTemplates.findIndex((item: any) => item.id === id);
+        if (idx < 0) {
+            const created = { ...data, id, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+            settings.reportTemplates.push(created);
+            await this.writeAdminSettings(settings);
+            return created;
+        }
+        settings.reportTemplates[idx] = { ...settings.reportTemplates[idx], ...data, id, updatedAt: new Date().toISOString() };
+        await this.writeAdminSettings(settings);
+        return settings.reportTemplates[idx];
+    }
+    async deleteReportTemplate(id: string) {
+        const settings = await this.readAdminSettings();
+        settings.reportTemplates = settings.reportTemplates.filter((item: any) => item.id !== id);
+        await this.writeAdminSettings(settings);
+        return { id, deleted: true };
     }
 }

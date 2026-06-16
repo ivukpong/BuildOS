@@ -46,6 +46,7 @@ interface UserRecord {
   name: string;
   email: string;
   role: string;
+  assignedApps: AppKey[];
   overrides: Record<string, ProcessOverride>;
   rolePerms: Record<string, RoleBasePerm>;
 }
@@ -527,8 +528,10 @@ function UserPermPane({
     setHasChanges(true);
   };
 
-  // Group processes by app
+  // Group processes by app — only show apps assigned to this user
+  const assignedApps = user.assignedApps ?? [];
   const groupedProcesses = (Object.keys(APP_LABELS) as AppKey[])
+    .filter((app) => assignedApps.includes(app))
     .map((app) => ({
       app,
       processes: ALL_PROCESSES.filter((p) => p.app === app),
@@ -584,6 +587,12 @@ function UserPermPane({
 
         {/* Body */}
         <div className="flex-1 overflow-y-auto">
+          {groupedProcesses.length === 0 && (
+            <div className="px-6 py-12 text-center text-sm text-gray-500">
+              This user has no applications assigned, so there are no processes
+              to configure. Assign applications to the user first.
+            </div>
+          )}
           {groupedProcesses.map(({ app, processes }) => {
             const isExpanded = expandedApp === null || expandedApp === app;
             return (
@@ -736,20 +745,29 @@ export function UserPermissionsPage() {
     getUsers()
       .then((data) =>
         setUsers(
-          data.map((u) => ({
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            role: u.role,
-            department: u.department || "—",
-            status:
-              (u.status ?? "").toLowerCase() === "active"
-                ? "active"
-                : "inactive",
-            lastLogin: u.lastLogin || "Never",
-            rolePerms: ROLE_PERMS[u.role] || {},
-            overrides: {},
-          })),
+          data.map((u) => {
+            const assignedApps: AppKey[] = Array.isArray(u.assignedApps)
+              ? (u.assignedApps.filter((app): app is AppKey =>
+                  (Object.keys(APP_LABELS) as string[]).includes(app),
+                ) as AppKey[])
+              : (["ess"] as AppKey[]);
+            return {
+              id: u.id,
+              name: u.name,
+              email: u.email,
+              role: u.role,
+              assignedApps:
+                assignedApps.length > 0 ? assignedApps : (["ess"] as AppKey[]),
+              department: u.department || "—",
+              status:
+                (u.status ?? "").toLowerCase() === "active"
+                  ? "active"
+                  : "inactive",
+              lastLogin: u.lastLogin || "Never",
+              rolePerms: ROLE_PERMS[u.role] || {},
+              overrides: {},
+            };
+          }),
         ),
       )
       .catch(() => {});
@@ -794,9 +812,9 @@ export function UserPermissionsPage() {
         <AlertTriangle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
         <div className="text-sm text-amber-800">
           <span className="font-semibold">Process-based overrides</span> take
-          precedence over role permissions. All processes across all
-          applications are shown. Cells not overridden inherit from the user's
-          role.
+          precedence over role permissions. Only processes for applications
+          assigned to the user are shown. Cells not overridden inherit from the
+          user's role.
         </div>
       </div>
 

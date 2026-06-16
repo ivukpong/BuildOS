@@ -129,12 +129,15 @@ export const getAdminSystemSummary = () =>
     apiFetch<AdminSystemSummary>('/admin/system-summary');
 export const getAdminActivityLog = () =>
     apiFetch<AdminActivity[]>('/admin/activity-log');
-export const getAuditLogs = (params?: { limit?: number; offset?: number }) => {
+export const getAuditLogs = async (params?: { limit?: number; offset?: number }) => {
     const qs = new URLSearchParams();
     if (params?.limit) qs.set('limit', params.limit.toString());
-    if (params?.offset) qs.set('offset', params.offset.toString());
+    if (params?.offset) qs.set('skip', params.offset.toString());
     const query = qs.toString() ? `?${qs}` : '';
-    return apiFetch<any[]>(`/audit-logs${query}`);
+    const res = await apiFetch<any>(`/audit-logs${query}`);
+    if (Array.isArray(res)) return res;
+    if (res && Array.isArray(res.data)) return res.data;
+    return [];
 };
 export const inviteUser = (data: { email: string; name: string; role: string; assignedApps?: string[]; department?: string }) =>
     apiFetch<{
@@ -243,6 +246,64 @@ export const getEmailTemplates = () =>
     apiFetch<EmailTemplateConfig[]>('/admin/email-templates');
 export const getNotificationRules = () =>
     apiFetch<NotificationRuleConfig[]>('/admin/notification-rules');
+
+// Email Config
+export interface EmailConfigRecord {
+    id: string;
+    name: string;
+    module: string;
+    trigger: string;
+    subject: string;
+    body: string;
+    recipients: string;
+    cc: string;
+    enabled: boolean;
+}
+export const getEmailConfigs = () =>
+    apiFetch<EmailConfigRecord[]>('/admin/email-config');
+export const createEmailConfig = (data: Omit<EmailConfigRecord, 'id'>) =>
+    apiFetch<EmailConfigRecord>('/admin/email-config', { method: 'POST', body: JSON.stringify(data) });
+export const updateEmailConfig = (id: string, data: Partial<Omit<EmailConfigRecord, 'id'>>) =>
+    apiFetch<EmailConfigRecord>(`/admin/email-config/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteEmailConfig = (id: string) =>
+    apiFetch<{ id: string; deleted: boolean }>(`/admin/email-config/${id}`, { method: 'DELETE' });
+
+// Integrations — API Keys & Webhooks
+export interface ApiKeyRecord {
+    id: string;
+    name: string;
+    key: string;
+    status?: string;
+    created?: string;
+    lastUsed?: string | null;
+}
+export interface WebhookRecord {
+    id: string;
+    name: string;
+    url: string;
+    events: string[];
+    status?: string;
+}
+export const getApiKeys = () => apiFetch<ApiKeyRecord[]>('/admin/api-keys');
+export const createApiKey = (data: { name: string }) =>
+    apiFetch<ApiKeyRecord>('/admin/api-keys', { method: 'POST', body: JSON.stringify(data) });
+export const deleteApiKey = (id: string) =>
+    apiFetch<{ id: string; deleted: boolean }>(`/admin/api-keys/${id}`, { method: 'DELETE' });
+export const getWebhooks = () => apiFetch<WebhookRecord[]>('/admin/webhooks');
+export const createWebhook = (data: { name: string; url: string; events: string[] }) =>
+    apiFetch<WebhookRecord>('/admin/webhooks', { method: 'POST', body: JSON.stringify(data) });
+export const deleteWebhook = (id: string) =>
+    apiFetch<{ id: string; deleted: boolean }>(`/admin/webhooks/${id}`, { method: 'DELETE' });
+
+// Report Templates
+export const getReportTemplates = <T = any>() =>
+    apiFetch<T[]>('/admin/report-templates');
+export const createReportTemplate = <T = any>(data: T) =>
+    apiFetch<T>('/admin/report-templates', { method: 'POST', body: JSON.stringify(data) });
+export const updateReportTemplate = <T = any>(id: string, data: T) =>
+    apiFetch<T>(`/admin/report-templates/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteReportTemplate = (id: string) =>
+    apiFetch<{ id: string; deleted: boolean }>(`/admin/report-templates/${id}`, { method: 'DELETE' });
 
 // Company Profile
 export interface CompanyProfile {

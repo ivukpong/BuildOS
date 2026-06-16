@@ -23,7 +23,7 @@ const sidebarSections = [
   {
     label: "Requests",
     items: [
-      { label: "My Requests",    href: "/apps/ess",           icon: <FileText    className="w-4 h-4" />, end: true },
+      { label: "My Requests",    href: "/apps/ess/requests",  icon: <FileText    className="w-4 h-4" />, end: true },
       { label: "Create Request", href: "/apps/ess/submit",    icon: <PlusCircle  className="w-4 h-4" />, end: true },
       { label: "Approvals",      href: "/apps/ess/approvals", icon: <CheckSquare className="w-4 h-4" />, end: true },
     ],

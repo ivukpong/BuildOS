@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { toast } from "sonner";
 import {
   getIssueTypes,
   createIssueType,
@@ -48,42 +49,63 @@ const PRIORITY_BADGE: Record<Priority, string> = {
   critical: "bg-red-100 text-red-700",
 };
 
-const EMPTY: Omit<IssueType, "id"> = {
+const EMPTY: FormState = {
   name: "",
   description: "",
   priority: "medium",
   color: COLORS[0],
-  slaHours: 24,
+  slaHours: "24",
   active: true,
 };
+
+// slaHours is kept as a string in the form so the field can be cleared
+type FormState = Omit<IssueType, "id" | "slaHours"> & { slaHours: string };
 
 export function IssueTypesPage() {
   const [issueTypes, setIssueTypes] = useState<IssueType[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<typeof EMPTY>({ ...EMPTY });
+  const [form, setForm] = useState<FormState>({ ...EMPTY });
 
   useEffect(() => {
     getIssueTypes()
       .then(setIssueTypes)
       .catch(() => {
         setIssueTypes([]);
+        toast.error("Failed to load issue types");
       });
   }, []);
 
   async function save(e: React.FormEvent) {
     e.preventDefault();
-    if (!form.name.trim()) return;
-    if (editId) {
-      const updated = await updateIssueType(editId, form);
-      setIssueTypes((prev) => prev.map((t) => (t.id === editId ? updated : t)));
-      setEditId(null);
-    } else {
-      const created = await createIssueType(form);
-      setIssueTypes((prev) => [...prev, created]);
+    if (!form.name.trim()) {
+      toast.error("Issue type name is required");
+      return;
     }
-    setForm({ ...EMPTY });
-    setShowForm(false);
+    const slaHours = Number(form.slaHours);
+    if (form.slaHours.trim() === "" || Number.isNaN(slaHours) || slaHours < 1) {
+      toast.error("SLA target must be at least 1 hour");
+      return;
+    }
+    const payload = { ...form, slaHours };
+    try {
+      if (editId) {
+        const updated = await updateIssueType(editId, payload);
+        setIssueTypes((prev) =>
+          prev.map((t) => (t.id === editId ? updated : t)),
+        );
+        setEditId(null);
+        toast.success("Issue type updated");
+      } else {
+        const created = await createIssueType(payload);
+        setIssueTypes((prev) => [...prev, created]);
+        toast.success("Issue type created");
+      }
+      setForm({ ...EMPTY });
+      setShowForm(false);
+    } catch {
+      toast.error("Failed to save issue type");
+    }
   }
 
   function startEdit(t: IssueType) {
@@ -92,7 +114,7 @@ export function IssueTypesPage() {
       description: t.description,
       priority: t.priority,
       color: t.color,
-      slaHours: t.slaHours,
+      slaHours: String(t.slaHours),
       active: t.active,
     });
     setEditId(t.id);
@@ -100,15 +122,27 @@ export function IssueTypesPage() {
   }
 
   async function deleteType(id: string) {
-    await deleteIssueType(id);
-    setIssueTypes((prev) => prev.filter((t) => t.id !== id));
+    try {
+      await deleteIssueType(id);
+      setIssueTypes((prev) => prev.filter((t) => t.id !== id));
+      toast.success("Issue type deleted");
+    } catch {
+      toast.error("Failed to delete issue type");
+    }
   }
 
   async function toggleActive(id: string) {
     const current = issueTypes.find((t) => t.id === id);
     if (!current) return;
-    const updated = await updateIssueType(id, { active: !current.active });
-    setIssueTypes((prev) => prev.map((t) => (t.id === id ? updated : t)));
+    try {
+      const updated = await updateIssueType(id, { active: !current.active });
+      setIssueTypes((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      toast.success(
+        updated.active ? "Issue type activated" : "Issue type deactivated",
+      );
+    } catch {
+      toast.error("Failed to update issue type");
+    }
   }
 
   return (
@@ -197,8 +231,9 @@ export function IssueTypesPage() {
                   min={1}
                   value={form.slaHours}
                   onChange={(e) =>
-                    setForm((f) => ({ ...f, slaHours: Number(e.target.value) }))
+                    setForm((f) => ({ ...f, slaHours: e.target.value }))
                   }
+                  placeholder="e.g. 24"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-500"
                 />
               </div>
