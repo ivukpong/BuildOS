@@ -7,6 +7,7 @@ import {
   updateIssueType,
   deleteIssueType,
 } from "../../api/admin-extras";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 
 const COLORS = [
   "bg-red-100 text-red-700",
@@ -66,6 +67,8 @@ export function IssueTypesPage() {
   const [showForm, setShowForm] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>({ ...EMPTY });
+  const [deletingType, setDeletingType] = useState<IssueType | null>(null);
+  const [isDeletingType, setIsDeletingType] = useState(false);
 
   useEffect(() => {
     getIssueTypes()
@@ -122,12 +125,16 @@ export function IssueTypesPage() {
   }
 
   async function deleteType(id: string) {
+    setIsDeletingType(true);
     try {
       await deleteIssueType(id);
       setIssueTypes((prev) => prev.filter((t) => t.id !== id));
       toast.success("Issue type deleted");
+      setDeletingType(null);
     } catch {
       toast.error("Failed to delete issue type");
+    } finally {
+      setIsDeletingType(false);
     }
   }
 
@@ -367,7 +374,7 @@ export function IssueTypesPage() {
                       <Edit className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => deleteType(t.id)}
+                      onClick={() => setDeletingType(t)}
                       className="text-gray-400 hover:text-red-500 p-1 rounded-lg hover:bg-red-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -385,6 +392,23 @@ export function IssueTypesPage() {
         Issue types are used in the <strong>ESS → Log Issues</strong> form.
         Inactive types will not appear for employees.
       </div>
+
+      <ConfirmationModal
+        isOpen={deletingType !== null}
+        title="Delete issue type?"
+        description={
+          deletingType
+            ? `"${deletingType.name}" will be permanently deleted. This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        isDangerous
+        isLoading={isDeletingType}
+        onConfirm={() => {
+          if (deletingType) void deleteType(deletingType.id);
+        }}
+        onCancel={() => setDeletingType(null)}
+      />
     </div>
   );
 }

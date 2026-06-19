@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { useAuthUser } from "../utils/useAuthUser";
+import { ConfirmationModal } from "./ConfirmationModal";
 import {
   clearAuthSession,
   logoutServerSideIfPossible,
@@ -90,6 +91,8 @@ export function AppHeader({ currentApp }: AppHeaderProps) {
   const navigate = useNavigate();
   const [showAppSwitcher, setShowAppSwitcher] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const {
     name: authName,
     email: authEmail,
@@ -110,12 +113,19 @@ export function AppHeader({ currentApp }: AppHeaderProps) {
   const currentAppInfo = apps.find((a) => a.id === currentApp);
 
   const handleLogout = async () => {
-    await logoutServerSideIfPossible();
-    clearAuthSession();
-    navigate("/auth/login", { replace: true });
+    setIsLoggingOut(true);
+    try {
+      await logoutServerSideIfPossible();
+    } finally {
+      clearAuthSession();
+      setIsLoggingOut(false);
+      setShowLogoutConfirm(false);
+      navigate("/auth/login", { replace: true });
+    }
   };
 
   return (
+    <>
     <header className="bg-slate-900 border-b border-slate-800 h-14 flex items-center">
       <div className="px-4 flex items-center justify-between w-full gap-4">
         {/* Left: Logo + App Switcher */}
@@ -282,7 +292,8 @@ export function AppHeader({ currentApp }: AppHeaderProps) {
                   <div className="border-t border-gray-100 py-1">
                     <button
                       onClick={() => {
-                        void handleLogout();
+                        setShowProfile(false);
+                        setShowLogoutConfirm(true);
                       }}
                       className="w-full flex items-center gap-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                     >
@@ -297,5 +308,20 @@ export function AppHeader({ currentApp }: AppHeaderProps) {
         </div>
       </div>
     </header>
+
+    <ConfirmationModal
+      isOpen={showLogoutConfirm}
+      title="Log out?"
+      description="You will be signed out of BuildOS and returned to the login screen."
+      confirmLabel="Log Out"
+      cancelLabel="Cancel"
+      isDangerous
+      isLoading={isLoggingOut}
+      onConfirm={() => {
+        void handleLogout();
+      }}
+      onCancel={() => setShowLogoutConfirm(false)}
+    />
+    </>
   );
 }

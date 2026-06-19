@@ -71,6 +71,29 @@ export function hasValidAuthSession(): boolean {
   return !isExpired(token, 0) || !isExpired(refreshToken, 0);
 }
 
+const REFRESH_MAX_ATTEMPTS = 3;
+const REFRESH_RETRY_BASE_DELAY_MS = 600;
+const REFRESH_TIMEOUT_MS = 10_000;
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// HTTP statuses that indicate a transient/recoverable failure where the refresh
+// token is still potentially valid. The user must NOT be signed out for these —
+// we retry instead, and if it keeps failing we leave the session intact so a
+// later attempt (e.g. the next background check) can recover.
+function isTransientStatus(status: number): boolean {
+  return status === 408 || status === 429 || status >= 500;
+}
+
+function refreshTimeoutSignal(): AbortSignal | undefined {
+  if (typeof AbortSignal !== 'undefined' && typeof AbortSignal.timeout === 'function') {
+    return AbortSignal.timeout(REFRESH_TIMEOUT_MS);
+  }
+  return undefined;
+}
+
 async function requestTokenRefresh(): Promise<string | null> {
   const refreshToken = localStorage.getItem('refresh_token');
   if (!refreshToken || isExpired(refreshToken, 0)) {
@@ -78,30 +101,53 @@ async function requestTokenRefresh(): Promise<string | null> {
     return null;
   }
 
-  try {
-    const res = await fetch(`${BASE_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
+  for (let attempt = 1; attempt <= REFRESH_MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(`${BASE_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: refreshToken }),
+        signal: refreshTimeoutSignal(),
+      });
 
-    if (!res.ok) {
-      clearAuthSession();
+      if (res.ok) {
+        const data = (await res.json()) as RefreshResponse;
+        saveAuthSession({
+          accessToken: data.access_token,
+          refreshToken: data.refresh_token,
+          user: data.user,
+        });
+        return data.access_token;
+      }
+
+      // Definitive auth rejection: the refresh token is no longer accepted, so
+      // the session really is over.
+      if (res.status === 401 || res.status === 403) {
+        clearAuthSession();
+        return null;
+      }
+
+      // Transient server error (5xx / 408 / 429): retry with backoff, but never
+      // sign the user out for it.
+      if (isTransientStatus(res.status) && attempt < REFRESH_MAX_ATTEMPTS) {
+        await delay(REFRESH_RETRY_BASE_DELAY_MS * attempt);
+        continue;
+      }
+
+      // Any other unexpected non-OK response: do not discard a valid session on
+      // a single odd reply — let a later attempt retry.
+      return null;
+    } catch {
+      // Network error or timeout — transient. Retry without clearing the session.
+      if (attempt < REFRESH_MAX_ATTEMPTS) {
+        await delay(REFRESH_RETRY_BASE_DELAY_MS * attempt);
+        continue;
+      }
       return null;
     }
-
-    const data = (await res.json()) as RefreshResponse;
-    saveAuthSession({
-      accessToken: data.access_token,
-      refreshToken: data.refresh_token,
-      user: data.user,
-    });
-
-    return data.access_token;
-  } catch {
-    clearAuthSession();
-    return null;
   }
+
+  return null;
 }
 
 export async function ensureValidAccessToken(): Promise<string | null> {

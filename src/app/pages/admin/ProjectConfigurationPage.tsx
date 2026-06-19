@@ -22,6 +22,7 @@ import {
   type ProcessWorkflow,
 } from "../../api/admin-extras";
 import { toast } from "sonner";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ApprovalType = "single" | "group" | "tier";
@@ -644,6 +645,8 @@ export function ProjectConfigurationPage() {
   const [workflowError, setWorkflowError] = useState<string | null>(null);
   const [expandedWfId, setExpandedWfId] = useState<string | null>(null);
   const [catalogAppFilter, setCatalogAppFilter] = useState("All");
+  const [deletingWf, setDeletingWf] = useState<ProcessWorkflow | null>(null);
+  const [isDeletingWf, setIsDeletingWf] = useState(false);
 
   const availableProcesses = catalog.map((p) => ({
     id: p.id,
@@ -955,21 +958,7 @@ export function ProjectConfigurationPage() {
                             <Edit className="w-3.5 h-3.5" />
                           </button>
                           <button
-                            onClick={async () => {
-                              try {
-                                await deleteProcessWorkflow(wf.id);
-                                setWorkflows((prev) =>
-                                  prev.filter((w) => w.id !== wf.id),
-                                );
-                                setWorkflowError(null);
-                                toast.success("Workflow deleted.");
-                              } catch {
-                                setWorkflowError(
-                                  "Failed to delete workflow. Please try again.",
-                                );
-                                toast.error("Failed to delete workflow.");
-                              }
-                            }}
+                            onClick={() => setDeletingWf(wf)}
                             className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -1109,6 +1098,36 @@ export function ProjectConfigurationPage() {
           }}
         />
       )}
+
+      <ConfirmationModal
+        isOpen={deletingWf !== null}
+        title="Delete process workflow?"
+        description={
+          deletingWf
+            ? `The approval workflow for "${deletingWf.process}" will be permanently deleted. This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        isDangerous
+        isLoading={isDeletingWf}
+        onConfirm={async () => {
+          if (!deletingWf) return;
+          setIsDeletingWf(true);
+          try {
+            await deleteProcessWorkflow(deletingWf.id);
+            setWorkflows((prev) => prev.filter((w) => w.id !== deletingWf.id));
+            setWorkflowError(null);
+            toast.success("Workflow deleted.");
+            setDeletingWf(null);
+          } catch {
+            setWorkflowError("Failed to delete workflow. Please try again.");
+            toast.error("Failed to delete workflow.");
+          } finally {
+            setIsDeletingWf(false);
+          }
+        }}
+        onCancel={() => setDeletingWf(null)}
+      />
     </div>
   );
 }

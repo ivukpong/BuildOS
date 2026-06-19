@@ -27,8 +27,16 @@ export function AppLayout() {
 
       const token = await ensureValidAccessToken();
       if (!token) {
-        clearAuthSession();
-        if (mounted) navigate("/auth/login", { replace: true });
+        // A null token can also mean a transient refresh failure (network blip,
+        // server cold-start, timeout). Only sign the user out if the session is
+        // genuinely invalid; otherwise keep them in and let the next background
+        // check retry, so a flaky refresh call never ejects an active user.
+        if (!hasValidAuthSession()) {
+          clearAuthSession();
+          if (mounted) navigate("/auth/login", { replace: true });
+          return;
+        }
+        if (mounted) setReady(true);
         return;
       }
 

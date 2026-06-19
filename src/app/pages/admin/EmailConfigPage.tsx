@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus, Mail, Trash2, Edit2, Check, X } from "lucide-react";
 import { toast } from "sonner";
 import { apiFetch } from "../../api/client";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 
 type TriggerModule =
   | "Finance"
@@ -164,6 +165,8 @@ export function EmailConfigPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...BLANK_FORM });
   const [saved, setSaved] = useState(false);
+  const [deletingConfig, setDeletingConfig] = useState<EmailConfig | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     apiFetch<EmailConfig[]>("/admin/email-config")
@@ -248,6 +251,7 @@ export function EmailConfigPage() {
   }
 
   function deleteConfig(id: string) {
+    setIsDeleting(true);
     apiFetch(`/admin/email-config/${id}`, { method: "DELETE" })
       .then(() => {
         setConfigs((prev) => prev.filter((c) => c.id !== id));
@@ -256,6 +260,10 @@ export function EmailConfigPage() {
       .catch((err) => {
         toast.error("Failed to delete email config");
         console.error(err);
+      })
+      .finally(() => {
+        setIsDeleting(false);
+        setDeletingConfig(null);
       });
   }
 
@@ -354,7 +362,7 @@ export function EmailConfigPage() {
                 />
               </button>
               <button
-                onClick={() => deleteConfig(config.id)}
+                onClick={() => setDeletingConfig(config)}
                 className="p-1.5 rounded-lg text-gray-400 hover:bg-red-50 hover:text-red-500"
               >
                 <Trash2 className="w-4 h-4" />
@@ -523,6 +531,23 @@ export function EmailConfigPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={deletingConfig !== null}
+        title="Delete email configuration?"
+        description={
+          deletingConfig
+            ? `"${deletingConfig.trigger}" will be permanently removed. This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        isDangerous
+        isLoading={isDeleting}
+        onConfirm={() => {
+          if (deletingConfig) deleteConfig(deletingConfig.id);
+        }}
+        onCancel={() => setDeletingConfig(null)}
+      />
     </div>
   );
 }

@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CreatableSelect } from "../../components/CreatableSelect";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 import {
   getAdminGeneralSettings,
   updateAdminGeneralSettings,
@@ -71,6 +72,14 @@ const EMPTY_ISSUE: Omit<IssueType, "id"> = {
   color: IT_COLORS[0],
   slaHours: 24,
   active: true,
+};
+
+// slaHours is kept as a string in the form so the field can be cleared while
+// the user is typing (a raw number input cannot represent an empty value).
+type IssueFormState = Omit<IssueType, "id" | "slaHours"> & { slaHours: string };
+const EMPTY_ISSUE_FORM: IssueFormState = {
+  ...EMPTY_ISSUE,
+  slaHours: String(EMPTY_ISSUE.slaHours),
 };
 
 // ── Change Categories ────────────────────────────────────────────────────────
@@ -345,8 +354,9 @@ export function GeneralSettingsPage() {
   const [issueSaving, setIssueSaving] = useState(false);
   const [issueDeletingId, setIssueDeletingId] = useState<string | null>(null);
   const [issueTogglingId, setIssueTogglingId] = useState<string | null>(null);
-  const [issueForm, setIssueForm] = useState<typeof EMPTY_ISSUE>({
-    ...EMPTY_ISSUE,
+  const [deletingIssue, setDeletingIssue] = useState<IssueType | null>(null);
+  const [issueForm, setIssueForm] = useState<IssueFormState>({
+    ...EMPTY_ISSUE_FORM,
   });
   async function saveIssue(e: React.FormEvent) {
     e.preventDefault();
@@ -354,6 +364,18 @@ export function GeneralSettingsPage() {
 
     if (!issueForm.name.trim()) {
       setIssueFormError("Issue type name is required");
+      toast.error("Issue type name is required");
+      return;
+    }
+
+    const slaHours = Number(issueForm.slaHours);
+    if (
+      issueForm.slaHours.trim() === "" ||
+      Number.isNaN(slaHours) ||
+      slaHours < 1
+    ) {
+      setIssueFormError("SLA target must be at least 1 hour");
+      toast.error("SLA target must be at least 1 hour");
       return;
     }
 
@@ -364,29 +386,35 @@ export function GeneralSettingsPage() {
     );
     if (isDuplicate) {
       setIssueFormError("Issue type name already exists");
+      toast.error("Issue type name already exists");
       return;
     }
 
+    const payload = { ...issueForm, slaHours };
     setIssueSaving(true);
     try {
       if (editIssueId) {
-        const updated = await updateIssueType(editIssueId, issueForm);
+        const updated = await updateIssueType(editIssueId, payload);
         setIssueTypes((prev) =>
           prev.map((t) => (t.id === editIssueId ? updated : t)),
         );
         setEditIssueId(null);
+        toast.success("Issue type updated");
       } else {
-        const created = await createIssueType(issueForm);
+        const created = await createIssueType(payload);
         setIssueTypes((prev) => [...prev, created]);
+        toast.success("Issue type created");
       }
-      setIssueForm({ ...EMPTY_ISSUE });
+      setIssueForm({ ...EMPTY_ISSUE_FORM });
       setShowIssueForm(false);
     } catch (err: any) {
       const message = err?.message || "Failed to save issue type";
       if (message.includes("409") || message.includes("already exists")) {
         setIssueFormError("Issue type name already exists");
+        toast.error("Issue type name already exists");
       } else {
         setIssueFormError(message);
+        toast.error(message);
       }
     } finally {
       setIssueSaving(false);
@@ -398,7 +426,7 @@ export function GeneralSettingsPage() {
       description: t.description,
       priority: t.priority,
       color: t.color,
-      slaHours: t.slaHours,
+      slaHours: String(t.slaHours),
       active: t.active,
     });
     setEditIssueId(t.id);
@@ -409,6 +437,10 @@ export function GeneralSettingsPage() {
     try {
       await deleteIssueType(id);
       setIssueTypes((prev) => prev.filter((t) => t.id !== id));
+      toast.success("Issue type deleted");
+      setDeletingIssue(null);
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to delete issue type");
     } finally {
       setIssueDeletingId(null);
     }
@@ -423,6 +455,11 @@ export function GeneralSettingsPage() {
     try {
       const updated = await updateIssueType(id, { active: !current.active });
       setIssueTypes((prev) => prev.map((t) => (t.id === id ? updated : t)));
+      toast.success(
+        updated.active ? "Issue type activated" : "Issue type deactivated",
+      );
+    } catch (err: any) {
+      toast.error(err?.message || "Failed to update issue type");
     } finally {
       setIssueTogglingId(null);
     }
@@ -548,7 +585,7 @@ export function GeneralSettingsPage() {
             onClick={() => {
               setShowIssueForm(true);
               setEditIssueId(null);
-              setIssueForm({ ...EMPTY_ISSUE });
+              setIssueForm({ ...EMPTY_ISSUE_FORM });
             }}
             className="flex items-center gap-2 px-4 py-2 bg-gray-900 hover:bg-gray-800 text-white rounded-xl text-sm font-medium"
           >
@@ -865,9 +902,10 @@ export function GeneralSettingsPage() {
                       onChange={(e) =>
                         setIssueForm((f) => ({
                           ...f,
-                          slaHours: Number(e.target.value),
+                          slaHours: e.target.value,
                         }))
                       }
+                      placeholder="e.g. 24"
                       className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-gray-500"
                     />
                   </div>
@@ -926,7 +964,7 @@ export function GeneralSettingsPage() {
                     onClick={() => {
                       setShowIssueForm(false);
                       setEditIssueId(null);
-                      setIssueForm({ ...EMPTY_ISSUE });
+                      setIssueForm({ ...EMPTY_ISSUE_FORM });
                     }}
                     disabled={issueSaving}
                     className="px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1024,7 +1062,7 @@ export function GeneralSettingsPage() {
                           <Edit className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => deleteIssue(t.id)}
+                          onClick={() => setDeletingIssue(t)}
                           disabled={
                             issueSaving ||
                             issueDeletingId === t.id ||
@@ -1047,6 +1085,25 @@ export function GeneralSettingsPage() {
             Issue types are used in the <strong>ESS → Log Issues</strong> form.
             Inactive types will not appear for employees.
           </div>
+
+          <ConfirmationModal
+            isOpen={deletingIssue !== null}
+            title="Delete issue type?"
+            description={
+              deletingIssue
+                ? `"${deletingIssue.name}" will be permanently deleted. This action cannot be undone.`
+                : ""
+            }
+            confirmLabel="Delete"
+            isDangerous
+            isLoading={
+              deletingIssue !== null && issueDeletingId === deletingIssue.id
+            }
+            onConfirm={() => {
+              if (deletingIssue) void deleteIssue(deletingIssue.id);
+            }}
+            onCancel={() => setDeletingIssue(null)}
+          />
         </div>
       )}
 
