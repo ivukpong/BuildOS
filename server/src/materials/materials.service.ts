@@ -61,6 +61,12 @@ export class MaterialsService {
     }
 
     // ── Store Items ──
+    findAllStoreItems() {
+        return this.prisma.storeItem.findMany({
+            orderBy: { materialName: 'asc' },
+        });
+    }
+
     findStoreItems(storeId: string) {
         return this.prisma.storeItem.findMany({
             where: { storeId },

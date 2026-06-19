@@ -35,6 +35,8 @@ export class MaterialsController {
     deleteStore(@Param('id') id: string) { return this.svc.deleteStore(id); }
 
     // ── Store Items ──
+    @Get('store-items')
+    getAllStoreItems() { return this.svc.findAllStoreItems(); }
     @Get('stores/:storeId/items')
     getStoreItems(@Param('storeId') storeId: string) { return this.svc.findStoreItems(storeId); }
     @Post('store-items')

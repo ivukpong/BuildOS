@@ -42,13 +42,13 @@ interface StockItem {
 
 function toStockItem(item: ApiStoreItem): StockItem {
   return {
-    id: item.id,
-    name: item.materialName,
-    category: item.category,
-    unit: item.unit,
-    qty: item.qty,
-    reorderLevel: item.reorderLevel,
-    unitCost: item.unitCost,
+    id: item.id ?? "",
+    name: item.materialName ?? "",
+    category: item.category ?? "",
+    unit: item.unit ?? "Units",
+    qty: item.qty ?? 0,
+    reorderLevel: item.reorderLevel ?? 0,
+    unitCost: item.unitCost ?? 0,
     lastReceived: item.lastReceived ?? "",
     bin: item.bin ?? "",
   };
@@ -90,8 +90,8 @@ export function GeneralStorePage() {
 
   const filtered = items.filter((i) => {
     const matchSearch =
-      i.name.toLowerCase().includes(search.toLowerCase()) ||
-      i.id.toLowerCase().includes(search.toLowerCase());
+      (i.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
+      (i.id ?? "").toLowerCase().includes(search.toLowerCase());
     const matchCat = catFilter === "All" || i.category === catFilter;
     const matchLow = !lowOnly || getStatus(i) !== "In Stock";
     return matchSearch && matchCat && matchLow;
