@@ -49,19 +49,89 @@ interface ProcessPerm {
   delete: boolean;
 }
 
+// Mirrors the backend process catalog (single source of truth) so role
+// permissions stay linked to the actual developed modules even before the
+// live catalog is fetched.
 const DEFAULT_PROCESSES: ProcessDef[] = [
+  // Procurement
   { id: "p_create_pr", label: "Create Purchase Request", app: "procurement" },
+  { id: "p_approve_pr", label: "Approve Purchase Request", app: "procurement" },
+  { id: "p_create_po", label: "Create Purchase Order", app: "procurement" },
   { id: "p_approve_po", label: "Approve Purchase Order", app: "procurement" },
+  { id: "p_send_rfq", label: "Send RFQ to Supplier", app: "procurement" },
+  { id: "p_goods_receipt", label: "Goods Receipt", app: "procurement" },
   { id: "p_issue_mat", label: "Issue Materials", app: "procurement" },
+  {
+    id: "p_supplier_compliance",
+    label: "Supplier Compliance Review",
+    app: "procurement",
+  },
+  // Finance
   { id: "p_create_exp", label: "Create Expense", app: "finance" },
   { id: "p_approve_exp", label: "Approve Expense", app: "finance" },
+  { id: "p_journal_entry", label: "Post Journal Entry", app: "finance" },
+  { id: "p_record_income", label: "Record Income", app: "finance" },
+  { id: "p_budget_alloc", label: "Budget Allocation", app: "finance" },
+  { id: "p_approve_payment", label: "Approve Payment", app: "finance" },
+  { id: "p_process_claim", label: "Process Claim", app: "finance" },
+  {
+    id: "p_purchase_invoice",
+    label: "Process Purchase Invoice",
+    app: "finance",
+  },
+  { id: "p_bank_recon", label: "Bank Reconciliation", app: "finance" },
+  // HR
   { id: "p_create_pay", label: "Create Payroll", app: "hr" },
+  { id: "p_process_payroll", label: "Process Payroll", app: "hr" },
   { id: "p_approve_lv", label: "Approve Leave Request", app: "hr" },
-  { id: "p_assign_wf", label: "Assign Workforce", app: "construction" },
+  { id: "p_salary_advance", label: "Salary Advance", app: "hr" },
+  { id: "p_employee_onboard", label: "Employee Onboarding", app: "hr" },
+  { id: "p_workforce_alloc", label: "Workforce Allocation", app: "hr" },
+  { id: "p_attendance_approve", label: "Approve Attendance", app: "hr" },
+  { id: "p_appraisal", label: "Appraisal Review", app: "hr" },
+  // ESS
+  { id: "p_ess_submit_request", label: "Submit Request", app: "ess" },
+  { id: "p_ess_expense_claim", label: "Expense Claim", app: "ess" },
+  { id: "p_ess_leave_request", label: "Leave Request", app: "ess" },
+  { id: "p_ess_log_issue", label: "Log Issue", app: "ess" },
+  // Construction / Projects
   { id: "p_create_proj", label: "Create Project", app: "construction" },
   { id: "p_approve_bud", label: "Approve Project Budget", app: "construction" },
+  { id: "p_assign_wf", label: "Assign Workforce", app: "construction" },
+  { id: "p_daily_report", label: "Submit Daily Report", app: "construction" },
+  {
+    id: "p_milestone_approve",
+    label: "Approve Milestone / Progress",
+    app: "construction",
+  },
+  {
+    id: "p_change_request",
+    label: "Approve Change Request",
+    app: "construction",
+  },
+  { id: "p_resolve_issue", label: "Resolve Site Issue", app: "construction" },
+  { id: "p_quality_ncr", label: "Approve Quality NCR", app: "construction" },
+  { id: "p_hse_incident", label: "Log HSE Incident", app: "construction" },
+  { id: "p_doc_approve", label: "Approve Document", app: "construction" },
+  {
+    id: "p_funding_release",
+    label: "Approve Funding Release",
+    app: "construction",
+  },
+  // Storefront
+  { id: "p_material_transfer", label: "Material Transfer", app: "storefront" },
+  { id: "p_stock_adjust", label: "Stock Adjustment", app: "storefront" },
+  { id: "p_issue_to_site", label: "Issue to Site", app: "storefront" },
+  { id: "p_material_return", label: "Material Return", app: "storefront" },
+  {
+    id: "p_store_to_procurement",
+    label: "Send for Procurement",
+    app: "storefront",
+  },
+  // Admin
   { id: "p_gen_rpt", label: "Generate Reports", app: "admin" },
   { id: "p_manage_usr", label: "Manage Users", app: "admin" },
+  { id: "p_manage_roles", label: "Manage Roles & Permissions", app: "admin" },
 ];
 
 interface Role {

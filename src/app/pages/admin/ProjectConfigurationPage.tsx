@@ -19,6 +19,7 @@ import {
   createProcessWorkflow,
   updateProcessWorkflow,
   deleteProcessWorkflow,
+  getProcessCatalog,
   type ProcessWorkflow,
 } from "../../api/admin-extras";
 import { toast } from "sonner";
@@ -294,7 +295,30 @@ const CATALOG_APP_COLORS: Record<string, string> = {
   ESS: "bg-teal-50 text-teal-700 border-teal-100",
   Construction: "bg-amber-50 text-amber-700 border-amber-100",
   Storefront: "bg-orange-50 text-orange-700 border-orange-100",
+  Admin: "bg-indigo-50 text-indigo-700 border-indigo-100",
 };
+
+// Map the backend's lowercase app keys to the display labels used above so the
+// Process List groups real module processes under consistent headings.
+const APP_DISPLAY_LABELS: Record<string, string> = {
+  procurement: "Procurement",
+  finance: "Finance",
+  hr: "HR",
+  ess: "ESS",
+  construction: "Construction",
+  storefront: "Storefront",
+  admin: "Admin",
+};
+
+function normalizeCatalogItem(item: ProcessCatalogItem): ProcessCatalogItem {
+  const key = String(item.app ?? "").trim();
+  return {
+    ...item,
+    app: APP_DISPLAY_LABELS[key.toLowerCase()] ?? key,
+    description: item.description ?? "",
+    requiresApproval: item.requiresApproval !== false,
+  };
+}
 
 function TypeBadge({ type }: { type: ApprovalType }) {
   const map = {
@@ -639,7 +663,9 @@ export function ProjectConfigurationPage() {
   const [editingWf, setEditingWf] = useState<ProcessWorkflow | undefined>(
     undefined,
   );
-  const catalog = PROCESS_CATALOG;
+  const [catalog, setCatalog] = useState<ProcessCatalogItem[]>(
+    PROCESS_CATALOG,
+  );
   const [availableUsers, setAvailableUsers] = useState<string[]>([]);
   const [workflowsLoading, setWorkflowsLoading] = useState(true);
   const [workflowError, setWorkflowError] = useState<string | null>(null);
@@ -679,6 +705,19 @@ export function ProjectConfigurationPage() {
         setAvailableUsers(Array.from(new Set(names)));
       })
       .catch(() => setAvailableUsers([]));
+  }, []);
+
+  // Load the live process catalog so the Process List reflects the actual
+  // developed modules configured in Admin. Falls back to the bundled catalog
+  // if the request fails so the page is never empty.
+  useEffect(() => {
+    getProcessCatalog()
+      .then((items) => {
+        if (Array.isArray(items) && items.length > 0) {
+          setCatalog(items.map(normalizeCatalogItem));
+        }
+      })
+      .catch(() => setCatalog(PROCESS_CATALOG));
   }, []);
 
   useEffect(() => {

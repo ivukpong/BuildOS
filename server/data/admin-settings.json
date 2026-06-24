@@ -1,14 +1,6 @@
 {
   "issueTypes": [],
   "changeCategories": [],
-  "processCatalog": [
-    {
-      "id": "4cf04464-852e-425a-9976-3f653f059b5d",
-      "label": "Create purchase request",
-      "app": "Procurement",
-      "description": "Create a purchase request",
-      "requiresApproval": true
-    }
-  ],
+  "processCatalog": [],
   "processWorkflows": []
 }
