@@ -7,6 +7,7 @@ import {
   type StockTransfer as ApiTransfer,
 } from "../../api/materials";
 import { Plus, ArrowRight, Search } from "lucide-react";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 type TransferStatus = "Pending" | "In Transit" | "Completed" | "Rejected";
 
@@ -48,11 +49,7 @@ function toTransfer(t: ApiTransfer): StockTransfer {
     from: t.fromStoreName,
     to: t.toStoreName,
     requestedBy: t.requestedBy ?? "",
-    date: new Date(t.requestDate).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
+    date: formatDateByGeneralSettings(t.requestDate),
     status:
       t.status === "Completed" ||
       t.status === "Rejected" ||

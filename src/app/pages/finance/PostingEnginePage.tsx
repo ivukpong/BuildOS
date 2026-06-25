@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getChartAccounts, getTransactions } from "../../api/finance-extras";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   Zap,
   Search,
@@ -124,9 +125,10 @@ const SOURCE_APPS: SourceApp[] = [
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1000) return `₦${(n / 1000).toFixed(0)}K`;
-  return `₦${n.toLocaleString()}`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1000) return `${symbol}${(n / 1000).toFixed(0)}K`;
+  return `${symbol}${n.toLocaleString()}`;
 }
 function todayStr() {
   return new Date().toLocaleDateString("en-GB", {

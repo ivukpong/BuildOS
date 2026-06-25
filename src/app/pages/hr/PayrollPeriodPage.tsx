@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import { getPayrollPeriods, createPayrollPeriod } from "../../api/hr-extras";
 import { Plus, Lock, Unlock, Clock } from "lucide-react";
 
@@ -38,7 +39,8 @@ const statusConf: Record<
   },
 };
 
-const fmt = (n: number) => (n === 0 ? "—" : `₦${(n / 1_000_000).toFixed(1)}M`);
+const fmt = (n: number) =>
+  n === 0 ? "—" : `${getCurrencySymbol()}${(n / 1_000_000).toFixed(1)}M`;
 
 export function PayrollPeriodPage() {
   const [periods, setPeriods] = useState<Period[]>([]);

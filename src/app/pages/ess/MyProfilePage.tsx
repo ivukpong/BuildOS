@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { updateMyProfile } from "../../api/profile";
 import { createActivityRecord } from "../../api/activity-history";
 import { useAuthUser } from "../../utils/useAuthUser";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 interface ProfileField {
   label: string;
@@ -65,18 +66,11 @@ function formatEmploymentType(type: string): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+  return formatDateByGeneralSettings(iso);
 }
 
 function formatJoinDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "long",
-    year: "numeric",
-  });
+  return formatDateByGeneralSettings(iso);
 }
 
 export function MyProfilePage() {

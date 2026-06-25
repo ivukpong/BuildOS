@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import {
   fetchExpenses,
   approveExpense,
@@ -161,7 +162,8 @@ export function ExpenseManagementPage() {
   } | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+  const fmt = (n: number) =>
+    formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
 
   const filtered = expenses
     .filter((e) => {

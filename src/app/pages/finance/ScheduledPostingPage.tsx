@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { getChartAccounts } from "../../api/finance-extras";
 import { apiFetch } from "../../api/client";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   CalendarClock,
   Plus,
@@ -78,9 +79,10 @@ const SCHEDULE_TYPE_CFG: Record<ScheduleType, { label: string; desc: string }> =
   };
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1000) return `₦${(n / 1000).toFixed(0)}K`;
-  return `₦${n}`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1000) return `${symbol}${(n / 1000).toFixed(0)}K`;
+  return `${symbol}${n}`;
 }
 
 // ── New Posting Modal ─────────────────────────────────────────────────────────

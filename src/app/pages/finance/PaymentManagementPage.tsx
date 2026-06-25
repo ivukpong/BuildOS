@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import { fetchPayments } from "../../api/payments";
 import {
   Search,
@@ -144,7 +145,8 @@ export function PaymentManagementPage() {
   const [viewPayment, setViewPayment] = useState<Payment | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+  const fmt = (n: number) =>
+    formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
 
   const filtered = payments
     .filter((p) => {

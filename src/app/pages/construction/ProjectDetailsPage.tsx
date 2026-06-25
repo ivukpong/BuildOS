@@ -29,6 +29,7 @@ import { getTasks } from "../../api/tasks";
 import { getWorkforceAllocations } from "../../api/workforce-allocation";
 import { fetchExpenses } from "../../api/expenses";
 import { getResourcePlans } from "../../api/resource-planning";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 // ─── Shared data ────────────────────────────────────────────────────────────
 
@@ -229,11 +230,8 @@ function OverviewTab({ p }: { p: ProjectDetail }) {
           },
           {
             label: "Due Date",
-            value: new Date(p.endDate).toLocaleDateString("en-US", {
-              month: "short",
-              year: "numeric",
-            }),
-            sub: `Started ${new Date(p.startDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}`,
+            value: formatDateByGeneralSettings(p.endDate),
+            sub: `Started ${formatDateByGeneralSettings(p.startDate)}`,
             icon: <Calendar className="w-5 h-5" />,
             color: "text-orange-600 bg-orange-50",
           },
@@ -514,16 +512,10 @@ function TasksTab({ tasks }: { tasks: Task[] }) {
                   {task.assignee}
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-500">
-                  {new Date(task.startDate).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  {formatDateByGeneralSettings(task.startDate)}
                 </td>
                 <td className="px-4 py-3 text-xs text-gray-500">
-                  {new Date(task.endDate).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })}
+                  {formatDateByGeneralSettings(task.endDate)}
                 </td>
                 <td className="px-4 py-3">
                   <span
@@ -1427,16 +1419,9 @@ export function ProjectDetailsPage() {
                 </div>
                 <div className="flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5" />
-                  {new Date(p.startDate).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  })}{" "}
+                  {formatDateByGeneralSettings(p.startDate)}{" "}
                   →{" "}
-                  {new Date(p.endDate).toLocaleDateString("en-US", {
-                    month: "short",
-                    year: "numeric",
-                  })}
+                  {formatDateByGeneralSettings(p.endDate)}
                 </div>
               </div>
               <div className="mt-3 flex items-center gap-3">

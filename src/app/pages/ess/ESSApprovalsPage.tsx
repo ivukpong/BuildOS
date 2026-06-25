@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   CheckCircle,
   XCircle,
@@ -8,7 +9,12 @@ import {
   ChevronDown,
   AlertTriangle,
 } from "lucide-react";
-import { getApprovals, approveItem, rejectItem } from "../../api/approvals";
+import {
+  getApprovals,
+  approveItem,
+  rejectItem,
+  type ApprovalFlow,
+} from "../../api/approvals";
 import { createActivityRecord } from "../../api/activity-history";
 import { useAuthUser } from "../../utils/useAuthUser";
 import { toast } from "sonner";
@@ -27,6 +33,7 @@ interface ESSApproval {
   status: ApprovalStatus;
   urgency: "normal" | "urgent";
   description: string;
+  approvalFlow?: ApprovalFlow | null;
 }
 
 const statusConfig: Record<
@@ -58,8 +65,9 @@ const typeColors: Record<string, string> = {
 };
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  return `$${(n / 1000).toFixed(0)}K`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(1)}M`;
+  return `${symbol}${(n / 1000).toFixed(0)}K`;
 }
 
 export function ESSApprovalsPage() {
@@ -284,6 +292,59 @@ export function ESSApprovalsPage() {
                   <p className="text-sm text-gray-600 mt-3 mb-4">
                     {a.description}
                   </p>
+                  {a.approvalFlow && a.approvalFlow.approvers.length > 0 && (
+                    <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                        Approval flow
+                        <span className="ml-1.5 font-normal capitalize text-gray-400">
+                          ({a.approvalFlow.workflowType})
+                        </span>
+                      </p>
+                      {a.approvalFlow.workflowType === "tier" &&
+                      a.approvalFlow.tierLevels ? (
+                        <ol className="flex flex-wrap items-center gap-2">
+                          {a.approvalFlow.tierLevels.map((t, i) => (
+                            <li
+                              key={`${t.level}-${t.approver}`}
+                              className="flex items-center gap-2"
+                            >
+                              <span className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700">
+                                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-teal-100 text-[10px] font-semibold text-teal-700">
+                                  {t.level}
+                                </span>
+                                {t.approver}
+                                {t.condition && (
+                                  <span className="text-gray-400">
+                                    · {t.condition}
+                                  </span>
+                                )}
+                              </span>
+                              {i <
+                                (a.approvalFlow?.tierLevels?.length ?? 0) - 1 && (
+                                <span className="text-gray-400">→</span>
+                              )}
+                            </li>
+                          ))}
+                        </ol>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {a.approvalFlow.approvers.map((approver) => (
+                            <span
+                              key={approver}
+                              className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700"
+                            >
+                              {approver}
+                            </span>
+                          ))}
+                          {a.approvalFlow.workflowType === "group" && (
+                            <span className="text-xs text-gray-400">
+                              (any approver)
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   {isPending && (
                     <div className="flex items-center gap-3">
                       <button

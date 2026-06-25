@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import {
   getPayrollEntries,
   getPayrollRuns,
@@ -124,7 +125,8 @@ export function PayrollIntegrationPage() {
       .catch(() => setEmployees([]));
   }, [activeRun?.id]);
 
-  const fmt = (n: number) => `₦${n.toLocaleString()}`;
+  const fmt = (n: number) =>
+    formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
 
   const filtered = payrolls.filter((p) => {
     if (statusFilter !== "All" && p.status !== statusFilter) return false;

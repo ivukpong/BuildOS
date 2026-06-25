@@ -8,6 +8,7 @@ import {
   Download,
 } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 type StockItem = {
   id: string;
@@ -33,7 +34,7 @@ function fromApiStock(m: ApiMaterial): StockItem {
     max: m.totalQty,
     reorderQty: Math.round(m.totalQty * 0.4),
     location: "",
-    lastUpdated: m.createdAt ? new Date(m.createdAt).toLocaleDateString() : "",
+    lastUpdated: m.createdAt ? formatDateByGeneralSettings(m.createdAt) : "",
   };
 }
 

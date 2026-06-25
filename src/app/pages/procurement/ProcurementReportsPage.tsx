@@ -12,6 +12,7 @@ import {
 import { getMaterialRequests, getMaterials } from "../../api/materials";
 import { fetchPurchaseOrders } from "../../api/purchase-orders";
 import { fetchSuppliers } from "../../api/suppliers";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 export function ProcurementReportsPage() {
   const [dateRange, setDateRange] = useState("This Month");
@@ -88,7 +89,7 @@ export function ProcurementReportsPage() {
       name: "Stock Report",
       format: "Live",
       runBy: "System",
-      date: new Date().toLocaleDateString(),
+      date: formatDateByGeneralSettings(new Date()),
       time: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
@@ -99,7 +100,7 @@ export function ProcurementReportsPage() {
       name: "Procurement Spend",
       format: "Live",
       runBy: "System",
-      date: new Date().toLocaleDateString(),
+      date: formatDateByGeneralSettings(new Date()),
       time: new Date().toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",

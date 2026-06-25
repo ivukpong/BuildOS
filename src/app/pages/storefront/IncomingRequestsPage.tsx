@@ -13,6 +13,7 @@ import {
   XCircle,
   ExternalLink,
 } from "lucide-react";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 type RequestStatus =
   | "Pending"
@@ -60,21 +61,13 @@ function toRequest(r: ApiRequest): MaterialRequest {
     sourceStore: r.storeName,
     destination: r.projectName ?? "",
     destinationType: "Project Store",
-    requestDate: new Date(r.requestDate).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
+    requestDate: formatDateByGeneralSettings(r.requestDate),
     requiredDate: "",
     status: (r.status as RequestStatus) ?? "Pending",
     remarks: r.purpose ?? "",
     approvedBy: r.approvedBy ?? "",
     approvalDate: r.approvedAt
-      ? new Date(r.approvedAt).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
+      ? formatDateByGeneralSettings(r.approvedAt)
       : "",
   };
 }

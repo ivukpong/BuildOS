@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import { getPayslips } from "../../api/hr-extras";
 import {
   Download,
@@ -50,7 +51,8 @@ const statusConfig: Record<
   },
 };
 
-const fmt = (n: number) => `₦${n.toLocaleString()}`;
+const fmt = (n: number) =>
+  formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
 
 type SortKey = "name" | "gross" | "deductions" | "net" | "status";
 type SortDir = "asc" | "desc";

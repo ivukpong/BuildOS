@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 import {
   FolderKanban,
   AlertTriangle,
@@ -158,10 +159,7 @@ export function ConstructionDashboardPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             Overview of all construction activities —{" "}
-            {new Date().toLocaleDateString("en-GB", {
-              month: "long",
-              year: "numeric",
-            })}
+            {formatDateByGeneralSettings(new Date())}
           </p>
         </div>
         <div className="flex gap-2">

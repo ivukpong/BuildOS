@@ -24,6 +24,7 @@ interface AuditLog {
   timestamp: string;
   createdAt: string;
   user: string;
+  userId: string;
   action: string;
   module: string;
   details: string;
@@ -52,6 +53,12 @@ export function AuditLogsPage() {
                   log.user?.email ||
                   log.userId ||
                   "System",
+            userId:
+              (typeof log.user === "object"
+                ? log.user?.userId || log.user?.id
+                : null) ||
+              log.userId ||
+              "—",
             action: normalizeAction(String(log.action || "Unknown")),
             module: String(
               log.module || log.resource || log.entity || "System",
@@ -110,6 +117,14 @@ export function AuditLogsPage() {
       key: "user",
       label: "User",
       sortable: true,
+    },
+    {
+      key: "userId",
+      label: "User ID",
+      sortable: true,
+      render: (row: AuditLog) => (
+        <span className="text-sm font-mono text-gray-600">{row.userId}</span>
+      ),
     },
     {
       key: "action",

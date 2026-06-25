@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import {
   fetchClaims,
   approveClaim,
@@ -117,7 +118,8 @@ export function ClaimsManagementPage() {
     reason: string;
   } | null>(null);
 
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+  const fmt = (n: number) =>
+    formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
 
   const filtered = claims
     .filter((c) => {

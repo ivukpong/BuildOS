@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   getAttendance,
   getPayrollRuns,
@@ -63,7 +64,7 @@ const reports: ReportConfig[] = [
   },
 ];
 
-const fmt = (n: number) => `₦${(n / 1000000).toFixed(1)}M`;
+const fmt = (n: number) => `${getCurrencySymbol()}${(n / 1000000).toFixed(1)}M`;
 
 export function HRReportsPage() {
   const [activeReport, setActiveReport] = useState<ReportType>("attendance");

@@ -355,6 +355,7 @@ function levelToType(level: StoreLevel): string {
 function StoresPanel() {
   const [stores, setStores] = useState<StoreRecord[]>([]);
   const [projects, setProjects] = useState<string[]>([]);
+  const [levelCaps, setLevelCaps] = useState<Record<number, number | undefined>>({});
   const [loading, setLoading] = useState(true);
   const [levelFilter, setLevelFilter] = useState<StoreLevel | 0>(0);
   const [showModal, setShowModal] = useState(false);
@@ -369,10 +370,26 @@ function StoresPanel() {
   });
 
   useEffect(() => {
-    Promise.all([getStores(), getReferenceData()])
-      .then(([storeData, refs]) => {
+    Promise.all([getStores(), getReferenceData(), getStoreLevels()])
+      .then(([storeData, refs, levels]) => {
         setStores(storeData.map(storeFromApi));
         setProjects(refs.projects.map((p) => p.name));
+        if (Array.isArray(levels) && levels.length) {
+          const caps: Record<number, number | undefined> = {};
+          levels.forEach((l) => {
+            caps[l.level] =
+              l.maxCount === null || l.maxCount === undefined
+                ? undefined
+                : Number(l.maxCount);
+          });
+          setLevelCaps(caps);
+        } else {
+          const caps: Record<number, number | undefined> = {};
+          DEFAULT_LEVEL_CONFIGS.forEach((l) => {
+            caps[l.level] = l.maxCount;
+          });
+          setLevelCaps(caps);
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -416,6 +433,20 @@ function StoresPanel() {
   }
   async function save() {
     if (!form.name.trim()) return;
+    if (!editing) {
+      const cap = levelCaps[form.level];
+      if (typeof cap === "number" && cap >= 0) {
+        const existingAtLevel = stores.filter(
+          (s) => s.level === form.level,
+        ).length;
+        if (existingAtLevel >= cap) {
+          toast.error(
+            `Maximum of ${cap} ${LEVEL_LABELS[form.level]} store${cap === 1 ? "" : "s"} allowed. Update the limit in Store Levels to add more.`,
+          );
+          return;
+        }
+      }
+    }
     const payload = {
       name: form.name.trim(),
       type: levelToType(form.level),

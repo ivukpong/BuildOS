@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import { getBankAccounts, getTaxConfigs } from "../../api/finance-extras";
 import { apiFetch } from "../../api/client";
 import {
@@ -132,7 +133,8 @@ export function FinanceConfigPage() {
     appliesTo: "",
   });
 
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+  const fmt = (n: number) =>
+    formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
 
   function saveAll() {
     apiFetch("/config", {

@@ -25,6 +25,10 @@ import {
   type SortConfig,
 } from "../../components/AdvancedFilter";
 import { getReferenceData } from "../../api/reference-data";
+import {
+  getCurrencySymbol,
+  formatDateByGeneralSettings,
+} from "../../utils/generalSettings";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type PRStatus =
@@ -97,18 +101,9 @@ function fromApi(r: ApiPR): PurchaseRequest {
     raisedBy: r.requestedBy ?? "Unknown",
     procurementType: "rfq",
     status,
-    raisedDate: r.createdAt
-      ? new Date(r.createdAt).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
-      : "",
+    raisedDate: r.createdAt ? formatDateByGeneralSettings(r.createdAt) : "",
     requiredDate: r.daysToDeliver
-      ? new Date(Date.now() + r.daysToDeliver * 86400000).toLocaleDateString(
-          "en-GB",
-          { day: "2-digit", month: "short", year: "numeric" },
-        )
+      ? formatDateByGeneralSettings(Date.now() + r.daysToDeliver * 86400000)
       : "",
     totalItems: r.items?.length ?? 0,
     estimatedValue:
@@ -128,9 +123,10 @@ function fromApi(r: ApiPR): PurchaseRequest {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1000) return `₦${(n / 1000).toFixed(0)}K`;
-  return `₦${n}`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1000) return `${symbol}${(n / 1000).toFixed(0)}K`;
+  return `${symbol}${n}`;
 }
 
 const PR_STATUS_CFG: Record<PRStatus, { label: string; badge: string }> = {

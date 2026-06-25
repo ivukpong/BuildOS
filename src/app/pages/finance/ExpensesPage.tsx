@@ -5,6 +5,7 @@ import {
   approveExpense,
   rejectExpense,
 } from "../../api/expenses";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 interface Expense {
   id: string;
@@ -180,7 +181,7 @@ export function ExpensesPage() {
                 </td>
                 <td className="px-6 py-4">
                   <span className="text-sm text-gray-700">
-                    {new Date(expense.date).toLocaleDateString()}
+                    {formatDateByGeneralSettings(expense.date)}
                   </span>
                 </td>
                 <td className="px-6 py-4">

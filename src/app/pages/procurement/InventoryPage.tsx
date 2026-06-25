@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getMaterials, Material as ApiMaterial } from "../../api/materials";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   Package,
   Search,
@@ -80,9 +81,10 @@ const statusConfig: Record<
 };
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1000) return `₦${(n / 1000).toFixed(0)}K`;
-  return `₦${n}`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `${symbol}${(n / 1000).toFixed(0)}K`;
+  return `${symbol}${n}`;
 }
 
 type MatSortKey =

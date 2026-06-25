@@ -1,5 +1,6 @@
 import { useParams } from "react-router";
 import { useEffect, useState, useMemo } from "react";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 import {
   Calendar,
   ChevronRight,
@@ -837,7 +838,7 @@ export function SchedulePage() {
                   <div
                     className="absolute top-0 bottom-0 w-px bg-red-400 z-10"
                     style={{ left: `${todayPct}%` }}
-                    title={`Today: ${today.toLocaleDateString("en-GB")}`}
+                    title={`Today: ${formatDateByGeneralSettings(today)}`}
                   />
                 )}
               </div>

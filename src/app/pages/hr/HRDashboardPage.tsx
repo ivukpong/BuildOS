@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { formatDateByGeneralSettings, getCurrencySymbol } from "../../utils/generalSettings";
 import {
   Users,
   UserCheck,
@@ -38,8 +39,9 @@ const attConfig: Record<string, { badge: string; icon: React.ReactNode }> = {
 };
 
 function fmt(n: number) {
+  const symbol = getCurrencySymbol();
   const abs = Math.abs(n);
-  const prefix = n < 0 ? "-₦" : "₦";
+  const prefix = n < 0 ? `-${symbol}` : symbol;
   if (abs >= 1_000_000) return `${prefix}${(abs / 1_000_000).toFixed(1)}M`;
   if (abs >= 1000) return `${prefix}${(abs / 1000).toFixed(0)}K`;
   return `${prefix}${abs}`;
@@ -243,11 +245,7 @@ export function HRDashboardPage() {
           <h1 className="text-2xl font-semibold text-gray-900">HR Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">
             Workforce overview —{" "}
-            {new Date().toLocaleDateString("en-GB", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
+            {formatDateByGeneralSettings(new Date())}
           </p>
         </div>
         <div className="flex gap-2">

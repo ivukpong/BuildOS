@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { fetchProjects } from "../../api/projects";
 import { createPurchaseRequest } from "../../api/procurement-requests";
 import { createActivityRecord } from "../../api/activity-history";
+import { getIssueTypes, getChangeCategories } from "../../api/admin-extras";
 import { useAuthUser } from "../../utils/useAuthUser";
 import { useHRConfig } from "../../stores/hrConfigStore";
 
@@ -1383,17 +1384,9 @@ function LeaveForm({ onSuccess }: { onSuccess: (id: string) => void }) {
   );
 }
 
-const issueTypes = ["Incident", "Complaint", "Safety Hazard", "Suggestion"];
-const changeCategoryOptions = [
-  "Personal Details",
-  "Bank Details",
-  "Address",
-  "Emergency Contact",
-  "Other",
-];
-
 function IssueForm({ onSuccess }: { onSuccess: (id: string) => void }) {
   const { name } = useAuthUser();
+  const [issueTypeOptions, setIssueTypeOptions] = useState<string[]>([]);
   const [form, setForm] = useState({
     type: "",
     title: "",
@@ -1403,6 +1396,19 @@ function IssueForm({ onSuccess }: { onSuccess: (id: string) => void }) {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<File[]>([]);
+
+  useEffect(() => {
+    getIssueTypes()
+      .then((types) =>
+        setIssueTypeOptions(
+          types
+            .filter((t) => t.active !== false)
+            .map((t) => t.name)
+            .filter(Boolean),
+        ),
+      )
+      .catch((err) => console.error("Failed to load issue types:", err));
+  }, []);
 
   function validate() {
     const e: Record<string, string> = {};
@@ -1453,7 +1459,12 @@ function IssueForm({ onSuccess }: { onSuccess: (id: string) => void }) {
           className={`w-full border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.type ? "border-red-400" : "border-gray-300"}`}
         >
           <option value="">Select type…</option>
-          {issueTypes.map((t) => (
+          {issueTypeOptions.length === 0 && (
+            <option value="" disabled>
+              No issue types configured
+            </option>
+          )}
+          {issueTypeOptions.map((t) => (
             <option key={t} value={t}>
               {t}
             </option>
@@ -1552,6 +1563,7 @@ function IssueForm({ onSuccess }: { onSuccess: (id: string) => void }) {
 
 function ChangeRequestForm({ onSuccess }: { onSuccess: (id: string) => void }) {
   const { name } = useAuthUser();
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
   const [form, setForm] = useState({
     category: "",
     currentValue: "",
@@ -1560,6 +1572,14 @@ function ChangeRequestForm({ onSuccess }: { onSuccess: (id: string) => void }) {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<File[]>([]);
+
+  useEffect(() => {
+    getChangeCategories()
+      .then((cats) =>
+        setCategoryOptions(cats.map((c) => c.name).filter(Boolean)),
+      )
+      .catch((err) => console.error("Failed to load change categories:", err));
+  }, []);
 
   function validate() {
     const e: Record<string, string> = {};
@@ -1615,7 +1635,12 @@ function ChangeRequestForm({ onSuccess }: { onSuccess: (id: string) => void }) {
           className={`w-full border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.category ? "border-red-400" : "border-gray-300"}`}
         >
           <option value="">Select category…</option>
-          {changeCategoryOptions.map((c) => (
+          {categoryOptions.length === 0 && (
+            <option value="" disabled>
+              No categories configured
+            </option>
+          )}
+          {categoryOptions.map((c) => (
             <option key={c} value={c}>
               {c}
             </option>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import {
   Plus,
   AlertTriangle,
@@ -7,9 +8,12 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react";
-import { getIssues } from "../../api/hr-extras";
+import { getIssues, createIssue } from "../../api/hr-extras";
+import { getIssueTypes } from "../../api/admin-extras";
+import { useAuthUser } from "../../utils/useAuthUser";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
-type IssueType = "Incident" | "Complaint" | "Suggestion" | "Safety";
+type IssueType = string;
 type IssuePriority = "Low" | "Medium" | "High";
 type IssueStatus = "Open" | "Under Review" | "Resolved";
 
@@ -24,12 +28,16 @@ interface Issue {
   anonymous: boolean;
 }
 
-const TYPE_ICONS: Record<IssueType, React.ReactNode> = {
+const TYPE_ICONS: Record<string, React.ReactNode> = {
   Incident: <AlertTriangle className="w-4 h-4 text-red-500" />,
   Complaint: <Flag className="w-4 h-4 text-orange-500" />,
   Suggestion: <Lightbulb className="w-4 h-4 text-yellow-500" />,
   Safety: <AlertTriangle className="w-4 h-4 text-red-600" />,
 };
+
+function typeIcon(type: string): React.ReactNode {
+  return TYPE_ICONS[type] ?? <Flag className="w-4 h-4 text-gray-400" />;
+}
 
 const PRIORITY_STYLES: Record<IssuePriority, string> = {
   Low: "bg-gray-100 text-gray-600",
@@ -44,7 +52,7 @@ const STATUS_STYLES: Record<IssueStatus, string> = {
 };
 
 const BLANK: Omit<Issue, "id" | "date" | "status"> = {
-  type: "Incident",
+  type: "",
   title: "",
   description: "",
   priority: "Medium",
@@ -52,22 +60,21 @@ const BLANK: Omit<Issue, "id" | "date" | "status"> = {
 };
 
 export function LogIssuesPage() {
+  const { name: authName } = useAuthUser();
   const [issues, setIssues] = useState<Issue[]>([]);
+  const [issueTypes, setIssueTypes] = useState<string[]>([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ ...BLANK });
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    getIssues()
+  function loadIssues() {
+    return getIssues()
       .then((data) =>
         setIssues(
           data.map((i) => ({
             id: i.id,
-            type: (["Incident", "Complaint", "Suggestion", "Safety"].includes(
-              i.category ?? "",
-            )
-              ? i.category
-              : "Incident") as IssueType,
+            type: i.category || "Other",
             title: i.title,
             description: i.description ?? "",
             priority: (["Low", "Medium", "High"].includes(i.priority ?? "")
@@ -76,32 +83,60 @@ export function LogIssuesPage() {
             status: (["Open", "Under Review", "Resolved"].includes(i.status)
               ? i.status
               : "Open") as IssueStatus,
-            date: new Date(i.reportedAt).toLocaleDateString(),
+            date: formatDateByGeneralSettings(i.reportedAt),
             anonymous: false,
           })),
         ),
+      );
+  }
+
+  useEffect(() => {
+    loadIssues().catch((err) => {
+      console.error(err);
+      toast.error("Failed to load issues.");
+    });
+    getIssueTypes()
+      .then((types) =>
+        setIssueTypes(
+          types
+            .filter((t) => t.active !== false)
+            .map((t) => t.name)
+            .filter(Boolean),
+        ),
       )
-      .catch(console.error);
+      .catch((err) => console.error("Failed to load issue types:", err));
   }, []);
 
   function openModal() {
-    setForm({ ...BLANK });
+    setForm({ ...BLANK, type: issueTypes[0] ?? "" });
     setShowModal(true);
   }
 
-  function submit() {
-    const newIssue: Issue = {
-      ...form,
-      id: `ISS-${String(issues.length + 1).padStart(3, "0")}`,
-      status: "Open",
-      date: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      }),
-    };
-    setIssues([newIssue, ...issues]);
-    setShowModal(false);
+  async function submit() {
+    if (!form.title.trim()) return;
+    if (!form.type) {
+      toast.error("Please select an issue type.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await createIssue({
+        title: form.title.trim(),
+        category: form.type,
+        description: form.description.trim(),
+        priority: form.priority,
+        status: "Open",
+        reportedBy: form.anonymous ? "Anonymous" : authName || "ESS User",
+      });
+      await loadIssues();
+      setShowModal(false);
+      toast.success("Issue logged successfully.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to log issue. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -155,7 +190,7 @@ export function LogIssuesPage() {
                 setExpanded((p) => (p === issue.id ? null : issue.id))
               }
             >
-              <div className="flex-shrink-0">{TYPE_ICONS[issue.type]}</div>
+              <div className="flex-shrink-0">{typeIcon(issue.type)}</div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-gray-900 truncate">
                   {issue.title}
@@ -221,18 +256,16 @@ export function LogIssuesPage() {
                     className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500"
                     value={form.type}
                     onChange={(e) =>
-                      setForm({ ...form, type: e.target.value as IssueType })
+                      setForm({ ...form, type: e.target.value })
                     }
                   >
-                    {(
-                      [
-                        "Incident",
-                        "Complaint",
-                        "Suggestion",
-                        "Safety",
-                      ] as IssueType[]
-                    ).map((t) => (
-                      <option key={t}>{t}</option>
+                    {issueTypes.length === 0 && (
+                      <option value="">No issue types configured</option>
+                    )}
+                    {issueTypes.map((t) => (
+                      <option key={t} value={t}>
+                        {t}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -302,10 +335,10 @@ export function LogIssuesPage() {
               </button>
               <button
                 onClick={submit}
-                disabled={!form.title.trim()}
+                disabled={!form.title.trim() || saving}
                 className="px-4 py-2 text-sm bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50"
               >
-                Submit Issue
+                {saving ? "Submitting…" : "Submit Issue"}
               </button>
             </div>
           </div>

@@ -5,6 +5,7 @@ import {
   ReceivedQuote as ApiReceivedQuote,
 } from "../../api/procurement-requests";
 import { getReferenceData } from "../../api/reference-data";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   Search,
   ChevronDown,
@@ -138,9 +139,10 @@ const STATUS_CFG: Record<
 };
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(2)}M`;
-  if (n >= 1000) return `₦${(n / 1000).toFixed(0)}K`;
-  return `₦${n}`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(2)}M`;
+  if (n >= 1000) return `${symbol}${(n / 1000).toFixed(0)}K`;
+  return `${symbol}${n}`;
 }
 
 const RQ_UNITS = [
@@ -265,12 +267,14 @@ function RecordDocModal({
     });
   }
 
-  const fmt = (n: number) =>
-    n >= 1_000_000
-      ? `₦${(n / 1_000_000).toFixed(2)}M`
+  const fmt = (n: number) => {
+    const symbol = getCurrencySymbol();
+    return n >= 1_000_000
+      ? `${symbol}${(n / 1_000_000).toFixed(2)}M`
       : n >= 1000
-        ? `₦${(n / 1000).toFixed(0)}K`
-        : `₦${n}`;
+        ? `${symbol}${(n / 1000).toFixed(0)}K`
+        : `${symbol}${n}`;
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -743,12 +747,14 @@ function CreatePOFromQuoteModal({
   onClose: () => void;
   onDone: (id: string) => void;
 }) {
-  const fmt = (n: number) =>
-    n >= 1_000_000
-      ? `₦${(n / 1_000_000).toFixed(2)}M`
+  const fmt = (n: number) => {
+    const symbol = getCurrencySymbol();
+    return n >= 1_000_000
+      ? `${symbol}${(n / 1_000_000).toFixed(2)}M`
       : n >= 1000
-        ? `₦${(n / 1000).toFixed(0)}K`
-        : `₦${n}`;
+        ? `${symbol}${(n / 1000).toFixed(0)}K`
+        : `${symbol}${n}`;
+  };
   const today = new Date()
     .toLocaleDateString("en-GB", {
       day: "2-digit",

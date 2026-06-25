@@ -12,6 +12,7 @@ import { useState, useEffect } from "react";
 import { exportCSV } from "../../utils/exportCSV";
 import { getActivityHistory } from "../../api/activity-history";
 import { useAuthUser } from "../../utils/useAuthUser";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 type ActivityType =
   | "submitted"
@@ -81,12 +82,7 @@ function groupByDate(items: Activity[]): Record<string, Activity[]> {
 }
 
 function formatDate(d: string) {
-  return new Date(d).toLocaleDateString("en-GB", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  return formatDateByGeneralSettings(d);
 }
 
 export function ActivityHistoryPage() {

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import {
   getJournalEntries,
   JournalEntry as ApiJournalEntry,
@@ -219,7 +220,8 @@ export function JournalEntryPage() {
     );
   }
 
-  const fmt = (n: number) => (n ? `₦${n.toLocaleString()}` : "—");
+  const fmt = (n: number) =>
+    n ? formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 }) : "—";
 
   return (
     <div className="space-y-5">
@@ -281,20 +283,24 @@ export function JournalEntryPage() {
           },
           {
             label: "Total Debits",
-            value: `₦${entries
-              .filter((e) => e.status === "Posted")
-              .flatMap((e) => e.lines)
-              .reduce((s, l) => s + l.debit, 0)
-              .toLocaleString()}`,
+            value: formatCurrencyByGeneralSettings(
+              entries
+                .filter((e) => e.status === "Posted")
+                .flatMap((e) => e.lines)
+                .reduce((s, l) => s + l.debit, 0),
+              { minimumFractionDigits: 0 },
+            ),
             sub: "Posted entries",
           },
           {
             label: "Total Credits",
-            value: `₦${entries
-              .filter((e) => e.status === "Posted")
-              .flatMap((e) => e.lines)
-              .reduce((s, l) => s + l.credit, 0)
-              .toLocaleString()}`,
+            value: formatCurrencyByGeneralSettings(
+              entries
+                .filter((e) => e.status === "Posted")
+                .flatMap((e) => e.lines)
+                .reduce((s, l) => s + l.credit, 0),
+              { minimumFractionDigits: 0 },
+            ),
             sub: "Posted entries",
           },
         ].map((c) => (
@@ -665,10 +671,14 @@ export function JournalEntryPage() {
                           Totals:
                         </td>
                         <td className="px-3 py-2 text-xs font-bold text-emerald-700">
-                          ₦{totalDebits.toLocaleString()}
+                          {formatCurrencyByGeneralSettings(totalDebits, {
+                            minimumFractionDigits: 0,
+                          })}
                         </td>
                         <td className="px-3 py-2 text-xs font-bold text-red-600">
-                          ₦{totalCredits.toLocaleString()}
+                          {formatCurrencyByGeneralSettings(totalCredits, {
+                            minimumFractionDigits: 0,
+                          })}
                         </td>
                         <td colSpan={2} className="px-3 py-2">
                           {totalDebits > 0 && (
@@ -677,7 +687,7 @@ export function JournalEntryPage() {
                             >
                               {isBalanced
                                 ? "✓ Balanced"
-                                : `Difference: ₦${Math.abs(totalDebits - totalCredits).toLocaleString()}`}
+                                : `Difference: ${formatCurrencyByGeneralSettings(Math.abs(totalDebits - totalCredits), { minimumFractionDigits: 0 })}`}
                             </span>
                           )}
                         </td>

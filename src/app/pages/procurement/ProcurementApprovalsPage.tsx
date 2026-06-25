@@ -1,4 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   getApprovals,
   type ApprovalItem,
@@ -77,8 +78,9 @@ const typeColors: Record<string, string> = {
 };
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(1)}M`;
-  return `$${(n / 1000).toFixed(0)}K`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(1)}M`;
+  return `${symbol}${(n / 1000).toFixed(0)}K`;
 }
 
 export function ProcurementApprovalsPage() {

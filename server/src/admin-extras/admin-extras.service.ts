@@ -899,9 +899,71 @@ export class AdminExtrasService {
         return normalized.length > 0 ? normalized : defaultApps;
     }
 
+    /**
+     * Maps an approval row `type` to the admin process-catalog id whose
+     * configured ProcessWorkflow defines its approval flow.
+     */
+    private approvalProcessIdForType(type: string): string | null {
+        switch (type) {
+            case 'Leave Request':
+                return 'p_ess_leave_request';
+            case 'Expense Claim':
+                return 'p_ess_expense_claim';
+            case 'Purchase Request':
+                return 'p_ess_submit_request';
+            default:
+                return null;
+        }
+    }
+
+    /**
+     * Resolves a configured ProcessWorkflow into a flat, UI-friendly approval
+     * flow (ordered list of approver stages). Returns null when no workflow is
+     * configured for the process.
+     */
+    private resolveApprovalFlow(workflow: any): {
+        workflowType: 'single' | 'group' | 'tier';
+        approvers: string[];
+        tierLevels?: { level: number; approver: string; condition: string }[];
+    } | null {
+        if (!workflow) return null;
+        const workflowType = workflow.workflowType as 'single' | 'group' | 'tier';
+        if (workflowType === 'single') {
+            return { workflowType, approvers: workflow.approver ? [workflow.approver] : [] };
+        }
+        if (workflowType === 'group') {
+            return { workflowType, approvers: Array.isArray(workflow.groupApprovers) ? workflow.groupApprovers : [] };
+        }
+        if (workflowType === 'tier') {
+            const tierLevels = Array.isArray(workflow.tierLevels)
+                ? [...workflow.tierLevels].sort((a, b) => Number(a.level) - Number(b.level))
+                : [];
+            return {
+                workflowType,
+                approvers: tierLevels.map((t) => t.approver).filter(Boolean),
+                tierLevels,
+            };
+        }
+        return null;
+    }
+
     async findApprovals(module?: string) {
         const target = String(module || 'all').toLowerCase();
         const rows: any[] = [];
+
+        // Load admin-configured process workflows once and index by processId so
+        // each approval row can advertise the approval flow defined by the admin.
+        const settings = await this.readAdminSettings();
+        const workflowByProcessId = new Map<string, any>(
+            (Array.isArray(settings.processWorkflows) ? settings.processWorkflows : []).map(
+                (w: any) => [w.processId, w],
+            ),
+        );
+        const flowForType = (type: string) => {
+            const processId = this.approvalProcessIdForType(type);
+            if (!processId) return null;
+            return this.resolveApprovalFlow(workflowByProcessId.get(processId));
+        };
 
         if (target === 'all' || target === 'hr' || target === 'ess') {
             const leaveRequests = await this.prisma.leaveRequest.findMany({
@@ -919,6 +981,7 @@ export class AdminExtrasService {
                 status: this.normalizeApprovalStatus(r.status),
                 urgency: r.days > 10 ? 'urgent' : 'normal',
                 description: r.notes ?? `${r.days} day leave request`,
+                approvalFlow: flowForType('Leave Request'),
             })));
         }
 
@@ -939,6 +1002,7 @@ export class AdminExtrasService {
                 status: this.normalizeApprovalStatus(c.status),
                 urgency: c.amount >= 1000000 ? 'urgent' : 'normal',
                 description: c.description,
+                approvalFlow: flowForType('Expense Claim'),
             })));
         }
 
@@ -959,6 +1023,7 @@ export class AdminExtrasService {
                 status: this.normalizeApprovalStatus(e.status),
                 urgency: e.amount >= 1000000 ? 'urgent' : 'normal',
                 description: e.description,
+                approvalFlow: flowForType('Expense Claim'),
             })));
         }
 
@@ -994,6 +1059,7 @@ export class AdminExtrasService {
                 status: this.normalizeApprovalStatus(r.status),
                 urgency: String(r.priority).toLowerCase().includes('urgent') ? 'urgent' : 'normal',
                 description: r.notes ?? '',
+                approvalFlow: flowForType('Purchase Request'),
             })));
             rows.push(...purchaseOrders.map((o) => ({
                 id: o.id,

@@ -9,6 +9,7 @@ import {
   deleteUser,
   AppUser,
 } from "../../api/admin-extras";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 import {
   Search,
   Plus,
@@ -180,21 +181,11 @@ function userFromApi(u: AppUser): UserRecord {
     location: "",
     role: u.role,
     department: u.department ?? "",
-    joinDate: u.createdAt
-      ? new Date(u.createdAt).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
-      : "",
+    joinDate: u.createdAt ? formatDateByGeneralSettings(u.createdAt) : "",
     status,
     apps: apps.length > 0 ? apps : (["ess"] as AppKey[]),
     lastActive: u.lastLogin
-      ? new Date(u.lastLogin).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        })
+      ? formatDateByGeneralSettings(u.lastLogin)
       : "Never",
     processes: [],
     activity: [],

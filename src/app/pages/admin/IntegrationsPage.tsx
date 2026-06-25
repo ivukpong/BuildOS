@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { apiFetch } from "../../api/client";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 type ApiKey = {
   id: string;
@@ -169,8 +170,7 @@ export function IntegrationsPage() {
 
   const fmtDate = (v?: string) => {
     if (!v) return "Never";
-    const d = new Date(v);
-    return Number.isNaN(d.getTime()) ? v : d.toLocaleDateString("en-GB");
+    return formatDateByGeneralSettings(v) || v;
   };
 
   return (

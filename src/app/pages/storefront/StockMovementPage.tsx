@@ -14,6 +14,7 @@ import {
   getMaterials,
   getStores,
 } from "../../api/materials";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 type MovementType = "Transfer" | "Issue" | "Receipt" | "Return" | "Adjustment";
 
@@ -78,11 +79,7 @@ export function StockMovementPage() {
         setMovements(
           movs.map((m) => ({
             id: m.id,
-            date: new Date(m.date).toLocaleDateString("en-US", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-            }),
+            date: formatDateByGeneralSettings(m.date),
             material: m.materialName,
             category: "",
             fromStore: m.storeName,
@@ -133,11 +130,7 @@ export function StockMovementPage() {
       });
       const mov: Movement = {
         id: created.id,
-        date: new Date(created.date).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
+        date: formatDateByGeneralSettings(created.date),
         material: created.materialName,
         category: "",
         fromStore: created.storeName,

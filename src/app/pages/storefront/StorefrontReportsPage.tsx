@@ -12,6 +12,7 @@ import {
   getStockMovements,
   getStockTransfers,
 } from "../../api/materials";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 type ReportType = "Stock Levels" | "Movement" | "Transfer" | "Return";
 
@@ -147,13 +148,7 @@ export function StorefrontReportsPage() {
         setMovementData(
           movements.map((m) => ({
             id: m.reference || m.id,
-            date: m.date
-              ? new Date(m.date).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
-              : "",
+            date: m.date ? formatDateByGeneralSettings(m.date) : "",
             material: m.materialName,
             from: m.type === "Receipt" ? "Supplier" : m.storeName,
             to: m.type === "Issue" ? m.projectName || "Project" : m.storeName,
@@ -184,11 +179,7 @@ export function StorefrontReportsPage() {
               items: t.items?.length ?? 0,
               qty,
               date: t.requestDate
-                ? new Date(t.requestDate).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                  })
+                ? formatDateByGeneralSettings(t.requestDate)
                 : "",
               status: t.status,
               value,
@@ -211,11 +202,7 @@ export function StorefrontReportsPage() {
             condition: r.condition || "Not specified",
             status: r.status,
             date: r.requestDate
-              ? new Date(r.requestDate).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
+              ? formatDateByGeneralSettings(r.requestDate)
               : "",
           })),
         ),

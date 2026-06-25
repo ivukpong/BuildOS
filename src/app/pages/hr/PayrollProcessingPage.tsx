@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import { getPayrollRuns, getPayrollEntries } from "../../api/hr-extras";
 import {
   CheckCircle,
@@ -41,7 +42,8 @@ const statusConfig: Record<EmpPayStatus, { label: string; badge: string }> = {
   on_hold: { label: "On Hold", badge: "bg-amber-100 text-amber-700" },
 };
 
-const fmt = (n: number) => `₦${n.toLocaleString()}`;
+const fmt = (n: number) =>
+  formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
 
 export function PayrollProcessingPage() {
   const [runStatus, setRunStatus] = useState<RunStatus>("idle");

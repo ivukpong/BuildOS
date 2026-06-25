@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import { fetchIncome, createIncome } from "../../api/income";
 import { fetchProjects } from "../../api/projects";
 import { getChartAccounts } from "../../api/finance-extras";
@@ -78,7 +79,8 @@ export function IncomeManagementPage() {
   const [form, setForm] = useState(emptyForm);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
 
-  const fmt = (n: number) => `$${n.toLocaleString()}`;
+  const fmt = (n: number) =>
+    formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
 
   const filtered = incomes
     .filter((i) => {

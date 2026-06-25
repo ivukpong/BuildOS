@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Download, FileText, Search } from "lucide-react";
 import { getPayslips } from "../../api/hr-extras";
+import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 
 interface Payslip {
   id: string;
@@ -13,7 +14,7 @@ interface Payslip {
 }
 
 function fmt(n: number) {
-  return "₦" + n.toLocaleString("en-NG");
+  return formatCurrencyByGeneralSettings(n, { minimumFractionDigits: 0 });
 }
 
 export function PayslipHistoryPage() {

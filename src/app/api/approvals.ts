@@ -1,5 +1,17 @@
 import { apiFetch } from "./client";
 
+export interface ApprovalFlowTierLevel {
+    level: number;
+    approver: string;
+    condition: string;
+}
+
+export interface ApprovalFlow {
+    workflowType: "single" | "group" | "tier";
+    approvers: string[];
+    tierLevels?: ApprovalFlowTierLevel[];
+}
+
 export interface ApprovalItem {
     id: string;
     module: string;
@@ -12,6 +24,7 @@ export interface ApprovalItem {
     status: "pending" | "approved" | "rejected";
     urgency: "normal" | "urgent";
     description: string;
+    approvalFlow?: ApprovalFlow | null;
 }
 
 export function getApprovals(module?: string) {

@@ -14,6 +14,10 @@ import {
 } from "lucide-react";
 import { fetchPurchaseOrders } from "../../api/purchase-orders";
 import { getMaterialRequests, getMaterials } from "../../api/materials";
+import {
+  getCurrencySymbol,
+  formatDateByGeneralSettings,
+} from "../../utils/generalSettings";
 
 const reqStatusBadge: Record<string, string> = {
   pending: "bg-amber-100 text-amber-700",
@@ -29,9 +33,10 @@ const poStatusBadge: Record<string, string> = {
 };
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1000) return `₦${(n / 1000).toFixed(0)}K`;
-  return `₦${n}`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `${symbol}${(n / 1000).toFixed(0)}K`;
+  return `${symbol}${n}`;
 }
 
 export function ProcurementDashboardPage() {
@@ -137,10 +142,7 @@ export function ProcurementDashboardPage() {
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             Inventory, requests, and purchasing overview —{" "}
-            {new Date().toLocaleDateString("en-GB", {
-              month: "long",
-              year: "numeric",
-            })}
+            {formatDateByGeneralSettings(new Date())}
           </p>
         </div>
         <div className="flex gap-2">

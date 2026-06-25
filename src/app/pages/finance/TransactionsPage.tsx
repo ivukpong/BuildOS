@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Search, Filter, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { getTransactions, Transaction } from "../../api/finance-extras";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 export function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -115,7 +116,7 @@ export function TransactionsPage() {
                     {t.category}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-700">
-                    {new Date(t.date).toLocaleDateString()}
+                    {formatDateByGeneralSettings(t.date)}
                   </td>
                   <td
                     className={`px-6 py-4 text-right text-sm ${t.type === "Income" ? "text-green-600" : "text-red-600"}`}

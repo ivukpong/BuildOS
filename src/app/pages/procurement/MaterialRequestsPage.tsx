@@ -3,6 +3,7 @@ import {
   getMaterialRequests,
   MaterialRequest as ApiMR,
 } from "../../api/materials";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 import {
   ClipboardList,
   Plus,
@@ -76,11 +77,7 @@ function fromApiMR(r: ApiMR): LocalMR {
     status,
     priority,
     submittedDate: r.requestDate
-      ? new Date(r.requestDate).toLocaleDateString("en-GB", {
-          day: "2-digit",
-          month: "short",
-          year: "numeric",
-        })
+      ? formatDateByGeneralSettings(r.requestDate)
       : "",
     neededBy: "",
     totalItems: 1,
