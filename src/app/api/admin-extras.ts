@@ -107,6 +107,8 @@ export interface ProcessWorkflow {
     workflowType: ApprovalType;
     approver?: string;
     groupApprovers?: string[];
+    /** For group workflows: whether ANY one approver (OR) or ALL approvers (AND) are required. */
+    groupApprovalMode?: 'any' | 'all';
     tierLevels?: ProcessWorkflowTierLevel[];
 }
 

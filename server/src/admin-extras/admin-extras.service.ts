@@ -636,6 +636,15 @@ export class AdminExtrasService {
         const groupApprovers = Array.isArray(input?.groupApprovers)
             ? input.groupApprovers.map((item: any) => String(item).trim()).filter(Boolean)
             : undefined;
+        // Group approval mode: 'any' (OR \u2014 a single approver suffices) or
+        // 'all' (AND \u2014 every listed approver must approve). Defaults to 'all'
+        // so workflows persisted before this field existed keep their stricter
+        // behaviour. Only meaningful for group workflows.
+        const groupApprovalModeRaw = String(input?.groupApprovalMode ?? '').trim().toLowerCase();
+        const groupApprovalMode =
+            workflowType === 'group'
+                ? (groupApprovalModeRaw === 'any' ? 'any' : 'all')
+                : undefined;
         const tierLevels = Array.isArray(input?.tierLevels)
             ? input.tierLevels.map((item: any, index: number) => ({
                 level: Number(item?.level ?? index + 1),
@@ -652,6 +661,7 @@ export class AdminExtrasService {
             workflowType,
             approver,
             groupApprovers,
+            groupApprovalMode,
             tierLevels,
         };
     }

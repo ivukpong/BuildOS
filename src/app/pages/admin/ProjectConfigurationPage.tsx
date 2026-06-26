@@ -352,10 +352,10 @@ function ConfigureWorkflowModal({
     ? availableProcesses.find((p) => p.id === existing.processId)
     : undefined;
   const [selectedProcess, setSelectedProcess] = useState(
-    existingProcess?.label ?? existing?.process ?? "",
+    existingProcess?.label ?? existing?.process ?? availableProcesses[0]?.label ?? "",
   );
   const [selectedApp, setSelectedApp] = useState(
-    existingProcess?.app ?? existing?.app ?? "",
+    existingProcess?.app ?? existing?.app ?? availableProcesses[0]?.app ?? "",
   );
   const [wfType, setWfType] = useState<ApprovalType>(
     existing?.workflowType ?? "single",
@@ -363,6 +363,9 @@ function ConfigureWorkflowModal({
   const [approver, setApprover] = useState(existing?.approver ?? "");
   const [groupApprovers, setGroupApprovers] = useState<string[]>(
     existing?.groupApprovers ?? [],
+  );
+  const [groupApprovalMode, setGroupApprovalMode] = useState<"any" | "all">(
+    existing?.groupApprovalMode ?? "all",
   );
   const [tierLevels, setTierLevels] = useState<TierLevel[]>(
     existing?.tierLevels ?? [
@@ -422,6 +425,7 @@ function ConfigureWorkflowModal({
         workflowType: wfType,
         approver: wfType === "single" ? approver : undefined,
         groupApprovers: wfType === "group" ? groupApprovers : undefined,
+        groupApprovalMode: wfType === "group" ? groupApprovalMode : undefined,
         tierLevels: wfType === "tier" ? tierLevels : undefined,
       });
       onClose();
@@ -531,6 +535,37 @@ function ConfigureWorkflowModal({
                 Group Approvers{" "}
                 <span className="text-gray-400">(select multiple)</span>
               </label>
+              {/* Approval requirement: ANY (OR) vs ALL (AND) */}
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => setGroupApprovalMode("any")}
+                  className={`flex flex-col items-start gap-0.5 px-3 py-2 rounded-lg border text-left transition-colors ${
+                    groupApprovalMode === "any"
+                      ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  <span className="text-xs font-semibold">Any (OR)</span>
+                  <span className="text-[11px] text-gray-400">
+                    Any one approver can approve
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setGroupApprovalMode("all")}
+                  className={`flex flex-col items-start gap-0.5 px-3 py-2 rounded-lg border text-left transition-colors ${
+                    groupApprovalMode === "all"
+                      ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                      : "border-gray-200 text-gray-600 hover:border-gray-300"
+                  }`}
+                >
+                  <span className="text-xs font-semibold">All (AND)</span>
+                  <span className="text-[11px] text-gray-400">
+                    Every approver must approve
+                  </span>
+                </button>
+              </div>
               <div className="space-y-1.5 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-2">
                 {availableUsers.map((u) => (
                   <label
@@ -827,19 +862,15 @@ export function ProjectConfigurationPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {proc.requiresApproval ? (
-                        <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3 h-3" /> Requires Approval
+                      {/* One of two states: a workflow is attached (configured)
+                          or the process still only requires approval. */}
+                      {workflows.find((w) => w.processId === proc.id) ? (
+                        <span className="flex items-center gap-1 text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3 h-3" /> Workflow Configured
                         </span>
                       ) : (
-                        <span className="flex items-center gap-1 text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                          <AlertCircle className="w-3 h-3" /> No Approval
-                        </span>
-                      )}
-                      {/* Show linked workflow if any */}
-                      {workflows.find((w) => w.processId === proc.id) && (
-                        <span className="text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
-                          Workflow configured
+                        <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
+                          <CheckCircle2 className="w-3 h-3" /> Requires Approval
                         </span>
                       )}
                     </div>
@@ -978,7 +1009,10 @@ export function ProjectConfigurationPage() {
                         )}
                         {wf.workflowType === "group" && (
                           <span className="text-xs text-gray-500 hidden md:block">
-                            {wf.groupApprovers?.length ?? 0} approvers
+                            {wf.groupApprovers?.length ?? 0} approvers ·{" "}
+                            {wf.groupApprovalMode === "any"
+                              ? "Any (OR)"
+                              : "All (AND)"}
                           </span>
                         )}
                         {wf.workflowType === "tier" && (
@@ -1023,9 +1057,16 @@ export function ProjectConfigurationPage() {
                           )}
                           {wf.workflowType === "group" && (
                             <div className="p-3 bg-purple-50 rounded-lg border border-purple-100">
-                              <p className="text-xs text-gray-500 mb-2">
-                                Group Approvers
-                              </p>
+                              <div className="flex items-center justify-between mb-2">
+                                <p className="text-xs text-gray-500">
+                                  Group Approvers
+                                </p>
+                                <span className="text-[11px] font-semibold text-purple-700 bg-white border border-purple-200 px-2 py-0.5 rounded-full">
+                                  {wf.groupApprovalMode === "any"
+                                    ? "Any (OR) required"
+                                    : "All (AND) required"}
+                                </span>
+                              </div>
                               <div className="flex flex-wrap gap-1.5">
                                 {(wf.groupApprovers ?? []).map((u) => (
                                   <span
@@ -1095,6 +1136,7 @@ export function ProjectConfigurationPage() {
                   workflowType: wf.workflowType,
                   approver: wf.approver,
                   groupApprovers: wf.groupApprovers,
+                  groupApprovalMode: wf.groupApprovalMode,
                   tierLevels: wf.tierLevels,
                 });
                 setWorkflows((prev) =>
@@ -1120,6 +1162,7 @@ export function ProjectConfigurationPage() {
                 workflowType: wf.workflowType,
                 approver: wf.approver,
                 groupApprovers: wf.groupApprovers,
+                groupApprovalMode: wf.groupApprovalMode,
                 tierLevels: wf.tierLevels,
               });
               setWorkflows((prev) => [...prev, created]);
