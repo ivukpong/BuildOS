@@ -5,7 +5,11 @@ import {
   ReceivedQuote as ApiReceivedQuote,
 } from "../../api/procurement-requests";
 import { getReferenceData } from "../../api/reference-data";
-import { getCurrencySymbol } from "../../utils/generalSettings";
+import {
+  getCurrencySymbol,
+  formatDateByGeneralSettings,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 import {
   Search,
   ChevronDown,
@@ -169,14 +173,7 @@ function RecordDocModal({
   onSave: (doc: VendorDoc) => void;
 }) {
   const today = new Date();
-  const fmtDate = (d: Date) =>
-    d
-      .toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-      .replace(/ /g, " ");
+  const fmtDate = (d: Date) => formatDateByGeneralSettings(d);
   const addDays = (n: number) => {
     const d2 = new Date(today);
     d2.setDate(d2.getDate() + n);
@@ -432,7 +429,7 @@ function RecordDocModal({
                     type="number"
                     value={item.unitPrice}
                     onChange={(e) => updateItem(i, "unitPrice", e.target.value)}
-                    placeholder="Unit ₦"
+                    placeholder={`Unit ${getCurrencySymbol()}`}
                     className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {items.length > 1 && (
@@ -512,13 +509,7 @@ function NegotiateModal({
   const [proposedUnitPrice, setProposedUnitPrice] = useState("");
   const [comment, setComment] = useState("");
   const [status, setStatus] = useState<NegotiationStatus>("countered");
-  const today = new Date()
-    .toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
-    .replace(/ /g, " ");
+  const today = formatDateByGeneralSettings(new Date());
 
   const parsedUnitPrice = parseFloat(proposedUnitPrice.replace(/,/g, ""));
   const proposedTotal =
@@ -668,13 +659,13 @@ function NegotiateModal({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Proposed Unit Price (₦){" "}
+                  Proposed Unit Price ({getCurrencySymbol()}){" "}
                   <span className="text-red-500">*</span>
                 </label>
                 <input
                   value={proposedUnitPrice}
                   onChange={(e) => setProposedUnitPrice(e.target.value)}
-                  placeholder={`e.g. ${Math.round(currentBestUnitPrice * 0.95).toLocaleString()}`}
+                  placeholder={`e.g. ${formatNumberByGeneralSettings(Math.round(currentBestUnitPrice * 0.95))}`}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
                 {proposedTotal > 0 && (
@@ -755,13 +746,7 @@ function CreatePOFromQuoteModal({
         ? `${symbol}${(n / 1000).toFixed(0)}K`
         : `${symbol}${n}`;
   };
-  const today = new Date()
-    .toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    })
-    .replace(/ /g, " ");
+  const today = formatDateByGeneralSettings(new Date());
   // Import suppliers from SuppliersPage
   // (If not possible, copy the suppliers array here or import from a shared module)
   const allSuppliers = [

@@ -1,5 +1,9 @@
 import { useNavigate } from "react-router";
 import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
+import {
   Truck,
   Award,
   Users,
@@ -955,7 +959,7 @@ export function ResourcesOverviewPage() {
                   <td className="px-4 py-2.5 text-gray-600">{m.category}</td>
                   <td className="px-4 py-2.5 text-gray-500">{m.unit}</td>
                   <td className="px-4 py-2.5 text-right text-gray-700">
-                    {m.estimatedQty.toLocaleString()}
+                    {formatNumberByGeneralSettings(m.estimatedQty)}
                   </td>
                   <td className="px-4 py-2.5">
                     <span
@@ -1131,7 +1135,7 @@ export function ResourcesOverviewPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Pay Rate (₦)
+                    Pay Rate ({getCurrencySymbol()})
                   </label>
                   <input
                     type="number"
@@ -1445,7 +1449,7 @@ export function ResourcesOverviewPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Contract Sum (₦)
+                  Contract Sum ({getCurrencySymbol()})
                 </label>
                 <input
                   type="number"

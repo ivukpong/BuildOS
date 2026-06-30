@@ -14,6 +14,7 @@ import {
   LinkIcon,
 } from "lucide-react";
 import { getReferenceData } from "../../api/reference-data";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 type GRNStatus = "pending" | "partial" | "completed" | "over_supply";
 
@@ -108,12 +109,7 @@ function RecordDeliveryModal({
   existingGrn?: GRNRecord;
 }) {
   const today = new Date();
-  const fmtDate = (d: Date) =>
-    d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+  const fmtDate = (d: Date) => formatDateByGeneralSettings(d);
   const isAdditional = !!existingGrn;
 
   const [poRef, setPoRef] = useState(existingGrn?.poRef || GRN_PO_REFS[0]);

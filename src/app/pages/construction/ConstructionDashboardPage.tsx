@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  getCurrencySymbol,
+} from "../../utils/generalSettings";
 import {
   FolderKanban,
   AlertTriangle,
@@ -34,8 +37,9 @@ const statusConfig: Record<
 };
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1)}M`;
-  return `₦${(n / 1000).toFixed(0)}K`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(1)}M`;
+  return `${symbol}${(n / 1000).toFixed(0)}K`;
 }
 
 export function ConstructionDashboardPage() {
@@ -155,10 +159,10 @@ export function ConstructionDashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">
-            Construction Dashboard
+            Projects Dashboard
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Overview of all construction activities —{" "}
+            Overview of all project activities —{" "}
             {formatDateByGeneralSettings(new Date())}
           </p>
         </div>

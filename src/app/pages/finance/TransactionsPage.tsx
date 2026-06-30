@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { Search, Filter, ArrowUpRight, ArrowDownLeft } from "lucide-react";
 import { getTransactions, Transaction } from "../../api/finance-extras";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 export function TransactionsPage() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -24,7 +27,7 @@ export function TransactionsPage() {
 
   const currency = transactions[0]?.currency ?? "";
   const fmt = (n: number) =>
-    `${n.toLocaleString()}${currency ? " " + currency : ""}`;
+    `${formatNumberByGeneralSettings(n)}${currency ? " " + currency : ""}`;
 
   return (
     <div>
@@ -122,7 +125,7 @@ export function TransactionsPage() {
                     className={`px-6 py-4 text-right text-sm ${t.type === "Income" ? "text-green-600" : "text-red-600"}`}
                   >
                     {t.type === "Income" ? "+" : "-"}
-                    {t.amount.toLocaleString()}
+                    {formatNumberByGeneralSettings(t.amount)}
                   </td>
                 </tr>
               ))}

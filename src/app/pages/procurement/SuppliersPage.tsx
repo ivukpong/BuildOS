@@ -20,6 +20,10 @@ import {
   Trash2,
   User,
 } from "lucide-react";
+import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 type SupplierCity = "Lagos" | "Abuja" | "Ibadan" | "Port Harcourt" | "Kano";
 type Category = string;
@@ -42,9 +46,10 @@ function renderStars(rating: number) {
 }
 
 function fmt(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1000) return `₦${(n / 1000).toFixed(0)}K`;
-  return `₦${n}`;
+  const symbol = getCurrencySymbol();
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1000) return `${symbol}${(n / 1000).toFixed(0)}K`;
+  return `${symbol}${n}`;
 }
 
 const BLANK_SUPPLIER = {
@@ -509,7 +514,7 @@ export function SuppliersPage() {
                                   {m.name}
                                 </p>
                                 <p className="text-gray-400 mt-0.5">
-                                  Last: {m.lastPrice.toLocaleString()} /{" "}
+                                  Last: {formatNumberByGeneralSettings(m.lastPrice)} /{" "}
                                   {m.unit}
                                 </p>
                               </div>
@@ -819,7 +824,7 @@ export function SuppliersPage() {
                               {m.unit}
                             </td>
                             <td className="px-4 py-2.5 text-right font-mono text-gray-800">
-                              ₦{m.lastPrice.toLocaleString()}
+                              {getCurrencySymbol()}{formatNumberByGeneralSettings(m.lastPrice)}
                             </td>
                           </tr>
                         ),
@@ -863,7 +868,7 @@ export function SuppliersPage() {
                               {order.createdDate}
                             </td>
                             <td className="px-4 py-2.5 text-right text-gray-800">
-                              ₦{order.totalValue.toLocaleString()}
+                              {getCurrencySymbol()}{formatNumberByGeneralSettings(order.totalValue)}
                             </td>
                             <td className="px-4 py-2.5">
                               <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">

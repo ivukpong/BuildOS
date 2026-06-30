@@ -14,7 +14,10 @@ import {
   getMaterials,
   getStores,
 } from "../../api/materials";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 type MovementType = "Transfer" | "Issue" | "Receipt" | "Return" | "Adjustment";
 
@@ -325,7 +328,7 @@ export function StockMovementPage() {
                       </span>
                     </td>
                     <td className="px-4 py-3 text-gray-900 font-medium">
-                      {m.quantity.toLocaleString()}
+                      {formatNumberByGeneralSettings(m.quantity)}
                     </td>
                     <td className="px-4 py-3 text-gray-500">{m.unit}</td>
                     <td className="px-4 py-3">

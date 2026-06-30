@@ -13,6 +13,10 @@ import {
   createStoreItem,
   type StoreItem as ApiStoreItem,
 } from "../../api/materials";
+import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 type StockStatus = "In Stock" | "Low Stock" | "Out of Stock";
 
@@ -159,7 +163,7 @@ export function GeneralStorePage() {
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-4">
           <p className="text-2xl font-bold text-gray-900">
-            ₦
+            {getCurrencySymbol()}
             {(
               items.reduce((s, i) => s + i.qty * i.unitCost, 0) / 1_000_000
             ).toFixed(1)}
@@ -250,19 +254,19 @@ export function GeneralStorePage() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-1.5">
                       <span className="font-semibold text-gray-900">
-                        {item.qty.toLocaleString()}
+                        {formatNumberByGeneralSettings(item.qty)}
                       </span>
                       <span className="text-gray-400 text-xs">{item.unit}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {item.reorderLevel.toLocaleString()} {item.unit}
+                    {formatNumberByGeneralSettings(item.reorderLevel)} {item.unit}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    ₦{item.unitCost.toLocaleString()}
+                    {getCurrencySymbol()}{formatNumberByGeneralSettings(item.unitCost)}
                   </td>
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    ₦{(item.qty * item.unitCost).toLocaleString()}
+                    {getCurrencySymbol()}{formatNumberByGeneralSettings(item.qty * item.unitCost)}
                   </td>
                   <td className="px-4 py-3 text-gray-400 text-xs">
                     {item.lastReceived}
@@ -457,7 +461,7 @@ export function GeneralStorePage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-600 mb-1">
-                    Unit Cost (₦)
+                    Unit Cost ({getCurrencySymbol()})
                   </label>
                   <input
                     type="number"

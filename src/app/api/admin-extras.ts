@@ -235,6 +235,11 @@ export const deleteProcessWorkflow = (id: string) =>
 // General Settings
 export const getAdminGeneralSettings = () =>
     apiFetch<AdminGeneralSettingsPayload>('/admin/general-settings');
+// Public, read-only settings used to hydrate display preferences for every
+// user (any role, even before sign-in) so the configured currency, formats,
+// timezone and language take effect across all apps.
+export const getPublicGeneralSettings = () =>
+    apiFetch<AdminGeneralSettingsPayload>('/admin/general-settings/public');
 export const updateAdminGeneralSettings = (data: AdminGeneralSettingsPayload) =>
     apiFetch<AdminGeneralSettingsPayload>('/admin/general-settings', {
         method: 'PUT',

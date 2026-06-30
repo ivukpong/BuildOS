@@ -8,6 +8,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { fetchProjects } from "../../api/projects";
+import { formatNumberByGeneralSettings } from "../../utils/generalSettings";
 
 export function ActiveProjectsPage() {
   const navigate = useNavigate();
@@ -52,7 +53,7 @@ export function ActiveProjectsPage() {
           Active Projects
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Currently in-progress construction projects
+          Currently in-progress projects
         </p>
       </div>
 
@@ -76,9 +77,9 @@ export function ActiveProjectsPage() {
           <div>
             <p className="text-sm text-gray-600">Total Workforce</p>
             <p className="text-2xl font-semibold text-gray-900 mt-1">
-              {activeProjects
-                .reduce((s, p) => s + (p.workforce ?? 0), 0)
-                .toLocaleString()}
+              {formatNumberByGeneralSettings(
+                activeProjects.reduce((s, p) => s + (p.workforce ?? 0), 0),
+              )}
             </p>
           </div>
         </div>

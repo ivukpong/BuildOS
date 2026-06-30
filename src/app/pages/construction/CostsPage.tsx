@@ -1,5 +1,6 @@
 import { useParams } from "react-router";
 import { useMemo, useState, useEffect, Fragment } from "react";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   DollarSign,
   BarChart3,
@@ -73,7 +74,7 @@ export function CostsPage() {
     { key: "stage", label: "Stage", visible: true },
     { key: "budget", label: "Budget", visible: true },
     { key: "spent", label: "Spent", visible: true },
-    { key: "variance", label: "Variance (₦)", visible: true },
+    { key: "variance", label: `Variance (${getCurrencySymbol()})`, visible: true },
     { key: "variancePct", label: "Variance (%)", visible: true },
     { key: "progress", label: "Progress", visible: true },
   ]);
@@ -381,7 +382,7 @@ export function CostsPage() {
                     Spent
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    Variance (₦)
+                    Variance ({getCurrencySymbol()})
                   </th>
                   <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
                     Variance (%)
@@ -597,7 +598,7 @@ export function CostsPage() {
                 />
               </div>
               <div className="flex justify-between text-xs text-gray-400 mt-1.5">
-                <span>₦0</span>
+                <span>{getCurrencySymbol()}0</span>
                 <span>
                   {Math.max(0, Math.round((totalVariance / totalBudget) * 100))}
                   % remaining
@@ -624,13 +625,13 @@ export function CostsPage() {
                   Stage
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Budget (₦)
+                  Budget ({getCurrencySymbol()})
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Actual (₦)
+                  Actual ({getCurrencySymbol()})
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
-                  Variance (₦)
+                  Variance ({getCurrencySymbol()})
                 </th>
                 <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Variance (%)

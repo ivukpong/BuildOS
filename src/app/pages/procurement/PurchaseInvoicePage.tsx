@@ -6,6 +6,10 @@ import {
   createPurchaseInvoice,
   PurchaseInvoice as ApiPurchaseInvoice,
 } from "../../api/procurement-requests";
+import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 type InvoiceStatus =
   | "Draft"
@@ -77,7 +81,7 @@ function lineTotal(lines: InvoiceLine[]) {
 }
 
 function fmt(n: number) {
-  return "₦" + n.toLocaleString("en-NG");
+  return getCurrencySymbol() + formatNumberByGeneralSettings(n);
 }
 
 const BLANK_LINE = (): InvoiceLine => ({

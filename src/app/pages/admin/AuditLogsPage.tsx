@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { DataTable } from "../../components/DataTable";
 import { getAuditLogs, getUsers } from "../../api/admin-extras";
+import { formatDateTimeByGeneralSettings } from "../../utils/generalSettings";
 
 const ACTION_LABELS: Record<string, string> = {
   CREATE: "Created",
@@ -41,9 +42,9 @@ export function AuditLogsPage() {
         setLogs(
           auditLogs.map((log: any) => ({
             id: String(log.id),
-            timestamp: new Date(
+            timestamp: formatDateTimeByGeneralSettings(
               log.createdAt || log.timestamp,
-            ).toLocaleString(),
+            ),
             createdAt: String(log.createdAt || log.timestamp || ""),
             user:
               typeof log.user === "string"

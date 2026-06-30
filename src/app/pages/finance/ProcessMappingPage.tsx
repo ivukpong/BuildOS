@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { getProcessMappings, saveProcessMappings } from "../../api/finance-extras";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 import {
   GitBranch,
   Plus,
@@ -174,11 +175,7 @@ function MappingModal({
   onClose: () => void;
   onSave: (m: ProcessMapping) => void;
 }) {
-  const today = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const today = formatDateByGeneralSettings(new Date());
   const [application, setApplication] = useState(
     initial?.application ?? APPLICATIONS[0],
   );

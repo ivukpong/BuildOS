@@ -3,7 +3,10 @@ import {
   getMaterialRequests,
   MaterialRequest as ApiMR,
 } from "../../api/materials";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 import {
   ClipboardList,
   Plus,
@@ -186,12 +189,7 @@ function NewMRModal({
   onSave: (req: LocalMR) => void;
 }) {
   const today = new Date();
-  const fmtDate = (d: Date) =>
-    d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+  const fmtDate = (d: Date) => formatDateByGeneralSettings(d);
   const addDays = (n: number) => {
     const d2 = new Date(today);
     d2.setDate(d2.getDate() + n);
@@ -923,7 +921,7 @@ export function MaterialRequestsPage() {
                                 {item.material}
                               </td>
                               <td className="px-3 py-2 text-right font-semibold text-gray-900">
-                                {item.qty.toLocaleString()} {item.unit}
+                                {formatNumberByGeneralSettings(item.qty)} {item.unit}
                               </td>
                               <td className="px-3 py-2 text-right">
                                 <span
@@ -935,7 +933,7 @@ export function MaterialRequestsPage() {
                                         : "text-red-600 font-medium"
                                   }
                                 >
-                                  {item.available.toLocaleString()} {item.unit}
+                                  {formatNumberByGeneralSettings(item.available)} {item.unit}
                                 </span>
                               </td>
                               <td className="px-3 py-2 text-xs text-gray-500">

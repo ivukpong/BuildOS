@@ -55,9 +55,9 @@ interface AppDef {
 const ALL_APPS: AppDef[] = [
   {
     key: "construction",
-    label: "Construction",
+    label: "Projects",
     color: "bg-orange-100 text-orange-700",
-    abbr: "CONST",
+    abbr: "PROJ",
   },
   {
     key: "finance",
@@ -1188,11 +1188,7 @@ function AddUserModal({
         location: "",
         role: form.role,
         department: form.department,
-        joinDate: new Date().toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
+        joinDate: formatDateByGeneralSettings(new Date()),
         status: "Pending",
         apps: form.assignedApps,
         lastActive: "Never",

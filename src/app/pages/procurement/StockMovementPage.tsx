@@ -12,6 +12,11 @@ import {
 } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
 import { getStockMovements, type StockMovement } from "../../api/materials";
+import {
+  formatNumberByGeneralSettings,
+  formatDateByGeneralSettings,
+  formatTimeByGeneralSettings,
+} from "../../utils/generalSettings";
 
 type MovType = "incoming" | "outgoing" | "adjustment" | "transfer";
 
@@ -57,10 +62,10 @@ function mapMovement(m: StockMovement): MovementRow {
     id: m.id,
     ts: valid ? d!.getTime() : 0,
     date: valid
-      ? d!.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+      ? formatDateByGeneralSettings(d!)
       : "—",
     time: valid
-      ? d!.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
+      ? formatTimeByGeneralSettings(d!)
       : "",
     material: m.materialName ?? "—",
     category: "",
@@ -235,13 +240,13 @@ export function StockMovementPage() {
           },
           {
             label: "Total Incoming",
-            value: `+${totalIn.toLocaleString()}`,
+            value: `+${formatNumberByGeneralSettings(totalIn)}`,
             sub: "Units received",
             color: "text-green-700 bg-green-50 border-green-200",
           },
           {
             label: "Total Outgoing",
-            value: `-${totalOut.toLocaleString()}`,
+            value: `-${formatNumberByGeneralSettings(totalOut)}`,
             sub: "Units issued",
             color: "text-red-700 bg-red-50 border-red-200",
           },
@@ -379,7 +384,7 @@ export function StockMovementPage() {
                       className={`text-sm font-bold ${m.direction === "+" ? "text-green-700" : "text-red-600"}`}
                     >
                       {m.direction}
-                      {m.qty.toLocaleString()}
+                      {formatNumberByGeneralSettings(m.qty)}
                     </span>
                     <p className="text-xs text-gray-400">{m.unit}</p>
                   </td>

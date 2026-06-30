@@ -17,6 +17,7 @@ import { getMaterialRequests, getMaterials } from "../../api/materials";
 import {
   getCurrencySymbol,
   formatDateByGeneralSettings,
+  formatNumberByGeneralSettings,
 } from "../../utils/generalSettings";
 
 const reqStatusBadge: Record<string, string> = {
@@ -214,7 +215,7 @@ export function ProcurementDashboardPage() {
                   <p className="text-xs text-gray-400">{m.category}</p>
                 </div>
                 <p className="text-sm text-amber-700 font-semibold">
-                  {(m.availableQty ?? m.totalQty ?? 0).toLocaleString()}{" "}
+                  {formatNumberByGeneralSettings(m.availableQty ?? m.totalQty ?? 0)}{" "}
                   {m.unit}
                 </p>
               </div>
@@ -259,7 +260,10 @@ export function ProcurementDashboardPage() {
                     </p>
                   </div>
                   <p className="text-sm font-semibold text-gray-900">
-                    {req.qty?.toLocaleString?.() ?? req.qty} {req.unit}
+                    {typeof req.qty === "number"
+                      ? formatNumberByGeneralSettings(req.qty)
+                      : req.qty}{" "}
+                    {req.unit}
                   </p>
                   <span
                     className={`text-xs px-1.5 py-0.5 rounded font-medium capitalize ${reqStatusBadge[String(req.status).toLowerCase()] ?? "bg-gray-100 text-gray-600"}`}

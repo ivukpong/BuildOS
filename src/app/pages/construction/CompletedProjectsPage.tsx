@@ -20,7 +20,7 @@ export function CompletedProjectsPage() {
           Completed Projects
         </h1>
         <p className="text-sm text-gray-600 mt-1">
-          Successfully completed construction projects
+          Successfully completed projects
         </p>
       </div>
 

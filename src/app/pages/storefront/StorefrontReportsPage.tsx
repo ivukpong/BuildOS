@@ -12,7 +12,11 @@ import {
   getStockMovements,
   getStockTransfers,
 } from "../../api/materials";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 type ReportType = "Stock Levels" | "Movement" | "Transfer" | "Return";
 
@@ -307,7 +311,7 @@ export function StorefrontReportsPage() {
                     "Store",
                     "Qty",
                     "Reorder Lvl",
-                    "Stock Value (₦)",
+                    `Stock Value (${getCurrencySymbol()})`,
                     "Status",
                   ].map((h) => (
                     <th key={h} className="px-4 py-3 text-left font-medium">
@@ -327,13 +331,13 @@ export function StorefrontReportsPage() {
                       {s.store}
                     </td>
                     <td className="px-4 py-3 text-gray-900 font-medium">
-                      {s.qty.toLocaleString()}
+                      {formatNumberByGeneralSettings(s.qty)}
                     </td>
                     <td className="px-4 py-3 text-gray-500">
-                      {s.reorder.toLocaleString()}
+                      {formatNumberByGeneralSettings(s.reorder)}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      ₦{s.value.toLocaleString()}
+                      {getCurrencySymbol()}{formatNumberByGeneralSettings(s.value)}
                     </td>
                     <td className="px-4 py-3">
                       <span
@@ -352,7 +356,7 @@ export function StorefrontReportsPage() {
               Total Stock Value
             </p>
             <p className="text-2xl font-bold text-teal-900 mt-1">
-              ₦{stockData.reduce((sum, s) => sum + s.value, 0).toLocaleString()}
+              {getCurrencySymbol()}{formatNumberByGeneralSettings(stockData.reduce((sum, s) => sum + s.value, 0))}
             </p>
           </div>
         </div>
@@ -494,7 +498,7 @@ export function StorefrontReportsPage() {
                     "To",
                     "Items",
                     "Total Qty",
-                    "Value (₦)",
+                    `Value (${getCurrencySymbol()})`,
                     "Date",
                     "Status",
                   ].map((h) => (
@@ -516,10 +520,10 @@ export function StorefrontReportsPage() {
                     <td className="px-4 py-3 text-gray-600 text-xs">{t.to}</td>
                     <td className="px-4 py-3 text-gray-600">{t.items}</td>
                     <td className="px-4 py-3 text-gray-900 font-medium">
-                      {t.qty.toLocaleString()}
+                      {formatNumberByGeneralSettings(t.qty)}
                     </td>
                     <td className="px-4 py-3 text-gray-600">
-                      ₦{t.value.toLocaleString()}
+                      {getCurrencySymbol()}{formatNumberByGeneralSettings(t.value)}
                     </td>
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                       {t.date}
@@ -541,7 +545,7 @@ export function StorefrontReportsPage() {
               Total Transfer Value
             </p>
             <p className="text-2xl font-bold text-purple-900 mt-1">
-              ₦{transferData.reduce((s, t) => s + t.value, 0).toLocaleString()}
+              {getCurrencySymbol()}{formatNumberByGeneralSettings(transferData.reduce((s, t) => s + t.value, 0))}
             </p>
           </div>
         </div>

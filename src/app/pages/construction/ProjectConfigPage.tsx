@@ -72,7 +72,7 @@ function ProjectTypesPanel() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          Define the types of construction projects your organisation handles.
+          Define the types of projects your organisation handles.
         </p>
         <button
           onClick={openAdd}

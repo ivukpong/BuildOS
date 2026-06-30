@@ -1,5 +1,6 @@
 import { useParams } from "react-router";
 import { useState, useMemo, useEffect } from "react";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   DollarSign,
   Plus,
@@ -357,7 +358,7 @@ export function DisbursementsPage() {
               )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Amount (₦)
+                  Amount ({getCurrencySymbol()})
                 </label>
                 <input
                   type="number"

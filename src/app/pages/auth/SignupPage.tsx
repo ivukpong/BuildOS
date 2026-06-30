@@ -68,7 +68,7 @@ export function SignupPage() {
         Create Your Company
       </h2>
       <p className="text-gray-600 text-center mb-6">
-        Start managing your construction projects
+        Start managing your projects
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-4">

@@ -1,6 +1,10 @@
 import { useParams, useNavigate } from "react-router";
 import { useState, useEffect, useMemo } from "react";
 import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
+import {
   Save,
   Send,
   ArrowLeft,
@@ -1550,7 +1554,7 @@ export function DailyReportFormPage() {
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs text-gray-500">
-                          Amount (₦)
+                          Amount ({getCurrencySymbol()})
                         </label>
                         <input
                           type="number"
@@ -1619,10 +1623,10 @@ export function DailyReportFormPage() {
                   Total Expenses
                 </span>
                 <span className="font-bold" style={{ color: "#E8973A" }}>
-                  ₦
-                  {expenseRows
-                    .reduce((s, r) => s + r.amount, 0)
-                    .toLocaleString()}
+                  {getCurrencySymbol()}
+                  {formatNumberByGeneralSettings(
+                    expenseRows.reduce((s, r) => s + r.amount, 0),
+                  )}
                 </span>
               </div>
             )}

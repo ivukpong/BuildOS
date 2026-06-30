@@ -17,13 +17,18 @@ import {
   type StockTransfer,
   type MaterialRequest,
 } from "../../api/materials";
+import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
-// Compact Naira formatter to match the storefront design (e.g. ₦142.8M).
+// Compact currency formatter to match the storefront design (e.g. $142.8M).
 function formatStockValue(n: number): string {
-  if (!Number.isFinite(n)) return "₦0";
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `₦${(n / 1_000).toFixed(0)}K`;
-  return `₦${n.toLocaleString()}`;
+  const symbol = getCurrencySymbol();
+  if (!Number.isFinite(n)) return `${symbol}0`;
+  if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${symbol}${(n / 1_000).toFixed(0)}K`;
+  return `${symbol}${formatNumberByGeneralSettings(n)}`;
 }
 
 function isThisMonth(dateStr?: string): boolean {

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   BarChart3,
   FileText,
@@ -33,7 +34,7 @@ const reportTemplates: ReportTemplate[] = [
     id: "portfolio",
     title: "Portfolio Summary",
     description:
-      "Aggregate budget, spend, and progress across all construction projects.",
+      "Aggregate budget, spend, and progress across all projects.",
     icon: <PieChart className="w-5 h-5" />,
     color: "text-blue-600 bg-blue-50",
     type: "portfolio",
@@ -162,7 +163,7 @@ function generatePreview(
       return {
         labels: ["Labour", "Materials", "Equipment", "Subcontractors"],
         datasets: [
-          { label: "Cost (₦M)", values: [28, 35, 15, 22], color: "#14B8A6" },
+          { label: `Cost (${getCurrencySymbol()}M)`, values: [28, 35, 15, 22], color: "#14B8A6" },
         ],
       };
     case "daily":

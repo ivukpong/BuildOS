@@ -2,6 +2,10 @@ import { useState, useEffect } from "react";
 import { fetchDepartments } from "../../api/departments";
 import { getDepartmentPayrollSummary } from "../../api/hr-extras";
 import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
+import {
   Building2,
   Plus,
   Search,
@@ -112,7 +116,7 @@ export function DepartmentsPage() {
           },
           {
             label: "Latest Payroll",
-            value: `₦${totalPayroll.toLocaleString()}`,
+            value: `${getCurrencySymbol()}${formatNumberByGeneralSettings(totalPayroll)}`,
             color: "text-amber-700",
             bg: "bg-amber-50",
           },

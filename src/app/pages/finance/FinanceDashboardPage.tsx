@@ -19,6 +19,7 @@ import { getApprovals, type ApprovalItem } from "../../api/approvals";
 import {
   formatCurrencyByGeneralSettings,
   getCurrencySymbol,
+  formatNumberByGeneralSettings,
 } from "../../utils/generalSettings";
 
 export function FinanceDashboardPage() {
@@ -55,7 +56,7 @@ export function FinanceDashboardPage() {
     const sign = n < 0 ? `-${symbol}` : symbol;
     if (abs >= 1_000_000) return `${sign}${(abs / 1_000_000).toFixed(1)}M`;
     if (abs >= 1_000) return `${sign}${(abs / 1_000).toFixed(0)}K`;
-    return `${sign}${abs.toLocaleString()}`;
+    return `${sign}${formatNumberByGeneralSettings(abs)}`;
   }
 
   const totalIncome = allIncome.reduce((sum, i) => sum + (i.amount || 0), 0);

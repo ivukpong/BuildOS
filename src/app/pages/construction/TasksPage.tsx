@@ -168,7 +168,7 @@ export function TasksPage() {
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Tasks</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Manage and track construction tasks
+            Manage and track project tasks
           </p>
         </div>
         <button

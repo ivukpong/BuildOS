@@ -113,19 +113,30 @@ export function formatDateByGeneralSettings(
 }
 
 /**
- * Formats a time according to the configured timeFormat ("12" or "24").
+ * Formats a time according to the configured timeFormat ("12" or "24")
+ * and the configured timezone.
  */
 export function formatTimeByGeneralSettings(
   value: string | number | Date | null | undefined,
 ): string {
   const d = toDate(value);
   if (!d) return "";
-  const hour12 = getGeneralSettings().timeFormat !== "24";
-  return d.toLocaleTimeString("en-US", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12,
-  });
+  const { timeFormat, timezone } = getGeneralSettings();
+  const hour12 = timeFormat !== "24";
+  try {
+    return d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12,
+      timeZone: timezone || undefined,
+    });
+  } catch {
+    return d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12,
+    });
+  }
 }
 
 /**
@@ -160,4 +171,94 @@ export function formatNumberByGeneralSettings(
     formatted = formatted.replace(/,/g, " ");
   }
   return formatted;
+}
+
+/** Storage keys + the event fired whenever general settings change. */
+export const GENERAL_SETTINGS_STORAGE_KEY = "buildos_general_settings";
+export const CURRENCY_OPTIONS_STORAGE_KEY = "buildos_currency_options";
+export const GENERAL_SETTINGS_CHANGED_EVENT =
+  "buildos:general-settings-changed";
+
+/**
+ * Returns a time-of-day greeting ("Good morning" / "Good afternoon" /
+ * "Good evening") based on the hour in the configured timezone, so the
+ * greeting reflects the organisation's timezone rather than the browser's.
+ */
+export function getGreeting(value?: string | number | Date): string {
+  const { timezone } = getGeneralSettings();
+  const base = toDate(value ?? new Date()) ?? new Date();
+
+  let hour: number;
+  try {
+    const hourPart = new Intl.DateTimeFormat("en-US", {
+      hour: "numeric",
+      hour12: false,
+      timeZone: timezone || undefined,
+    })
+      .formatToParts(base)
+      .find((part) => part.type === "hour")?.value;
+    hour = Number.parseInt(hourPart ?? "", 10);
+    if (!Number.isFinite(hour)) hour = base.getHours();
+  } catch {
+    hour = base.getHours();
+  }
+  // Intl can return "24" for midnight in 24-hour mode.
+  hour %= 24;
+
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+/**
+ * Applies the configured language to the document so the browser and
+ * assistive tech render in the correct language/locale. Full UI string
+ * translation is layered on top of this elsewhere.
+ */
+export function applyLanguageToDocument(): void {
+  if (typeof document === "undefined") return;
+  const { language } = getGeneralSettings();
+  if (language) {
+    document.documentElement.lang = language;
+  }
+}
+
+/**
+ * Persists newly-resolved general settings to localStorage, applies the
+ * language to the document, and notifies the rest of the app so anything
+ * that depends on the settings (currency symbols, date/number formatting,
+ * greetings, language) updates immediately.
+ */
+export function hydrateGeneralSettings(
+  generalSettings?: Partial<GeneralSettingsConfig> | null,
+  currencyOptions?: unknown,
+): void {
+  if (typeof window === "undefined") return;
+
+  let changed = false;
+
+  if (generalSettings && typeof generalSettings === "object") {
+    const merged = { ...defaultGeneralSettings, ...generalSettings };
+    const nextStr = JSON.stringify(merged);
+    if (localStorage.getItem(GENERAL_SETTINGS_STORAGE_KEY) !== nextStr) {
+      localStorage.setItem(GENERAL_SETTINGS_STORAGE_KEY, nextStr);
+      changed = true;
+    }
+  }
+
+  if (Array.isArray(currencyOptions)) {
+    const nextStr = JSON.stringify(currencyOptions);
+    if (localStorage.getItem(CURRENCY_OPTIONS_STORAGE_KEY) !== nextStr) {
+      localStorage.setItem(CURRENCY_OPTIONS_STORAGE_KEY, nextStr);
+      changed = true;
+    }
+  }
+
+  applyLanguageToDocument();
+
+  // Only notify when something actually changed so returning users whose
+  // cached settings already match the server don't trigger needless re-renders.
+  if (changed) {
+    window.dispatchEvent(new Event(GENERAL_SETTINGS_CHANGED_EVENT));
+  }
 }

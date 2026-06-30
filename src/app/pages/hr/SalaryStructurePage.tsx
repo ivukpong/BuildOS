@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { apiFetch } from "../../api/client";
 import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
+import {
   Plus,
   Edit,
   Trash2,
@@ -274,7 +278,7 @@ function ComponentModal({
           {form.calcType === "fixed" && (
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Amount (₦)
+                Amount ({getCurrencySymbol()})
               </label>
               <input
                 type="number"
@@ -634,19 +638,19 @@ export function SalaryStructurePage() {
                   <div>
                     <p className="text-xs text-gray-400">Basic Salary</p>
                     <p className="text-sm font-semibold text-gray-800">
-                      ₦{band.basicSalary.toLocaleString()}
+                      {getCurrencySymbol()}{formatNumberByGeneralSettings(band.basicSalary)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">Allowances</p>
                     <p className="text-sm font-semibold text-emerald-600">
-                      +₦{totalAllowances.toLocaleString()}
+                      +{getCurrencySymbol()}{formatNumberByGeneralSettings(totalAllowances)}
                     </p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400">Deductions</p>
                     <p className="text-sm font-semibold text-rose-600">
-                      -₦{totalDeductions.toLocaleString()}
+                      -{getCurrencySymbol()}{formatNumberByGeneralSettings(totalDeductions)}
                     </p>
                   </div>
                   <div>
@@ -733,7 +737,7 @@ export function SalaryStructurePage() {
                                     </td>
                                     <td className="px-4 py-3 text-gray-600 font-mono text-xs">
                                       {comp.calcType === "fixed" &&
-                                        `₦${comp.amount.toLocaleString()}`}
+                                        `${getCurrencySymbol()}${formatNumberByGeneralSettings(comp.amount)}`}
                                       {(comp.calcType === "percent_basic" ||
                                         comp.calcType ===
                                           "percent_component") &&
@@ -860,7 +864,7 @@ export function SalaryStructurePage() {
                 </div>
                 <div className="col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Basic Salary (₦)
+                    Basic Salary ({getCurrencySymbol()})
                   </label>
                   <input
                     type="number"

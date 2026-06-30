@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   CheckCircle,
   AlertTriangle,
@@ -881,7 +882,7 @@ function MaterialForm({ onSuccess }: { onSuccess: (id: string) => void }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Estimated Cost{" "}
-                <span className="text-gray-400 font-normal">(₦)</span>
+                <span className="text-gray-400 font-normal">({getCurrencySymbol()})</span>
               </label>
               <input
                 value={formState.estimatedCost}

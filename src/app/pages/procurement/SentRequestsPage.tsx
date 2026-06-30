@@ -21,6 +21,7 @@ import {
   SentRFQ as ApiSentRFQ,
 } from "../../api/procurement-requests";
 import { getReferenceData } from "../../api/reference-data";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
 type SRStatus = "sent" | "viewed" | "quote_received" | "declined" | "expired";
 
@@ -143,14 +144,7 @@ function NewRFQModal({
   onSave: (r: SentRequest) => void;
 }) {
   const today = new Date();
-  const fmtDate = (d: Date) =>
-    d
-      .toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-      .replace(/ /g, " ");
+  const fmtDate = (d: Date) => formatDateByGeneralSettings(d);
   const addDays = (n: number) => {
     const d = new Date(today);
     d.setDate(d.getDate() + n);

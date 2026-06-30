@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from "react-router";
 import { useState, useEffect } from "react";
+import { getCurrencySymbol, formatNumberByGeneralSettings } from "../../utils/generalSettings";
 import { ArrowLeft, Award, CheckCircle, XCircle, AlertTriangle, DollarSign, Briefcase, Calculator } from "lucide-react";
 import { vendors as allVendors, projects, getProjectById, getTasksByProject, fmtCurrency } from "./mockData";
 import { listVendors } from "../../api/vendors";
@@ -183,7 +184,7 @@ export function GlobalResourceDetailPage() {
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">Man-days Estimate</p>
-                <p className="text-sm font-medium text-gray-900">{vendor.mandaysEstimate.toLocaleString()}</p>
+                <p className="text-sm font-medium text-gray-900">{formatNumberByGeneralSettings(vendor.mandaysEstimate)}</p>
               </div>
               <div>
                 <p className="text-xs text-gray-500 mb-0.5">Status</p>
@@ -295,7 +296,7 @@ export function GlobalResourceDetailPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-0.5">Rate (₦/day)</label>
+                  <label className="block text-xs text-gray-500 mb-0.5">Rate ({getCurrencySymbol()}/day)</label>
                   <input
                     type="number" value={skilledRate}
                     onChange={e => setSkilledRate(Number(e.target.value))}
@@ -325,7 +326,7 @@ export function GlobalResourceDetailPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-500 mb-0.5">Rate (₦/day)</label>
+                  <label className="block text-xs text-gray-500 mb-0.5">Rate ({getCurrencySymbol()}/day)</label>
                   <input
                     type="number" value={unskilledRate}
                     onChange={e => setUnskilledRate(Number(e.target.value))}

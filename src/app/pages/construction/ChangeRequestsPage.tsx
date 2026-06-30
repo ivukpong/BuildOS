@@ -17,6 +17,7 @@ import {
   fmtCurrency,
 } from "./mockData";
 import type { ChangeRequest } from "./types";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   listChangeRequests,
   createChangeRequest,
@@ -463,7 +464,7 @@ export function ChangeRequestsPage() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-                    Cost Impact (₦)
+                    Cost Impact ({getCurrencySymbol()})
                   </label>
                   <input
                     type="number"

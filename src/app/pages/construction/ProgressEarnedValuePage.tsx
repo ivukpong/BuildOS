@@ -1,5 +1,6 @@
 import { useParams } from "react-router";
 import { useEffect, useMemo, useState } from "react";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   TrendingUp,
   TrendingDown,
@@ -399,16 +400,16 @@ export function ProgressEarnedValuePage() {
                 Stage
               </th>
               <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
-                Budget (₦)
+                Budget ({getCurrencySymbol()})
               </th>
               <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
-                EV (₦)
+                EV ({getCurrencySymbol()})
               </th>
               <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
-                PV (₦)
+                PV ({getCurrencySymbol()})
               </th>
               <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
-                SV (₦)
+                SV ({getCurrencySymbol()})
               </th>
               <th className="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wide">
                 SPI

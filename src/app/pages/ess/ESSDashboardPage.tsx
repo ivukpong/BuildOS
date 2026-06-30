@@ -14,6 +14,7 @@ import {
 import { fetchProjects } from "../../api/projects";
 import { getPurchaseRequests } from "../../api/procurement-requests";
 import { useAuthUser } from "../../utils/useAuthUser";
+import { getGreeting } from "../../utils/generalSettings";
 
 interface RecentRequest {
   id: string;
@@ -115,7 +116,7 @@ export function ESSDashboardPage() {
           </div>
           <div>
             <h1 className="text-xl font-semibold text-gray-900">
-              Good morning, {firstName} 👋
+              {getGreeting()}, {firstName} 👋
             </h1>
             <p className="text-sm text-gray-500 capitalize">{displayRole}</p>
           </div>

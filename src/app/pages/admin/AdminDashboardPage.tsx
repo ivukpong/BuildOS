@@ -15,6 +15,7 @@ import {
   type AdminActivity,
   type AdminSystemSummary,
 } from "../../api/admin-extras";
+import { formatDateTimeByGeneralSettings } from "../../utils/generalSettings";
 
 export function AdminDashboardPage() {
   const [summary, setSummary] = useState<AdminSystemSummary | null>(null);
@@ -266,7 +267,7 @@ export function AdminDashboardPage() {
         </div>
         <p className="text-xs text-gray-500 mt-3">
           {summary
-            ? `Last checked ${new Date(summary.health.checkedAt).toLocaleString()}`
+            ? `Last checked ${formatDateTimeByGeneralSettings(new Date(summary.health.checkedAt))}`
             : "Loading system status…"}
         </p>
       </div>

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AttachmentsSection } from "./AttachmentsSection";
 import { createIssue } from "../api/hr-extras";
 import { useAuthUser } from "../utils/useAuthUser";
+import { getCurrencySymbol } from "../utils/generalSettings";
 
 const changeCategoryOptions = [
   "Personal Details",
@@ -256,7 +257,7 @@ export function ChangeRequestForm({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Cost Impact (₦)
+                Cost Impact ({getCurrencySymbol()})
               </label>
               <input
                 type="number"

@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
+import {
   ArrowLeft,
   Mail,
   Phone,
@@ -523,13 +527,13 @@ export function EmployeeProfilePage() {
                       {p.period}
                     </td>
                     <td className="px-4 py-3 text-gray-700">
-                      ₦{p.grossPay.toLocaleString()}
+                      {getCurrencySymbol()}{formatNumberByGeneralSettings(p.grossPay)}
                     </td>
                     <td className="px-4 py-3 text-red-500">
-                      -₦{p.deductions.toLocaleString()}
+                      -{getCurrencySymbol()}{formatNumberByGeneralSettings(p.deductions)}
                     </td>
                     <td className="px-4 py-3 font-semibold text-green-700">
-                      ₦{p.netPay.toLocaleString()}
+                      {getCurrencySymbol()}{formatNumberByGeneralSettings(p.netPay)}
                     </td>
                     <td className="px-4 py-3">
                       <span

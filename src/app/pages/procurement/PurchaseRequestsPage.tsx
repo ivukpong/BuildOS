@@ -28,6 +28,7 @@ import { getReferenceData } from "../../api/reference-data";
 import {
   getCurrencySymbol,
   formatDateByGeneralSettings,
+  formatNumberByGeneralSettings,
 } from "../../utils/generalSettings";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -312,12 +313,7 @@ function NewPRModal({
   onSave: (pr: PurchaseRequest) => void;
 }) {
   const today = new Date();
-  const fmtDate = (d: Date) =>
-    d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+  const fmtDate = (d: Date) => formatDateByGeneralSettings(d);
   const addDays = (n: number) => {
     const d2 = new Date(today);
     d2.setDate(d2.getDate() + n);
@@ -599,7 +595,7 @@ function NewPRModal({
                         ),
                       )
                     }
-                    placeholder="Unit ₦"
+                    placeholder={`Unit ${getCurrencySymbol()}`}
                     className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {items.length > 1 && (
@@ -759,11 +755,7 @@ export function PurchaseRequestsPage() {
   }
 
   function sendToSuppliers(id: string) {
-    const now = new Date().toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    const now = formatDateByGeneralSettings(new Date());
     setPrList((prev) =>
       prev.map((pr) =>
         pr.id !== id
@@ -996,7 +988,7 @@ export function PurchaseRequestsPage() {
                               {it.material}
                             </td>
                             <td className="px-3 py-2 text-right text-gray-600">
-                              {it.qty.toLocaleString()} {it.unit}
+                              {formatNumberByGeneralSettings(it.qty)} {it.unit}
                             </td>
                             <td className="px-3 py-2 text-right text-gray-600">
                               {fmt(it.estimatedUnitCost)}

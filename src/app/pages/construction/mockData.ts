@@ -7,6 +7,10 @@
 // imports keep resolving and pages render clean empty states until real data
 // loads. `getProjectById` reads the live project store that the project pages
 // populate after fetching from the backend.
+import {
+  formatCurrencyByGeneralSettings,
+  formatDateByGeneralSettings,
+} from "../../utils/generalSettings";
 import type {
   Project,
   Task,
@@ -252,19 +256,11 @@ export function getChildTasks(parentId: string): Task[] {
 
 // ── Formatters ──────────────────────────────────────────────────────────────
 export function fmtCurrency(n: number): string {
-  return new Intl.NumberFormat("en-NG", {
-    style: "currency",
-    currency: "NGN",
-    minimumFractionDigits: 0,
-  }).format(n);
+  return formatCurrencyByGeneralSettings(n);
 }
 
 export function fmtDate(d: string): string {
-  return new Date(d).toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDateByGeneralSettings(d);
 }
 
 export function pctCompleteColor(pct: number): string {

@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { getMaterials, Material as ApiMaterial } from "../../api/materials";
-import { getCurrencySymbol } from "../../utils/generalSettings";
+import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 import {
   Package,
   Search,
@@ -370,11 +373,11 @@ export function InventoryPage() {
                     <span
                       className={`font-semibold ${m.currentStock === 0 ? "text-red-600" : m.currentStock < m.minStock ? "text-amber-600" : "text-gray-900"}`}
                     >
-                      {m.currentStock.toLocaleString()}
+                      {formatNumberByGeneralSettings(m.currentStock)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right text-gray-500">
-                    {m.minStock.toLocaleString()}
+                    {formatNumberByGeneralSettings(m.minStock)}
                   </td>
                   <td className="px-4 py-3 text-right text-gray-600">
                     {fmt(m.unitCost)}

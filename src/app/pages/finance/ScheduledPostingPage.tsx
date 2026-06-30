@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { getChartAccounts } from "../../api/finance-extras";
 import { apiFetch } from "../../api/client";
-import { getCurrencySymbol } from "../../utils/generalSettings";
+import {
+  getCurrencySymbol,
+  formatDateByGeneralSettings,
+} from "../../utils/generalSettings";
 import {
   CalendarClock,
   Plus,
@@ -95,11 +98,7 @@ function NewPostingModal({
   onClose: () => void;
   onSave: (p: ScheduledPosting) => void;
 }) {
-  const today = new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const today = formatDateByGeneralSettings(new Date());
   const [description, setDescription] = useState("");
   const [amount, setAmount] = useState("");
   const [debitAccount, setDebit] = useState("");
@@ -198,7 +197,7 @@ function NewPostingModal({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Amount (₦) <span className="text-red-500">*</span>
+                Amount ({getCurrencySymbol()}) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -371,11 +370,7 @@ export function ScheduledPostingPage() {
     .reduce((s, p) => s + p.amount, 0);
 
   function processPosting(id: string) {
-    const today = new Date().toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+    const today = formatDateByGeneralSettings(new Date());
     setPostings((prev) =>
       prev.map((p) =>
         p.id === id ? { ...p, status: "processed", processedDate: today } : p,

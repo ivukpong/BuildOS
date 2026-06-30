@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { Download, FileText, Search } from "lucide-react";
 import { getPayslips } from "../../api/hr-extras";
-import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatCurrencyByGeneralSettings,
+  formatDateByGeneralSettings,
+} from "../../utils/generalSettings";
 
 interface Payslip {
   id: string;
@@ -35,7 +38,7 @@ export function PayslipHistoryPage() {
             status: (p.status === "Paid"
               ? "Paid"
               : "Pending") as Payslip["status"],
-            paidOn: p.issuedAt ? new Date(p.issuedAt).toLocaleDateString() : "",
+            paidOn: p.issuedAt ? formatDateByGeneralSettings(p.issuedAt) : "",
           })),
         ),
       )

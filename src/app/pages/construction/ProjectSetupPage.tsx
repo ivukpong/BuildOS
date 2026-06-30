@@ -26,6 +26,11 @@ import {
   fmtDate,
   defaultScheduleLevels,
 } from "./mockData";
+import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+  formatDateTimeByGeneralSettings,
+} from "../../utils/generalSettings";
 import type {
   Task,
   Vendor,
@@ -2693,7 +2698,7 @@ export function ProjectSetupPage() {
                                 group: "Employees",
                               })),
                               ...projectContractors.map((r) => ({
-                                label: `${r.name} — ${r.trade}${r.payRate ? ` (₦${r.payRate.toLocaleString()}/${r.payRateUnit})` : ""}`,
+                                label: `${r.name} — ${r.trade}${r.payRate ? ` (${getCurrencySymbol()}${formatNumberByGeneralSettings(r.payRate)}/${r.payRateUnit})` : ""}`,
                                 value: r.id,
                                 group: "Contractors",
                               })),
@@ -2758,7 +2763,7 @@ export function ProjectSetupPage() {
                     if (!rId) return null;
                     let hideQty = false;
                     let hideCost = false;
-                    let costLabel = "Planned Cost (₦)";
+                    let costLabel = `Planned Cost (${getCurrencySymbol()})`;
                     if (assignForm.resourceType === "human") {
                       const isEmployee = projectStaff.some((s) => s.id === rId);
                       if (isEmployee) {
@@ -3091,7 +3096,7 @@ export function ProjectSetupPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Pay Rate (₦)
+                    Pay Rate ({getCurrencySymbol()})
                   </label>
                   <input
                     type="number"
@@ -3398,7 +3403,7 @@ export function ProjectSetupPage() {
                               <p className="text-[11px] text-gray-500">
                                 {s.trade}
                                 {s.dailyRate
-                                  ? ` · ₦${s.dailyRate.toLocaleString()}/day`
+                                  ? ` · ${getCurrencySymbol()}${formatNumberByGeneralSettings(s.dailyRate)}/day`
                                   : ""}
                               </p>
                             </div>
@@ -3478,7 +3483,7 @@ export function ProjectSetupPage() {
                               <p className="text-[11px] text-gray-500">
                                 {c.trade}
                                 {c.payRate
-                                  ? ` · ₦${c.payRate.toLocaleString()}/${c.payRateUnit}`
+                                  ? ` · ${getCurrencySymbol()}${formatNumberByGeneralSettings(c.payRate)}/${c.payRateUnit}`
                                   : ""}{" "}
                                 · {(c.skilledCount ?? 0) + (c.unskilledCount ?? 0)} workers
                               </p>
@@ -3995,7 +4000,7 @@ export function ProjectSetupPage() {
               </label>
               <SearchableMultiSelect
                 options={materialInventory.map((i) => ({
-                  label: `${i.name} (${i.inStock} ${i.unit} in stock) — ₦${i.defaultUnitCost.toLocaleString()}/${i.unit}`,
+                  label: `${i.name} (${i.inStock} ${i.unit} in stock) — ${getCurrencySymbol()}${formatNumberByGeneralSettings(i.defaultUnitCost)}/${i.unit}`,
                   value: i.id,
                   group: i.category,
                 }))}
@@ -4064,11 +4069,13 @@ export function ProjectSetupPage() {
                     <div>
                       <p className="font-medium text-gray-900">{m.name}</p>
                       <p className="text-xs text-gray-500">
-                        {m.category} · {m.estimatedQty} {m.unit} · ₦
-                        {m.estimatedUnitCost.toLocaleString()}/{m.unit}
+                        {m.category} · {m.estimatedQty} {m.unit} ·{" "}
+                        {getCurrencySymbol()}
+                        {formatNumberByGeneralSettings(m.estimatedUnitCost)}/{m.unit}
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">
-                        Total: ₦{m.totalEstimatedCost.toLocaleString()} ·{" "}
+                        Total: {getCurrencySymbol()}
+                        {formatNumberByGeneralSettings(m.totalEstimatedCost)} ·{" "}
                         {m.procurementSource === "purchase"
                           ? "Purchased"
                           : "Internal"}
@@ -4288,7 +4295,7 @@ export function ProjectSetupPage() {
                       </p>
                       <p className="text-xs text-gray-400 mt-0.5">
                         {e.totalEstimatedCost
-                          ? `Est. Total: ₦${e.totalEstimatedCost.toLocaleString()}`
+                          ? `Est. Total: ${getCurrencySymbol()}${formatNumberByGeneralSettings(e.totalEstimatedCost)}`
                           : ""}{" "}
                         · {e.status}
                       </p>
@@ -4407,7 +4414,7 @@ export function ProjectSetupPage() {
                 {externalEquipType === "rented" && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Rental Cost per Day (₦)
+                      Rental Cost per Day ({getCurrencySymbol()})
                     </label>
                     <input
                       type="number"
@@ -5172,7 +5179,7 @@ export function ProjectSetupPage() {
                   </span>
                   <span>{entry.performedBy}</span>
                   <span>·</span>
-                  <span>{new Date(entry.performedAt).toLocaleString()}</span>
+                  <span>{formatDateTimeByGeneralSettings(entry.performedAt)}</span>
                   {entry.reason && <span>· "{entry.reason}"</span>}
                 </div>
               ))}

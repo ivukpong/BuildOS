@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { getChartAccounts, getTransactions } from "../../api/finance-extras";
-import { getCurrencySymbol } from "../../utils/generalSettings";
+import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+  formatDateByGeneralSettings,
+} from "../../utils/generalSettings";
 import {
   Zap,
   Search,
@@ -128,14 +132,10 @@ function fmt(n: number) {
   const symbol = getCurrencySymbol();
   if (n >= 1_000_000) return `${symbol}${(n / 1_000_000).toFixed(2)}M`;
   if (n >= 1000) return `${symbol}${(n / 1000).toFixed(0)}K`;
-  return `${symbol}${n.toLocaleString()}`;
+  return `${symbol}${formatNumberByGeneralSettings(n)}`;
 }
 function todayStr() {
-  return new Date().toLocaleDateString("en-GB", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  return formatDateByGeneralSettings(new Date());
 }
 
 // ── New Category Modal ────────────────────────────────────────────────────────

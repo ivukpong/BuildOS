@@ -112,11 +112,7 @@ export function IncomingRequestsPage() {
                 ...r,
                 status: "Approved",
                 approvedBy: "Store Manager",
-                approvalDate: new Date().toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                }),
+                approvalDate: formatDateByGeneralSettings(new Date()),
               }
             : r,
         ),
@@ -139,11 +135,7 @@ export function IncomingRequestsPage() {
                 ...r,
                 status: "Rejected",
                 approvedBy: "Store Manager",
-                approvalDate: new Date().toLocaleDateString("en-US", {
-                  month: "short",
-                  day: "numeric",
-                  year: "numeric",
-                }),
+                approvalDate: formatDateByGeneralSettings(new Date()),
               }
             : r,
         ),

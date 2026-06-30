@@ -8,7 +8,10 @@ import {
   Download,
 } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 type StockItem = {
   id: string;
@@ -317,17 +320,17 @@ export function StockLevelsPage() {
                     <span
                       className={`font-bold text-sm ${status === "out_of_stock" ? "text-red-600" : status === "low_stock" ? "text-amber-600" : "text-gray-900"}`}
                     >
-                      {item.current.toLocaleString()}
+                      {formatNumberByGeneralSettings(item.current)}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right text-gray-500 text-xs">
-                    {item.min.toLocaleString()}
+                    {formatNumberByGeneralSettings(item.min)}
                   </td>
                   <td className="px-4 py-3 text-right text-gray-500 text-xs">
-                    {item.max.toLocaleString()}
+                    {formatNumberByGeneralSettings(item.max)}
                   </td>
                   <td className="px-4 py-3 text-right text-gray-500 text-xs">
-                    {item.reorderQty.toLocaleString()}
+                    {formatNumberByGeneralSettings(item.reorderQty)}
                   </td>
                   <td className="px-4 py-3 w-36">
                     <div className="w-full bg-gray-100 rounded-full h-2">
@@ -422,7 +425,7 @@ export function StockLevelsPage() {
                 <p className="text-xs text-gray-400 mt-1.5">
                   Current:{" "}
                   <strong>
-                    {adjustModal.current.toLocaleString()} {adjustModal.unit}
+                    {formatNumberByGeneralSettings(adjustModal.current)} {adjustModal.unit}
                   </strong>
                 </p>
               </div>

@@ -29,7 +29,10 @@ import { getTasks } from "../../api/tasks";
 import { getWorkforceAllocations } from "../../api/workforce-allocation";
 import { fetchExpenses } from "../../api/expenses";
 import { getResourcePlans } from "../../api/resource-planning";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 // ─── Shared data ────────────────────────────────────────────────────────────
 
@@ -709,13 +712,13 @@ function MaterialsTab({ materials }: { materials: Material[] }) {
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">{m.unit}</td>
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    {m.required.toLocaleString()}
+                    {formatNumberByGeneralSettings(m.required)}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    {m.used.toLocaleString()}
+                    {formatNumberByGeneralSettings(m.used)}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900">
-                    {m.ordered.toLocaleString()}
+                    {formatNumberByGeneralSettings(m.ordered)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { fetchEmployees } from "../../api/employees";
+import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 import {
   Users,
   Search,
@@ -341,11 +342,7 @@ export function EmployeesPage() {
 
   function handleAddEmployee(form: AddEmpForm) {
     const newId = `EMP-${String(empList.length + 1).padStart(3, "0")}`;
-    const today = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
+    const today = formatDateByGeneralSettings(new Date());
     setEmpList((prev) => [
       ...prev,
       {

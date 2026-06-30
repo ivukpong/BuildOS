@@ -6,6 +6,7 @@ import {
   updateReportTemplate,
   deleteReportTemplate,
 } from "../../api/admin-extras";
+import { formatNumberByGeneralSettings } from "../../utils/generalSettings";
 import {
   Play,
   Download,
@@ -119,7 +120,7 @@ interface ReportTemplate {
 const APPLICATIONS = [
   {
     key: "construction",
-    label: "Construction",
+    label: "Projects",
     color: "bg-orange-100 text-orange-700",
     icon: "🏗️",
   },
@@ -154,7 +155,7 @@ const DATA_SOURCES: DataSource[] = [
   {
     value: "projects",
     label: "Projects",
-    module: "Construction",
+    module: "Projects",
     moduleColor: "bg-orange-100 text-orange-700",
     appKey: "construction",
     fields: [
@@ -356,7 +357,7 @@ function BarChartViz({
                 style={{ width: `${(val / max) * 100}%` }}
               />
               <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-700">
-                {val.toLocaleString()}
+                {formatNumberByGeneralSettings(val)}
               </span>
             </div>
           </div>
@@ -466,11 +467,11 @@ function CardsViz({
             <p className="text-2xl font-bold text-gray-900">
               {total > 9999
                 ? `${(total / 1000).toFixed(1)}k`
-                : total.toLocaleString()}
+                : formatNumberByGeneralSettings(total)}
             </p>
             <p className="text-xs text-gray-500 mt-1">
               Avg: {(total / vals.length).toFixed(1)} · Max:{" "}
-              {Math.max(...vals).toLocaleString()}
+              {formatNumberByGeneralSettings(Math.max(...vals))}
             </p>
           </div>
         );
@@ -1485,7 +1486,7 @@ export function ReportBuilderPage() {
                                       ) : fieldType === "number" ? (
                                         <span className="font-mono">
                                           {typeof val === "number"
-                                            ? val.toLocaleString()
+                                            ? formatNumberByGeneralSettings(val)
                                             : val}
                                         </span>
                                       ) : (

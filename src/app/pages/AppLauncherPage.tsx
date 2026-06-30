@@ -452,7 +452,7 @@ async function buildAppsFromApi(authName?: string): Promise<AppDef[]> {
         },
       ],
       blurb:
-        "Oversee construction projects, track timelines and manage site approvals end-to-end.",
+        "Oversee projects, track timelines and manage site approvals end-to-end.",
       details: [
         {
           label: "Active Projects",

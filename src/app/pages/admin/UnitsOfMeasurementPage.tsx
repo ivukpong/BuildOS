@@ -217,7 +217,7 @@ export function UnitsOfMeasurementPage() {
         <div>
           <h3 className="text-sm font-medium text-blue-900">About Units</h3>
           <p className="text-sm text-blue-700 mt-1">
-            Create custom units for materials specific to construction (e.g.,
+            Create custom units for materials specific to projects (e.g.,
             bags, bundles, rolls). All units are converted to base units for
             accurate calculations.
           </p>

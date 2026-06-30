@@ -7,6 +7,10 @@ import {
 } from "../../api/materials";
 import { getReferenceData } from "../../api/reference-data";
 import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
+import {
   Plus,
   Search,
   Download,
@@ -554,10 +558,10 @@ export function AllMaterialsPage() {
                   <td className="px-4 py-3 text-gray-600">{m.category}</td>
                   <td className="px-4 py-3 text-gray-600">{m.unit}</td>
                   <td className="px-4 py-3 font-medium text-gray-900">
-                    {m.availableQty.toLocaleString()}
+                    {formatNumberByGeneralSettings(m.availableQty)}
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    ₦{m.unitCost.toLocaleString()}
+                    {getCurrencySymbol()}{formatNumberByGeneralSettings(m.unitCost)}
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -695,7 +699,7 @@ export function AllMaterialsPage() {
                   ["totalQty", "Total Quantity", "number"],
                   ["availableQty", "Available Qty", "number"],
                   ["reservedQty", "Reserved Qty", "number"],
-                  ["unitCost", "Unit Cost (₦)", "number"],
+                  ["unitCost", `Unit Cost (${getCurrencySymbol()})`, "number"],
                   ["reorderLevel", "Reorder Level", "number"],
                 ] as const
               ).map(([key, label, type]) => (

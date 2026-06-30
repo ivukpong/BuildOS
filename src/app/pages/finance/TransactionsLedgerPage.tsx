@@ -1,5 +1,9 @@
 import { useState, useEffect } from "react";
 import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
+import {
   Search,
   Download,
   ChevronDown,
@@ -98,7 +102,7 @@ const TYPE_OPTS: Array<TxnType | "All"> = [
 ];
 
 function fmtAmt(n: number) {
-  const abs = `₦${Math.abs(n).toLocaleString()}`;
+  const abs = `${getCurrencySymbol()}${formatNumberByGeneralSettings(Math.abs(n))}`;
   return n >= 0 ? `+${abs}` : `−${abs}`;
 }
 
@@ -240,7 +244,7 @@ function TransactionDetailModal({
                       {txn.debitAccount}
                     </td>
                     <td className="px-4 py-2.5 text-right font-semibold text-gray-900">
-                      ₦{Math.abs(txn.amount).toLocaleString()}
+                      {getCurrencySymbol()}{formatNumberByGeneralSettings(Math.abs(txn.amount))}
                     </td>
                   </tr>
                   <tr>
@@ -253,7 +257,7 @@ function TransactionDetailModal({
                       {txn.creditAccount}
                     </td>
                     <td className="px-4 py-2.5 text-right font-semibold text-gray-900">
-                      ₦{Math.abs(txn.amount).toLocaleString()}
+                      {getCurrencySymbol()}{formatNumberByGeneralSettings(Math.abs(txn.amount))}
                     </td>
                   </tr>
                 </tbody>
@@ -448,13 +452,13 @@ export function TransactionsLedgerPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-xs text-gray-500 font-medium">Total Inflow</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">
-            ₦{totalInflow.toLocaleString()}
+            {getCurrencySymbol()}{formatNumberByGeneralSettings(totalInflow)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <p className="text-xs text-gray-500 font-medium">Total Outflow</p>
           <p className="text-2xl font-bold text-red-600 mt-1">
-            ₦{totalOutflow.toLocaleString()}
+            {getCurrencySymbol()}{formatNumberByGeneralSettings(totalOutflow)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -462,7 +466,7 @@ export function TransactionsLedgerPage() {
           <p
             className={`text-2xl font-bold mt-1 ${net >= 0 ? "text-emerald-600" : "text-red-600"}`}
           >
-            {net >= 0 ? "+" : "−"}₦{Math.abs(net).toLocaleString()}
+            {net >= 0 ? "+" : "−"}{getCurrencySymbol()}{formatNumberByGeneralSettings(Math.abs(net))}
           </p>
         </div>
       </div>

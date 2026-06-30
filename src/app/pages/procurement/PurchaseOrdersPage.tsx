@@ -1,7 +1,11 @@
 import { useState, useEffect } from "react";
 import { fetchPurchaseOrders } from "../../api/purchase-orders";
 import { getReferenceData } from "../../api/reference-data";
-import { getCurrencySymbol } from "../../utils/generalSettings";
+import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+  formatDateByGeneralSettings,
+} from "../../utils/generalSettings";
 import {
   ShoppingCart,
   Plus,
@@ -152,14 +156,7 @@ function NewPOModal({
   onSave: (po: PurchaseOrder) => void;
 }) {
   const today = new Date();
-  const fmtDate = (d: Date) =>
-    d
-      .toLocaleDateString("en-GB", {
-        day: "2-digit",
-        month: "short",
-        year: "numeric",
-      })
-      .replace(/ /g, " ");
+  const fmtDate = (d: Date) => formatDateByGeneralSettings(d);
   const addDays = (n: number) => {
     const d2 = new Date(today);
     d2.setDate(d2.getDate() + n);
@@ -364,7 +361,7 @@ function NewPOModal({
                     type="number"
                     value={item.unitCost}
                     onChange={(e) => updateItem(i, "unitCost", e.target.value)}
-                    placeholder="Unit ₦"
+                    placeholder={`Unit ${getCurrencySymbol()}`}
                     className="border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   {items.length > 1 && (
@@ -879,7 +876,7 @@ export function PurchaseOrdersPage() {
                             {item.material}
                           </td>
                           <td className="px-3 py-2 text-right text-gray-700">
-                            {item.qty.toLocaleString()} {item.unit}
+                            {formatNumberByGeneralSettings(item.qty)} {item.unit}
                           </td>
                           <td className="px-3 py-2 text-right">
                             <span
@@ -891,7 +888,7 @@ export function PurchaseOrdersPage() {
                                     : "text-gray-400"
                               }
                             >
-                              {item.received.toLocaleString()} {item.unit}
+                              {formatNumberByGeneralSettings(item.received)} {item.unit}
                             </span>
                           </td>
                           <td className="px-3 py-2 text-right text-gray-600">

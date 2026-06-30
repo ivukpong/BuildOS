@@ -925,7 +925,7 @@ export function SettingsPage() {
           id="trade-types"
           icon={<Settings className="w-4 h-4 text-gray-400" />}
           title="Trade Types"
-          description="Construction trade categories used for resource classification and planning"
+          description="Project trade categories used for resource classification and planning"
         >
           <div className="flex flex-wrap gap-2 mb-3">
             {tradeTypes.map((t) => (

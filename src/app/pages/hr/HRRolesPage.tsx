@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { getJobRoles, createJobRole } from "../../api/job-roles";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   Briefcase,
   Plus,
@@ -350,7 +351,7 @@ export function HRRolesPage() {
                     Min Salary
                   </label>
                   <input
-                    placeholder="₦150,000"
+                    placeholder={`${getCurrencySymbol()}150,000`}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -359,7 +360,7 @@ export function HRRolesPage() {
                     Max Salary
                   </label>
                   <input
-                    placeholder="₦280,000"
+                    placeholder={`${getCurrencySymbol()}280,000`}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>

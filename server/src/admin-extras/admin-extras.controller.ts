@@ -161,6 +161,13 @@ export class AdminExtrasController {
     @Roles('admin')
     getGeneralSettings() { return this.svc.getGeneralSettings(); }
 
+    // Read-only, non-sensitive display preferences (currency, date/number
+    // formats, timezone, language) needed by every user across all apps so
+    // the configured settings take effect system-wide, not just for admins.
+    @Get('general-settings/public')
+    @Public()
+    getPublicGeneralSettings() { return this.svc.getGeneralSettings(); }
+
     @Put('general-settings')
     @Roles('admin')
     updateGeneralSettings(@Body() body: any) { return this.svc.updateGeneralSettings(body); }

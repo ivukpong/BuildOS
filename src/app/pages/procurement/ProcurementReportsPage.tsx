@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   Package,
   TrendingDown,
@@ -12,7 +13,10 @@ import {
 import { getMaterialRequests, getMaterials } from "../../api/materials";
 import { fetchPurchaseOrders } from "../../api/purchase-orders";
 import { fetchSuppliers } from "../../api/suppliers";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  formatTimeByGeneralSettings,
+} from "../../utils/generalSettings";
 
 export function ProcurementReportsPage() {
   const [dateRange, setDateRange] = useState("This Month");
@@ -90,10 +94,7 @@ export function ProcurementReportsPage() {
       format: "Live",
       runBy: "System",
       date: formatDateByGeneralSettings(new Date()),
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      time: formatTimeByGeneralSettings(new Date()),
     },
     {
       id: "LIVE-SPEND",
@@ -101,10 +102,7 @@ export function ProcurementReportsPage() {
       format: "Live",
       runBy: "System",
       date: formatDateByGeneralSettings(new Date()),
-      time: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
+      time: formatTimeByGeneralSettings(new Date()),
     },
   ];
   const reportTypes = [
@@ -121,7 +119,7 @@ export function ProcurementReportsPage() {
         { label: "Total Materials", value: String(materials.length) },
         {
           label: "Total Stock Value",
-          value: `₦${(stockValue / 1_000_000).toFixed(1)}M`,
+          value: `${getCurrencySymbol()}${(stockValue / 1_000_000).toFixed(1)}M`,
         },
         { label: "Low Stock Items", value: String(lowStock) },
         { label: "Out of Stock", value: String(outOfStock) },
@@ -162,12 +160,12 @@ export function ProcurementReportsPage() {
       metrics: [
         {
           label: "Total Spend",
-          value: `₦${(totalSpend / 1_000_000).toFixed(1)}M`,
+          value: `${getCurrencySymbol()}${(totalSpend / 1_000_000).toFixed(1)}M`,
         },
         { label: "No. of POs", value: String(purchaseOrders.length) },
         {
           label: "Avg PO Value",
-          value: `₦${(averagePo / 1_000_000).toFixed(1)}M`,
+          value: `${getCurrencySymbol()}${(averagePo / 1_000_000).toFixed(1)}M`,
         },
         {
           label: "Open POs",
@@ -288,7 +286,7 @@ export function ProcurementReportsPage() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-sm font-semibold text-gray-900">
-                Monthly Procurement Spend (₦M)
+                Monthly Procurement Spend ({getCurrencySymbol()}M)
               </h2>
               <p className="text-xs text-gray-400 mt-0.5">
                 Live purchase order totals
@@ -305,7 +303,7 @@ export function ProcurementReportsPage() {
                 className="flex-1 flex flex-col items-center gap-1"
               >
                 <span className="text-xs font-semibold text-gray-700">
-                  ₦{s.val}M
+                  {getCurrencySymbol()}{s.val}M
                 </span>
                 <div
                   className="w-full rounded-t-sm bg-blue-200 relative overflow-hidden"
@@ -350,7 +348,7 @@ export function ProcurementReportsPage() {
                       {c.change}
                     </span>
                     <span className="text-xs font-semibold text-gray-900 w-10 text-right">
-                      ₦{c.val}M
+                      {getCurrencySymbol()}{c.val}M
                     </span>
                   </div>
                 </div>
@@ -366,7 +364,7 @@ export function ProcurementReportsPage() {
           <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between text-sm">
             <span className="text-gray-500">Total</span>
             <span className="font-bold text-gray-900">
-              ₦{(categoryTotal / 1_000_000).toFixed(1)}M
+              {getCurrencySymbol()}{(categoryTotal / 1_000_000).toFixed(1)}M
             </span>
           </div>
         </div>

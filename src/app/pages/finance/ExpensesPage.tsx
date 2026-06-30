@@ -5,7 +5,11 @@ import {
   approveExpense,
   rejectExpense,
 } from "../../api/expenses";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 interface Expense {
   id: string;
@@ -41,7 +45,7 @@ export function ExpensesPage() {
             description: e.description,
             project: e.project,
             category: e.category,
-            amount: `$${Number(e.amount).toLocaleString()}`,
+            amount: `${getCurrencySymbol()}${formatNumberByGeneralSettings(Number(e.amount))}`,
             submittedBy: e.createdBy,
             date: e.date,
             status: (["Pending", "Approved", "Rejected"].includes(e.status)
@@ -84,19 +88,19 @@ export function ExpensesPage() {
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <p className="text-sm text-gray-600 mb-1">Pending Review</p>
           <p className="text-3xl text-gray-900">
-            ${totalPending.toLocaleString()}
+            {getCurrencySymbol()}{formatNumberByGeneralSettings(totalPending)}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <p className="text-sm text-gray-600 mb-1">Approved This Month</p>
           <p className="text-3xl text-gray-900">
-            ${totalApproved.toLocaleString()}
+            {getCurrencySymbol()}{formatNumberByGeneralSettings(totalApproved)}
           </p>
         </div>
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <p className="text-sm text-gray-600 mb-1">Total Expenses</p>
           <p className="text-3xl text-gray-900">
-            ${(totalPending + totalApproved).toLocaleString()}
+            {getCurrencySymbol()}{formatNumberByGeneralSettings(totalPending + totalApproved)}
           </p>
         </div>
       </div>
@@ -289,7 +293,7 @@ export function ExpensesPage() {
                               description: e.description,
                               project: e.project,
                               category: e.category,
-                              amount: `$${Number(e.amount).toLocaleString()}`,
+                              amount: `${getCurrencySymbol()}${formatNumberByGeneralSettings(Number(e.amount))}`,
                               submittedBy: e.createdBy,
                               date: e.date,
                               status: ([
@@ -332,7 +336,7 @@ export function ExpensesPage() {
                               description: e.description,
                               project: e.project,
                               category: e.category,
-                              amount: `$${Number(e.amount).toLocaleString()}`,
+                              amount: `${getCurrencySymbol()}${formatNumberByGeneralSettings(Number(e.amount))}`,
                               submittedBy: e.createdBy,
                               date: e.date,
                               status: ([

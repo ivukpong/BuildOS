@@ -1,5 +1,8 @@
 import { useState, useEffect } from "react";
-import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
+import {
+  formatCurrencyByGeneralSettings,
+  formatTimeByGeneralSettings,
+} from "../../utils/generalSettings";
 import { getPayrollRuns, getPayrollEntries } from "../../api/hr-extras";
 import {
   CheckCircle,
@@ -94,10 +97,7 @@ export function PayrollProcessingPage() {
   const totalNet = included.reduce((s, e) => s + e.netPay, 0);
 
   const now = () =>
-    new Date().toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    }) + " — Apr 10, 2026";
+    formatTimeByGeneralSettings(new Date()) + " — Apr 10, 2026";
 
   function advanceStage(to: ApprovalStage) {
     setApprovalStage(to);

@@ -24,6 +24,10 @@ import {
 } from "../../api/admin-extras";
 import { toast } from "sonner";
 import { ConfirmationModal } from "../../components/ConfirmationModal";
+import {
+  getCurrencySymbol,
+  formatNumberByGeneralSettings,
+} from "../../utils/generalSettings";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type ApprovalType = "single" | "group" | "tier";
@@ -78,7 +82,7 @@ const APPROVAL_WORKFLOW_TYPES = [
     color: "bg-amber-50 border-amber-200 text-amber-700",
     iconBg: "bg-amber-100",
     iconColor: "text-amber-600",
-    example: "e.g. Supervisor → Finance Manager → CFO for budget over ₦10M",
+    example: "e.g. Supervisor → Finance Manager → CFO for high-value budgets",
   },
 ];
 
@@ -276,7 +280,7 @@ const PROCESS_CATALOG: ProcessCatalogItem[] = [
     id: "sf-003",
     label: "Issue to Site",
     app: "Storefront",
-    description: "Record material issues from store to construction site",
+    description: "Record material issues from store to project site",
     requiresApproval: false,
   },
   {
@@ -289,13 +293,13 @@ const PROCESS_CATALOG: ProcessCatalogItem[] = [
 ];
 
 const CATALOG_APP_COLORS: Record<string, string> = {
-  Procurement: "bg-blue-50 text-blue-700 border-blue-100",
-  Finance: "bg-emerald-50 text-emerald-700 border-emerald-100",
-  HR: "bg-purple-50 text-purple-700 border-purple-100",
-  ESS: "bg-teal-50 text-teal-700 border-teal-100",
-  Construction: "bg-amber-50 text-amber-700 border-amber-100",
-  Storefront: "bg-orange-50 text-orange-700 border-orange-100",
-  Admin: "bg-indigo-50 text-indigo-700 border-indigo-100",
+  Procurement: "bg-blue-100 text-blue-700 border-blue-200",
+  Finance: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  HR: "bg-purple-100 text-purple-700 border-purple-200",
+  ESS: "bg-teal-100 text-teal-700 border-teal-200",
+  Construction: "bg-amber-100 text-amber-700 border-amber-200",
+  Storefront: "bg-orange-100 text-orange-700 border-orange-200",
+  Admin: "bg-indigo-100 text-indigo-700 border-indigo-200",
 };
 
 // Map the backend's lowercase app keys to the display labels used above so the
@@ -334,16 +338,199 @@ function TypeBadge({ type }: { type: ApprovalType }) {
   );
 }
 
+// ── Tier approval condition editor ────────────────────────────────────
+type TierConditionMode = "all" | "above" | "upto" | "between" | "custom";
+
+interface TierConditionState {
+  mode: TierConditionMode;
+  amount: string;
+  amount2: string;
+  customText: string;
+}
+
+const TIER_CONDITION_OPTIONS: { value: TierConditionMode; label: string }[] = [
+  { value: "all", label: "All amounts" },
+  { value: "above", label: "Above amount" },
+  { value: "upto", label: "Up to amount" },
+  { value: "between", label: "Between amounts" },
+  { value: "custom", label: "Custom…" },
+];
+
+function digitsOnly(value: string): string {
+  return value.replace(/[^\d.]/g, "");
+}
+
+function formatConditionAmount(value: string): string {
+  const numeric = Number(digitsOnly(value));
+  return value !== "" && Number.isFinite(numeric)
+    ? formatNumberByGeneralSettings(numeric)
+    : value;
+}
+
+// Parse a stored free-text condition back into structured fields so existing
+// workflows remain editable through the new controls (falls back to custom).
+function parseTierCondition(raw: string): TierConditionState {
+  const text = (raw ?? "").trim();
+  const base: TierConditionState = {
+    mode: "all",
+    amount: "",
+    amount2: "",
+    customText: "",
+  };
+  if (!text || /^all\b/i.test(text)) return base;
+
+  const numbers = (text.match(/[\d][\d.,]*/g) ?? []).map(digitsOnly);
+
+  if (/^(above|over|greater|more than)/i.test(text) && numbers[0]) {
+    return { ...base, mode: "above", amount: numbers[0] };
+  }
+  if (/^(up to|below|under|less than|max)/i.test(text) && numbers[0]) {
+    return { ...base, mode: "upto", amount: numbers[0] };
+  }
+  if (/^between/i.test(text) && numbers[0] && numbers[1]) {
+    return { ...base, mode: "between", amount: numbers[0], amount2: numbers[1] };
+  }
+  return { ...base, mode: "custom", customText: text };
+}
+
+// Compose a human-readable condition. Incomplete numeric conditions resolve to
+// an empty string so the existing "each tier needs a condition" validation can
+// catch them.
+function composeTierCondition(state: TierConditionState): string {
+  const sym = getCurrencySymbol();
+  switch (state.mode) {
+    case "all":
+      return "All amounts";
+    case "above":
+      return state.amount
+        ? `Above ${sym}${formatConditionAmount(state.amount)}`
+        : "";
+    case "upto":
+      return state.amount
+        ? `Up to ${sym}${formatConditionAmount(state.amount)}`
+        : "";
+    case "between":
+      return state.amount && state.amount2
+        ? `Between ${sym}${formatConditionAmount(state.amount)} and ${sym}${formatConditionAmount(state.amount2)}`
+        : "";
+    case "custom":
+      return state.customText.trim();
+    default:
+      return "";
+  }
+}
+
+function TierConditionField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+}) {
+  const [state, setState] = useState<TierConditionState>(() =>
+    parseTierCondition(value),
+  );
+
+  const update = (patch: Partial<TierConditionState>) => {
+    const next = { ...state, ...patch };
+    setState(next);
+    onChange(composeTierCondition(next));
+  };
+
+  const symbol = getCurrencySymbol();
+  const preview = composeTierCondition(state);
+
+  return (
+    <div className="space-y-1.5">
+      <select
+        value={state.mode}
+        onChange={(e) => update({ mode: e.target.value as TierConditionMode })}
+        className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+      >
+        {TIER_CONDITION_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+
+      {(state.mode === "above" || state.mode === "upto") && (
+        <div className="relative">
+          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+            {symbol}
+          </span>
+          <input
+            inputMode="decimal"
+            value={state.amount}
+            onChange={(e) => update({ amount: digitsOnly(e.target.value) })}
+            placeholder="0"
+            className="w-full pl-6 pr-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+          />
+        </div>
+      )}
+
+      {state.mode === "between" && (
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+              {symbol}
+            </span>
+            <input
+              inputMode="decimal"
+              value={state.amount}
+              onChange={(e) => update({ amount: digitsOnly(e.target.value) })}
+              placeholder="Min"
+              className="w-full pl-6 pr-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+          </div>
+          <span className="text-xs text-gray-400">and</span>
+          <div className="relative flex-1">
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">
+              {symbol}
+            </span>
+            <input
+              inputMode="decimal"
+              value={state.amount2}
+              onChange={(e) => update({ amount2: digitsOnly(e.target.value) })}
+              placeholder="Max"
+              className="w-full pl-6 pr-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+            />
+          </div>
+        </div>
+      )}
+
+      {state.mode === "custom" && (
+        <input
+          value={state.customText}
+          onChange={(e) => update({ customText: e.target.value })}
+          placeholder="Describe the condition"
+          className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
+        />
+      )}
+
+      {state.mode !== "all" && state.mode !== "custom" && (
+        <p className="text-[11px] text-gray-400">
+          {preview
+            ? `Applies when amount is: ${preview}`
+            : "Enter an amount to complete this condition."}
+        </p>
+      )}
+    </div>
+  );
+}
+
 // ── Configure Workflow Modal ──────────────────────────────────────────────────
 function ConfigureWorkflowModal({
   existing,
   availableProcesses,
+  configuredProcessIds,
   availableUsers,
   onSave,
   onClose,
 }: {
   existing?: ProcessWorkflow;
   availableProcesses: { id: string; label: string; app: string }[];
+  configuredProcessIds: Set<string>;
   availableUsers: string[];
   onSave: (wf: ProcessWorkflow) => Promise<void>;
   onClose: () => void;
@@ -351,11 +538,22 @@ function ConfigureWorkflowModal({
   const existingProcess = existing
     ? availableProcesses.find((p) => p.id === existing.processId)
     : undefined;
+  // When adding, default to the first process that doesn't already have a
+  // workflow so the form never opens on a disabled (already-configured) option.
+  const firstSelectableProcess =
+    availableProcesses.find((p) => !configuredProcessIds.has(p.id)) ??
+    availableProcesses[0];
+  const hasSelectableProcess =
+    !!existing ||
+    availableProcesses.some((p) => !configuredProcessIds.has(p.id));
   const [selectedProcess, setSelectedProcess] = useState(
-    existingProcess?.label ?? existing?.process ?? availableProcesses[0]?.label ?? "",
+    existingProcess?.label ??
+      existing?.process ??
+      firstSelectableProcess?.label ??
+      "",
   );
   const [selectedApp, setSelectedApp] = useState(
-    existingProcess?.app ?? existing?.app ?? availableProcesses[0]?.app ?? "",
+    existingProcess?.app ?? existing?.app ?? firstSelectableProcess?.app ?? "",
   );
   const [wfType, setWfType] = useState<ApprovalType>(
     existing?.workflowType ?? "single",
@@ -384,7 +582,7 @@ function ConfigureWorkflowModal({
   const addTierLevel = () => {
     setTierLevels((prev) => [
       ...prev,
-      { level: prev.length + 1, approver: "", condition: "" },
+      { level: prev.length + 1, approver: "", condition: "All amounts" },
     ]);
   };
 
@@ -460,6 +658,12 @@ function ConfigureWorkflowModal({
               {formError}
             </p>
           )}
+          {!hasSelectableProcess && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+              Every process already has an approval workflow. Edit or delete an
+              existing workflow instead of adding a new one.
+            </p>
+          )}
           {/* Select process */}
           <div>
             <label className="block text-xs font-medium text-gray-700 mb-1.5">
@@ -476,11 +680,21 @@ function ConfigureWorkflowModal({
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             >
-              {availableProcesses.map((p) => (
-                <option key={p.id} value={p.label}>
-                  [{p.app}] {p.label}
-                </option>
-              ))}
+              {availableProcesses.map((p) => {
+                const alreadyConfigured =
+                  configuredProcessIds.has(p.id) &&
+                  p.id !== existing?.processId;
+                return (
+                  <option
+                    key={p.id}
+                    value={p.label}
+                    disabled={alreadyConfigured}
+                  >
+                    [{p.app}] {p.label}
+                    {alreadyConfigured ? " — workflow configured" : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
 
@@ -619,19 +833,15 @@ function ConfigureWorkflowModal({
                           </option>
                         ))}
                       </select>
-                      <input
+                      <TierConditionField
                         value={level.condition}
-                        onChange={(e) =>
+                        onChange={(next) =>
                           setTierLevels((prev) =>
                             prev.map((l, li) =>
-                              li === i
-                                ? { ...l, condition: e.target.value }
-                                : l,
+                              li === i ? { ...l, condition: next } : l,
                             ),
                           )
                         }
-                        placeholder="Condition, e.g. Above ₦1,000,000"
-                        className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
                       />
                     </div>
                     {tierLevels.length > 1 && (
@@ -671,8 +881,8 @@ function ConfigureWorkflowModal({
           </button>
           <button
             onClick={handleSave}
-            disabled={saving}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700"
+            disabled={saving || !hasSelectableProcess}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {saving
               ? existing
@@ -862,15 +1072,17 @@ export function ProjectConfigurationPage() {
                       </p>
                     </div>
                     <div className="flex items-center gap-2 flex-shrink-0">
-                      {/* One of two states: a workflow is attached (configured)
-                          or the process still only requires approval. */}
-                      {workflows.find((w) => w.processId === proc.id) ? (
-                        <span className="flex items-center gap-1 text-xs text-indigo-700 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-full">
-                          <CheckCircle2 className="w-3 h-3" /> Workflow Configured
-                        </span>
-                      ) : (
+                      {/* The "Requires Approval" tag is driven solely by whether
+                          an approval workflow has been configured for the
+                          process in the Process Workflows tab. Processes without
+                          a workflow are not marked as requiring approval. */}
+                      {workflows.some((w) => w.processId === proc.id) ? (
                         <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-50 border border-amber-100 px-2 py-0.5 rounded-full">
                           <CheckCircle2 className="w-3 h-3" /> Requires Approval
+                        </span>
+                      ) : (
+                        <span className="text-xs text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-full">
+                          No approval required
                         </span>
                       )}
                     </div>
@@ -996,7 +1208,12 @@ export function ProjectConfigurationPage() {
                             <p className="text-sm font-medium text-gray-900">
                               {wf.process}
                             </p>
-                            <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">
+                            <span
+                              className={`text-xs font-medium px-2 py-0.5 rounded-full border ${
+                                CATALOG_APP_COLORS[wf.app] ??
+                                "bg-gray-100 text-gray-600 border-gray-200"
+                              }`}
+                            >
                               {wf.app}
                             </span>
                           </div>
@@ -1117,6 +1334,7 @@ export function ProjectConfigurationPage() {
         <ConfigureWorkflowModal
           existing={editingWf}
           availableProcesses={availableProcesses}
+          configuredProcessIds={new Set(workflows.map((w) => w.processId))}
           availableUsers={availableUsers}
           onSave={async (wf) => {
             const duplicate = workflows.find(
