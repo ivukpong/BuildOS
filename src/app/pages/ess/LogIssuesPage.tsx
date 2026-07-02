@@ -9,7 +9,7 @@ import {
   ChevronUp,
 } from "lucide-react";
 import { getIssues, createIssue } from "../../api/hr-extras";
-import { getIssueTypes } from "../../api/admin-extras";
+import { getPublicIssueTypes } from "../../api/admin-extras";
 import { useAuthUser } from "../../utils/useAuthUser";
 import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 
@@ -95,7 +95,7 @@ export function LogIssuesPage() {
       console.error(err);
       toast.error("Failed to load issues.");
     });
-    getIssueTypes()
+    getPublicIssueTypes()
       .then((types) =>
         setIssueTypes(
           types
@@ -116,6 +116,10 @@ export function LogIssuesPage() {
     if (!form.title.trim()) return;
     if (!form.type) {
       toast.error("Please select an issue type.");
+      return;
+    }
+    if (!form.description.trim()) {
+      toast.error("Please provide a description.");
       return;
     }
     setSaving(true);
@@ -302,7 +306,7 @@ export function LogIssuesPage() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-600 mb-1">
-                  Description
+                  Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
                   className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-teal-500 resize-none"
@@ -335,7 +339,7 @@ export function LogIssuesPage() {
               </button>
               <button
                 onClick={submit}
-                disabled={!form.title.trim() || saving}
+                disabled={!form.title.trim() || !form.description.trim() || saving}
                 className="px-4 py-2 text-sm bg-teal-600 text-white rounded-xl hover:bg-teal-700 disabled:opacity-50"
               >
                 {saving ? "Submitting…" : "Submit Issue"}

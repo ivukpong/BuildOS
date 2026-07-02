@@ -225,39 +225,39 @@ const PROCESS_CATALOG: ProcessCatalogItem[] = [
     description: "Process and pay out approved expense reimbursements",
     requiresApproval: false,
   },
-  // Construction / Projects
+  // Projects
   {
     id: "ct-001",
     label: "Create Project",
-    app: "Construction",
+    app: "Projects",
     description: "Register a new project with scope, budget, and timeline",
     requiresApproval: true,
   },
   {
     id: "ct-002",
     label: "Approve Project Budget",
-    app: "Construction",
+    app: "Projects",
     description: "Authorize total project expenditure limits",
     requiresApproval: true,
   },
   {
     id: "ct-003",
     label: "Assign Workforce",
-    app: "Construction",
+    app: "Projects",
     description: "Allocate personnel to project tasks and sites",
     requiresApproval: false,
   },
   {
     id: "ct-004",
     label: "Milestone Approval",
-    app: "Construction",
+    app: "Projects",
     description: "Sign off on completion of project milestones",
     requiresApproval: true,
   },
   {
     id: "ct-005",
     label: "Contract Revenue",
-    app: "Construction",
+    app: "Projects",
     description: "Recognize revenue against contract milestones billed",
     requiresApproval: true,
   },
@@ -297,6 +297,8 @@ const CATALOG_APP_COLORS: Record<string, string> = {
   Finance: "bg-emerald-100 text-emerald-700 border-emerald-200",
   HR: "bg-purple-100 text-purple-700 border-purple-200",
   ESS: "bg-teal-100 text-teal-700 border-teal-200",
+  Projects: "bg-amber-100 text-amber-700 border-amber-200",
+  // Legacy label kept so previously-saved workflows still render correctly.
   Construction: "bg-amber-100 text-amber-700 border-amber-200",
   Storefront: "bg-orange-100 text-orange-700 border-orange-200",
   Admin: "bg-indigo-100 text-indigo-700 border-indigo-200",
@@ -309,7 +311,7 @@ const APP_DISPLAY_LABELS: Record<string, string> = {
   finance: "Finance",
   hr: "HR",
   ess: "ESS",
-  construction: "Construction",
+  construction: "Projects",
   storefront: "Storefront",
   admin: "Admin",
 };
@@ -611,6 +613,16 @@ function ConfigureWorkflowModal({
       setFormError("Each tier level requires an approver and a condition.");
       return;
     }
+    if (wfType === "tier") {
+      const approvers = tierLevels.map((l) => l.approver.trim());
+      const hasDuplicate = approvers.some(
+        (a, idx) => a && approvers.indexOf(a) !== idx,
+      );
+      if (hasDuplicate) {
+        setFormError("Each approval level must have a different approver.");
+        return;
+      }
+    }
 
     setSaving(true);
     setFormError(null);
@@ -827,11 +839,21 @@ function ConfigureWorkflowModal({
                         className="w-full px-2 py-1.5 border border-gray-300 rounded text-xs focus:outline-none focus:ring-1 focus:ring-indigo-400"
                       >
                         <option value="">Select approver…</option>
-                        {availableUsers.map((u) => (
-                          <option key={u} value={u}>
-                            {u}
-                          </option>
-                        ))}
+                        {availableUsers.map((u) => {
+                          const takenByOtherLevel = tierLevels.some(
+                            (l, li) => li !== i && l.approver === u,
+                          );
+                          return (
+                            <option
+                              key={u}
+                              value={u}
+                              disabled={takenByOtherLevel}
+                            >
+                              {u}
+                              {takenByOtherLevel ? " — already an approver" : ""}
+                            </option>
+                          );
+                        })}
                       </select>
                       <TierConditionField
                         value={level.condition}

@@ -418,7 +418,7 @@ export function SettingsPage() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Settings</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Construction module configuration
+            Projects module configuration
           </p>
         </div>
         <button

@@ -196,6 +196,8 @@ export const deleteAppRole = (id: string) =>
 
 // Issue Types
 export const getIssueTypes = () => apiFetch<IssueTypeConfig[]>('/admin/issue-types');
+// Public read for non-admin apps (e.g. ESS Log Issues) to load configured types.
+export const getPublicIssueTypes = () => apiFetch<IssueTypeConfig[]>('/admin/issue-types/public');
 export const createIssueType = (data: Omit<IssueTypeConfig, 'id'>) =>
     apiFetch<IssueTypeConfig>('/admin/issue-types', { method: 'POST', body: JSON.stringify(data) });
 export const updateIssueType = (id: string, data: Partial<Omit<IssueTypeConfig, 'id'>>) =>
@@ -205,6 +207,8 @@ export const deleteIssueType = (id: string) =>
 
 // Change Categories
 export const getChangeCategories = () => apiFetch<ChangeCategoryConfig[]>('/admin/change-categories');
+// Public read for non-admin apps (e.g. ESS change requests) to load configured categories.
+export const getPublicChangeCategories = () => apiFetch<ChangeCategoryConfig[]>('/admin/change-categories/public');
 export const createChangeCategory = (data: Omit<ChangeCategoryConfig, 'id'>) =>
     apiFetch<ChangeCategoryConfig>('/admin/change-categories', { method: 'POST', body: JSON.stringify(data) });
 export const updateChangeCategory = (id: string, data: Partial<Omit<ChangeCategoryConfig, 'id'>>) =>

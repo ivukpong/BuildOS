@@ -92,6 +92,12 @@ export class AdminExtrasController {
     @Get('issue-types')
     @Roles('admin')
     getIssueTypes() { return this.svc.findAllIssueTypes(); }
+
+    // Public read so ESS employees (non-admin) can populate the "Log Issue"
+    // type dropdown from the same admin-configured list.
+    @Get('issue-types/public')
+    @Public()
+    getPublicIssueTypes() { return this.svc.findAllIssueTypes(); }
     
     @Post('issue-types')
     @Roles('admin')
@@ -109,6 +115,12 @@ export class AdminExtrasController {
     @Get('change-categories')
     @Roles('admin')
     getChangeCategories() { return this.svc.findAllChangeCategories(); }
+
+    // Public read so ESS employees (non-admin) can populate the change-request
+    // category dropdown from the same admin-configured list.
+    @Get('change-categories/public')
+    @Public()
+    getPublicChangeCategories() { return this.svc.findAllChangeCategories(); }
     
     @Post('change-categories')
     @Roles('admin')

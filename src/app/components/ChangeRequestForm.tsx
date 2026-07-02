@@ -1,16 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AttachmentsSection } from "./AttachmentsSection";
 import { createIssue } from "../api/hr-extras";
+import { getPublicChangeCategories } from "../api/admin-extras";
 import { useAuthUser } from "../utils/useAuthUser";
 import { getCurrencySymbol } from "../utils/generalSettings";
 
-const changeCategoryOptions = [
-  "Personal Details",
-  "Bank Details",
-  "Address",
-  "Emergency Contact",
-  "Other",
-];
 const changeTypeOptions = ["Cost", "Scope", "Schedule", "Design", "Quality"];
 
 interface ChangeRequestFormProps {
@@ -29,6 +23,8 @@ export function ChangeRequestForm({
   submitLabel = "Submit Change Request",
 }: ChangeRequestFormProps) {
   const authUser = useAuthUser();
+  const [categoryOptions, setCategoryOptions] = useState<string[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     category: "",
@@ -48,6 +44,18 @@ export function ChangeRequestForm({
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [attachments, setAttachments] = useState<File[]>([]);
+
+  // Load the change categories configured in Admin > Change Categories so the
+  // dropdown always reflects the current configuration instead of a hardcoded
+  // list. Falls back to an empty list (handled in the UI) if the request fails.
+  useEffect(() => {
+    getPublicChangeCategories()
+      .then((cats) =>
+        setCategoryOptions(cats.map((c) => c.name).filter(Boolean)),
+      )
+      .catch(() => setCategoryOptions([]))
+      .finally(() => setCategoriesLoading(false));
+  }, []);
 
   function toggleChangeType(t: string) {
     setForm((f) => ({
@@ -139,12 +147,19 @@ export function ChangeRequestForm({
             onChange={(e) => field("category", e.target.value)}
             className={`w-full border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 ${errors.category ? "border-red-400" : "border-gray-300"}`}
           >
-            <option value="">Select category…</option>
-            {changeCategoryOptions.map((c) => (
+            <option value="">
+              {categoriesLoading ? "Loading categories…" : "Select category…"}
+            </option>
+            {categoryOptions.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
             ))}
+            {!categoriesLoading && categoryOptions.length === 0 && (
+              <option value="" disabled>
+                No categories configured in Admin settings
+              </option>
+            )}
           </select>
           {errors.category && (
             <p className="text-xs text-red-500 mt-1">{errors.category}</p>
