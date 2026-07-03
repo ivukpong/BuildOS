@@ -17,40 +17,17 @@ import { TimelineService } from './timeline.service';
 export class TimelineController {
   constructor(private timelineService: TimelineService) {}
 
-  // ── Timeline CRUD ──
-  @Post()
-  @Roles('admin', 'project-manager')
-  async create(@Body() createDto: any) {
-    const timeline = await this.timelineService.createTimeline(createDto);
-    return { success: true, data: timeline, message: 'Timeline created' };
-  }
-
-  @Get(':id')
-  @Roles('admin', 'project-manager', 'team-lead')
-  async getOne(@Param('id') id: string) {
-    const timeline = await this.timelineService.getTimeline(id);
-    return { success: true, data: timeline };
-  }
+  // NOTE: Basic timeline CRUD (GET/POST /timelines, GET/PUT/DELETE
+  // /timelines/:id) is served by ConstructionExtrasController, which is
+  // registered first. The equivalent handlers that used to live here were
+  // unreachable dead code and have been removed. This controller keeps the
+  // richer, service-backed routes below.
 
   @Get('project/:projectId')
   @Roles('admin', 'project-manager', 'team-lead')
   async getProjectTimelines(@Param('projectId') projectId: string) {
     const timelines = await this.timelineService.getProjectTimelines(projectId);
     return { success: true, data: timelines };
-  }
-
-  @Put(':id')
-  @Roles('admin', 'project-manager')
-  async update(@Param('id') id: string, @Body() updateDto: any) {
-    const timeline = await this.timelineService.updateTimeline(id, updateDto);
-    return { success: true, data: timeline, message: 'Timeline updated' };
-  }
-
-  @Delete(':id')
-  @Roles('admin', 'project-manager')
-  async delete(@Param('id') id: string) {
-    await this.timelineService.deleteTimeline(id);
-    return { success: true, message: 'Timeline deleted' };
   }
 
   // ── Phase Management ──

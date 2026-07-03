@@ -219,21 +219,77 @@ export function getGreeting(value?: string | number | Date): string {
 export function getCurrentFiscalQuarterLabel(
   value?: string | number | Date,
 ): string {
+  return getFiscalQuarterRange(0, value).label;
+}
+
+/** A labelled date range (ISO YYYY-MM-DD, inclusive) for a fiscal period. */
+export interface FiscalPeriodRange {
+  label: string;
+  from: string;
+  to: string;
+}
+
+function fiscalYearStartMonth(): number {
   const { fiscalYearStart } = getGeneralSettings();
-  const startMonth = Math.min(
-    12,
-    Math.max(1, Number.parseInt(fiscalYearStart, 10) || 1),
-  );
+  return Math.min(12, Math.max(1, Number.parseInt(fiscalYearStart, 10) || 1));
+}
+
+function isoDate(d: Date): string {
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+
+/**
+ * Returns the fiscal quarter range `offset` quarters away from the current
+ * one (0 = current quarter, -1 = previous quarter, …), based on the
+ * configured fiscal year start month.
+ */
+export function getFiscalQuarterRange(
+  offset = 0,
+  value?: string | number | Date,
+): FiscalPeriodRange {
+  const startMonth = fiscalYearStartMonth();
   const now = toDate(value ?? new Date()) ?? new Date();
 
   const monthsSinceFYStart = (now.getMonth() + 1 - startMonth + 12) % 12;
-  const quarter = Math.floor(monthsSinceFYStart / 3) + 1;
   const fiscalYear =
     now.getMonth() + 1 >= startMonth
       ? now.getFullYear()
       : now.getFullYear() - 1;
 
-  return `Q${quarter} ${fiscalYear}`;
+  // Absolute quarter index so offsets roll across fiscal-year boundaries.
+  const absoluteQuarter =
+    fiscalYear * 4 + Math.floor(monthsSinceFYStart / 3) + offset;
+  const fy = Math.floor(absoluteQuarter / 4);
+  const quarter = ((absoluteQuarter % 4) + 4) % 4; // 0-based
+
+  const start = new Date(fy, startMonth - 1 + quarter * 3, 1);
+  const end = new Date(fy, startMonth - 1 + quarter * 3 + 3, 0);
+  return {
+    label: `Q${quarter + 1} ${fy}`,
+    from: isoDate(start),
+    to: isoDate(end),
+  };
+}
+
+/**
+ * Returns the current fiscal year range (e.g. "FY2026"), based on the
+ * configured fiscal year start month.
+ */
+export function getFiscalYearRange(
+  value?: string | number | Date,
+): FiscalPeriodRange {
+  const startMonth = fiscalYearStartMonth();
+  const now = toDate(value ?? new Date()) ?? new Date();
+  const fy =
+    now.getMonth() + 1 >= startMonth
+      ? now.getFullYear()
+      : now.getFullYear() - 1;
+  const start = new Date(fy, startMonth - 1, 1);
+  const end = new Date(fy, startMonth - 1 + 12, 0);
+  return { label: `FY${fy}`, from: isoDate(start), to: isoDate(end) };
 }
 
 /**

@@ -11,6 +11,13 @@ import {
 } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
 import { apiFetch } from "../../api/client";
+import {
+  formatCurrencyByGeneralSettings,
+  formatDateByGeneralSettings,
+  formatNumberByGeneralSettings,
+  getFiscalQuarterRange,
+  getFiscalYearRange,
+} from "../../utils/generalSettings";
 
 type ReportType =
   | "Expense Report"
@@ -35,13 +42,67 @@ interface ReportRow {
   positive?: boolean;
 }
 
-const PERIOD_OPTS = [
-  "April 2026",
-  "March 2026",
-  "Q1 2026",
-  "Q2 2026",
-  "FY2026",
-];
+interface ApiReportRow {
+  label: string;
+  amount: number;
+  format?: "currency" | "count" | "percent";
+  sub?: string;
+  positive?: boolean;
+}
+
+interface PeriodOption {
+  label: string;
+  from: string;
+  to: string;
+}
+
+function monthRange(offset: number): PeriodOption {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), now.getMonth() + offset, 1);
+  const end = new Date(now.getFullYear(), now.getMonth() + offset + 1, 0);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return {
+    label: start.toLocaleDateString("en-US", {
+      month: "long",
+      year: "numeric",
+    }),
+    from: iso(start),
+    to: iso(end),
+  };
+}
+
+// Periods derived from today and the configured fiscal year start.
+function buildPeriodOptions(): PeriodOption[] {
+  const options = [
+    monthRange(0),
+    monthRange(-1),
+    getFiscalQuarterRange(0),
+    getFiscalQuarterRange(-1),
+    getFiscalYearRange(),
+  ];
+  // De-duplicate by label (e.g. quarter matching the fiscal year in edge configs).
+  return options.filter(
+    (opt, i) => options.findIndex((o) => o.label === opt.label) === i,
+  );
+}
+
+function toDisplayRow(row: ApiReportRow): ReportRow {
+  let value: string;
+  switch (row.format) {
+    case "count":
+      value = formatNumberByGeneralSettings(row.amount);
+      break;
+    case "percent":
+      value = `${formatNumberByGeneralSettings(row.amount)}%`;
+      break;
+    case "currency":
+    default:
+      value = formatCurrencyByGeneralSettings(row.amount);
+      break;
+  }
+  return { label: row.label, value, sub: row.sub, positive: row.positive };
+}
 
 const templates: ReportTemplate[] = [
   {
@@ -87,15 +148,28 @@ const templates: ReportTemplate[] = [
 ];
 
 export function FinanceReportsPage() {
+  const [periodOptions] = useState<PeriodOption[]>(() => buildPeriodOptions());
   const [selectedReport, setSelectedReport] = useState<string>("expense");
-  const [period, setPeriod] = useState("April 2026");
+  const [period, setPeriod] = useState<string>(
+    () => buildPeriodOptions()[0]?.label ?? "",
+  );
   const [reportData, setReportData] = useState<Record<string, ReportRow[]>>({});
 
   useEffect(() => {
-    apiFetch("/report-templates")
-      .then((data) => setReportData(data || {}))
+    const opt = periodOptions.find((p) => p.label === period);
+    const qs = opt
+      ? `?from=${encodeURIComponent(opt.from)}&to=${encodeURIComponent(opt.to)}`
+      : "";
+    apiFetch<Record<string, ApiReportRow[]>>(`/finance-reports${qs}`)
+      .then((data) => {
+        const mapped: Record<string, ReportRow[]> = {};
+        for (const [key, rows] of Object.entries(data ?? {})) {
+          if (Array.isArray(rows)) mapped[key] = rows.map(toDisplayRow);
+        }
+        setReportData(mapped);
+      })
       .catch(() => setReportData({}));
-  }, []);
+  }, [period, periodOptions]);
 
   function handleExport() {
     exportCSV(
@@ -125,9 +199,9 @@ export function FinanceReportsPage() {
             onChange={(e) => setPeriod(e.target.value)}
             className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
-            {PERIOD_OPTS.map((p) => (
-              <option key={p} value={p}>
-                {p}
+            {periodOptions.map((p) => (
+              <option key={p.label} value={p.label}>
+                {p.label}
               </option>
             ))}
           </select>
@@ -234,10 +308,10 @@ export function FinanceReportsPage() {
           {/* Footer note */}
           <div className="mt-4 p-4 bg-gray-50 rounded-xl">
             <p className="text-xs text-gray-500">
-              <strong>Generated:</strong> Apr 13, 2026 ·{" "}
+              <strong>Generated:</strong>{" "}
+              {formatDateByGeneralSettings(new Date())} ·{" "}
               <strong>Source:</strong> BuildOS Finance Module ·{" "}
-              <strong>Period:</strong> {period} · All figures in USD unless
-              otherwise stated.
+              <strong>Period:</strong> {period}
             </p>
           </div>
         </div>

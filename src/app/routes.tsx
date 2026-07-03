@@ -192,6 +192,8 @@ export const router = createBrowserRouter([
   {
     path: "/",
     Component: RootLayout,
+    // Rendered while lazy route modules load on initial hydration.
+    HydrateFallback: () => null,
     children: [
       {
         path: "auth",

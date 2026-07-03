@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, toApiArray, unwrapApiResult } from './client';
 
 export interface Task {
     id: string;
@@ -29,27 +29,31 @@ export interface CreateTaskDto {
     createdBy?: string;
 }
 
-export function getTasks(status?: string, projectId?: string, assignedTo?: string): Promise<Task[]> {
+export async function getTasks(status?: string, projectId?: string, assignedTo?: string): Promise<Task[]> {
     const params = new URLSearchParams();
     if (status) params.set('status', status);
     if (projectId) params.set('projectId', projectId);
     if (assignedTo) params.set('assignedTo', assignedTo);
-    const qs = params.toString();
-    return apiFetch<Task[]>(`/tasks${qs ? `?${qs}` : ''}`);
+    params.set('limit', '500');
+    return toApiArray<Task>(await apiFetch(`/tasks?${params}`));
 }
 
-export function getTask(id: string): Promise<Task> {
-    return apiFetch<Task>(`/tasks/${id}`);
+export async function getTask(id: string): Promise<Task> {
+    return unwrapApiResult<Task>(await apiFetch(`/tasks/${id}`));
 }
 
-export function createTask(dto: CreateTaskDto): Promise<Task> {
-    return apiFetch<Task>('/tasks', { method: 'POST', body: JSON.stringify(dto) });
+export async function createTask(dto: CreateTaskDto): Promise<Task> {
+    return unwrapApiResult<Task>(
+        await apiFetch('/tasks', { method: 'POST', body: JSON.stringify(dto) }),
+    );
 }
 
-export function updateTask(id: string, dto: Partial<CreateTaskDto>): Promise<Task> {
-    return apiFetch<Task>(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(dto) });
+export async function updateTask(id: string, dto: Partial<CreateTaskDto>): Promise<Task> {
+    return unwrapApiResult<Task>(
+        await apiFetch(`/tasks/${id}`, { method: 'PUT', body: JSON.stringify(dto) }),
+    );
 }
 
-export function deleteTask(id: string): Promise<Task> {
-    return apiFetch<Task>(`/tasks/${id}`, { method: 'DELETE' });
+export async function deleteTask(id: string): Promise<Task> {
+    return unwrapApiResult<Task>(await apiFetch(`/tasks/${id}`, { method: 'DELETE' }));
 }

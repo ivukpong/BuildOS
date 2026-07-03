@@ -64,6 +64,40 @@ function toBackend(data: Record<string, any>): Record<string, any> {
     return out;
 }
 
+export type BoardStatus =
+    | 'To Do'
+    | 'In Progress'
+    | 'Awaiting Approval'
+    | 'Approved'
+    | 'Declined';
+
+/**
+ * Normalises any stored task status onto the My Tasks board columns so tasks
+ * never disappear from the board (statuses are written by several pages using
+ * different vocabularies: "Pending"/"Completed", "todo"/"done", board labels).
+ */
+export function toBoardStatus(status: string | undefined): BoardStatus {
+    const s = (status ?? '').toLowerCase().replace(/[^a-z]/g, '');
+    switch (s) {
+        case 'inprogress':
+            return 'In Progress';
+        case 'awaitingapproval':
+        case 'submitted':
+            return 'Awaiting Approval';
+        case 'approved':
+        case 'completed':
+        case 'done':
+            return 'Approved';
+        case 'declined':
+        case 'rejected':
+        case 'blocked':
+        case 'cancelled':
+            return 'Declined';
+        default:
+            return 'To Do';
+    }
+}
+
 export async function listAppTasks(): Promise<AppTaskApi[]> {
     const res = await apiFetch<TaskEnvelope>('/tasks?limit=500');
     const rows = Array.isArray(res) ? res : res?.data ?? [];

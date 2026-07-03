@@ -109,7 +109,7 @@ const COLUMNS: Column[] = [
   },
 ];
 
-const TODAY = "2026-04-14";
+const TODAY = new Date().toISOString().slice(0, 10);
 
 export function MyTasksPage() {
   const { tasks, updateTask } = useTasks();
@@ -217,11 +217,11 @@ export function MyTasksPage() {
         })}
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-4 -mx-1 px-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 pb-4">
         {COLUMNS.map((col) => {
           const colTasks = myTasks.filter((t) => t.status === col.status);
           return (
-            <div key={col.status} className="flex-shrink-0 w-60">
+            <div key={col.status} className="min-w-0">
               <div
                 className={`flex items-center gap-2 px-3 py-2.5 rounded-t-xl border ${col.headerClass}`}
               >
@@ -243,6 +243,7 @@ export function MyTasksPage() {
                 {colTasks.map((task) => {
                   const isExpanded = expandedId === task.id;
                   const overdue =
+                    !!task.dueDate &&
                     !["Approved", "Declined"].includes(task.status) &&
                     task.dueDate < TODAY;
 

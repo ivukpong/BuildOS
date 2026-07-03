@@ -13,6 +13,12 @@ export class FinanceExtrasController {
     getAllTransactions(@Query('type') type?: string, @Query('status') status?: string) {
         return this.svc.findAllTransactions(type, status);
     }
+
+    // ── Finance Reports (aggregated data for the Financial Reports page) ──
+    @Get('finance-reports')
+    getFinanceReports(@Query('from') from?: string, @Query('to') to?: string) {
+        return this.svc.buildFinanceReports(from, to);
+    }
     @Get('transactions/:id')
     getTransaction(@Param('id') id: string) { return this.svc.findTransaction(id); }
     @Post('transactions')

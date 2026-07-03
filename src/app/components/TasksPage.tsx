@@ -12,7 +12,14 @@ import {
   CalendarDays,
   User,
 } from "lucide-react";
-import { listAppTasks } from "../api/app-tasks";
+import { toast } from "sonner";
+import {
+  listAppTasks,
+  createAppTask,
+  updateAppTask,
+  deleteAppTask,
+} from "../api/app-tasks";
+import { fetchEmployees } from "../api/employees";
 
 type TaskStatus = "Pending" | "In Progress" | "Completed";
 type TaskPriority = "Low" | "Medium" | "High";
@@ -42,6 +49,14 @@ const DEPT_USERS: Record<string, string[]> = {};
 function makeId() {
   return `TASK-${String(Math.floor(Math.random() * 9000) + 1000)}`;
 }
+
+// Status values written to the backend. New tasks are stored as "To Do" so
+// they also appear on the My Tasks board, which uses the board status model.
+const STATUS_TO_BACKEND: Record<TaskStatus, string> = {
+  Pending: "To Do",
+  "In Progress": "In Progress",
+  Completed: "Completed",
+};
 
 const STATUS_ICON: Record<TaskStatus, ReactNode> = {
   Pending: <Circle className="w-4 h-4 text-gray-400" />,
@@ -85,10 +100,31 @@ export function TasksPage({
   ringColor = "focus:ring-indigo-500",
   badgeColor = "bg-indigo-50 text-indigo-700",
 }: TasksPageProps) {
-  const users = DEPT_USERS[app] ?? ["Team Member"];
+  const [employeeNames, setEmployeeNames] = useState<string[]>([]);
   const today = new Date().toISOString().slice(0, 10);
 
   const [tasks, setTasks] = useState<Task[]>([]);
+
+  // Assignee options: real employees merged with assignees already on tasks.
+  const users = Array.from(
+    new Set([
+      ...(DEPT_USERS[app] ?? []),
+      ...employeeNames,
+      ...tasks.map((t) => t.assignedTo).filter(Boolean),
+    ]),
+  );
+  if (users.length === 0) users.push("Team Member");
+
+  useEffect(() => {
+    fetchEmployees()
+      .then((emps) => {
+        const names = emps
+          .map((e) => `${e.firstName} ${e.lastName}`.trim())
+          .filter(Boolean);
+        if (names.length > 0) setEmployeeNames(names);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     listAppTasks()
@@ -172,28 +208,66 @@ export function TasksPage({
   function saveTask() {
     if (!form.name.trim()) return;
     if (editId) {
+      const prevTasks = tasks;
       setTasks((prev) =>
         prev.map((t) => (t.id === editId ? { ...t, ...form } : t)),
       );
+      setShowModal(false);
+      updateAppTask(editId, { ...form }).catch((err) => {
+        setTasks(prevTasks);
+        toast.error(err?.message || "Failed to update task.");
+      });
     } else {
-      setTasks((prev) => [
-        ...prev,
-        { id: makeId(), ...form, status: "Pending", app, createdAt: today },
-      ]);
+      const tempId = makeId();
+      const newTask: Task = {
+        id: tempId,
+        ...form,
+        status: "Pending",
+        app,
+        createdAt: today,
+      };
+      setTasks((prev) => [...prev, newTask]);
+      setShowModal(false);
+      createAppTask({
+        ...form,
+        status: STATUS_TO_BACKEND.Pending,
+        app,
+        assignedBy: form.assignedTo,
+      })
+        .then((created) => {
+          // Swap the temporary id for the server-generated one.
+          setTasks((prev) =>
+            prev.map((t) => (t.id === tempId ? { ...t, id: created.id } : t)),
+          );
+        })
+        .catch((err) => {
+          setTasks((prev) => prev.filter((t) => t.id !== tempId));
+          toast.error(err?.message || "Failed to create task.");
+        });
     }
-    setShowModal(false);
   }
 
   function advanceStatus(id: string) {
+    const task = tasks.find((t) => t.id === id);
+    if (!task) return;
+    const next = STATUS_NEXT[task.status];
+    const prevTasks = tasks;
     setTasks((prev) =>
-      prev.map((t) =>
-        t.id === id ? { ...t, status: STATUS_NEXT[t.status] } : t,
-      ),
+      prev.map((t) => (t.id === id ? { ...t, status: next } : t)),
     );
+    updateAppTask(id, { status: STATUS_TO_BACKEND[next] }).catch((err) => {
+      setTasks(prevTasks);
+      toast.error(err?.message || "Failed to update task status.");
+    });
   }
 
   function deleteTask(id: string) {
+    const prevTasks = tasks;
     setTasks((prev) => prev.filter((t) => t.id !== id));
+    deleteAppTask(id).catch((err) => {
+      setTasks(prevTasks);
+      toast.error(err?.message || "Failed to delete task.");
+    });
   }
 
   const isOverdue = (dueDate: string, status: TaskStatus) =>

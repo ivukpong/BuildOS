@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, toApiArray, unwrapApiResult } from './client';
 
 export interface ProjectDocument {
     id: string; name: string; type: string; size?: number; url: string;
@@ -44,13 +44,20 @@ export const updateConstructionApproval = (id: string, data: Partial<Constructio
 export const deleteConstructionApproval = (id: string) =>
     apiFetch<void>(`/construction-approvals/${id}`, { method: 'DELETE' });
 
-// Timelines
-export const getTimelines = (projectId?: string) =>
-    apiFetch<Timeline[]>(projectId ? `/timelines?projectId=${projectId}` : '/timelines');
-export const getTimeline = (id: string) => apiFetch<Timeline>(`/timelines/${id}`);
-export const createTimeline = (data: Partial<Timeline>) =>
-    apiFetch<Timeline>('/timelines', { method: 'POST', body: JSON.stringify(data) });
-export const updateTimeline = (id: string, data: Partial<Timeline>) =>
-    apiFetch<Timeline>(`/timelines/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+// Timelines (backend wraps these responses in a `{ success, data }` envelope)
+export const getTimelines = async (projectId?: string) =>
+    toApiArray<Timeline>(
+        await apiFetch(projectId ? `/timelines?projectId=${projectId}` : '/timelines'),
+    );
+export const getTimeline = async (id: string) =>
+    unwrapApiResult<Timeline>(await apiFetch(`/timelines/${id}`));
+export const createTimeline = async (data: Partial<Timeline>) =>
+    unwrapApiResult<Timeline>(
+        await apiFetch('/timelines', { method: 'POST', body: JSON.stringify(data) }),
+    );
+export const updateTimeline = async (id: string, data: Partial<Timeline>) =>
+    unwrapApiResult<Timeline>(
+        await apiFetch(`/timelines/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    );
 export const deleteTimeline = (id: string) =>
     apiFetch<void>(`/timelines/${id}`, { method: 'DELETE' });

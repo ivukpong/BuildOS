@@ -57,3 +57,35 @@ export async function apiFetch<T = any>(path: string, options?: RequestInit): Pr
 
     return (await res.json()) as T;
 }
+
+/**
+ * Some backend controllers wrap responses in a `{ success, data, ... }`
+ * envelope while others return the payload directly. These helpers
+ * normalise both shapes so callers always get the payload.
+ */
+export function unwrapApiResult<T>(res: unknown): T {
+    if (
+        res !== null &&
+        typeof res === 'object' &&
+        !Array.isArray(res) &&
+        'success' in res &&
+        'data' in res
+    ) {
+        return (res as { data: T }).data;
+    }
+    return res as T;
+}
+
+/**
+ * Normalises a list response to a plain array. Handles raw arrays,
+ * `{ success, data: [...] }` envelopes and `{ data: [...], total }`
+ * paginated envelopes. Returns an empty array for anything else.
+ */
+export function toApiArray<T>(res: unknown): T[] {
+    if (Array.isArray(res)) return res as T[];
+    if (res !== null && typeof res === 'object') {
+        const data = (res as { data?: unknown }).data;
+        if (Array.isArray(data)) return data as T[];
+    }
+    return [];
+}

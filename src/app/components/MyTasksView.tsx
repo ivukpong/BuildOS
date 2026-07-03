@@ -18,7 +18,7 @@ import {
 import { ApprovalPipeline } from "./ApprovalPipeline";
 import type { PipelineStep } from "./ApprovalPipeline";
 import { fetchEmployees } from "../api/employees";
-import { listAppTasks, updateAppTask } from "../api/app-tasks";
+import { listAppTasks, updateAppTask, toBoardStatus } from "../api/app-tasks";
 
 type TaskStatus =
   | "To Do"
@@ -137,7 +137,7 @@ const COLUMNS: Column[] = [
   },
 ];
 
-const TODAY = "2026-04-14";
+const TODAY = new Date().toISOString().slice(0, 10);
 
 export function MyTasksView({
   app,
@@ -166,7 +166,7 @@ export function MyTasksView({
             dueDate: t.dueDate,
             priority: (t.priority as TaskPriority) ?? "Medium",
             category: (t.category as MyTask["category"]) ?? "general",
-            status: (t.status as TaskStatus) ?? "To Do",
+            status: toBoardStatus(t.status),
             startedAt: t.startedAt,
             submittedAt: t.submittedAt,
             resolvedAt: t.resolvedAt,
@@ -309,6 +309,7 @@ export function MyTasksView({
                 {colTasks.map((task) => {
                   const isExpanded = expandedId === task.id;
                   const overdue =
+                    !!task.dueDate &&
                     !["Approved", "Declined"].includes(task.status) &&
                     task.dueDate < TODAY;
 

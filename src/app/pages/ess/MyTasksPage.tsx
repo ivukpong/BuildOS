@@ -59,9 +59,10 @@ const priorityConfig: Record<TaskPriority, { dot: string; label: string }> = {
 };
 
 function mapStatus(status: string): TaskStatus {
-  const s = status.toLowerCase();
+  const s = status.toLowerCase().replace(/[^a-z]/g, "");
   if (s === "done" || s === "completed" || s === "approved") return "done";
-  if (s === "in_progress" || s === "in-progress") return "in-progress";
+  if (s === "inprogress" || s === "awaitingapproval" || s === "submitted")
+    return "in-progress";
   if (s === "blocked" || s === "declined" || s === "cancelled")
     return "blocked";
   return "todo";

@@ -9,6 +9,25 @@ import { PrismaService } from '../prisma/prisma.service';
 export class TasksService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * The UI sends DateTime fields as date-only strings (e.g. "2026-07-10")
+   * which Prisma rejects. Coerce them to Date objects; full ISO strings and
+   * Date instances pass through unchanged, invalid values become undefined.
+   */
+  private normalizeDates(dto: any): any {
+    const out = { ...dto };
+    for (const field of ['dueDate', 'startDate', 'completedAt']) {
+      if (out[field] === undefined) continue;
+      if (out[field] === null || out[field] === '') {
+        out[field] = null;
+        continue;
+      }
+      const d = out[field] instanceof Date ? out[field] : new Date(out[field]);
+      out[field] = Number.isNaN(d.getTime()) ? undefined : d;
+    }
+    return out;
+  }
+
   async create(createTaskDto: any) {
     // Validate dependencies exist
     if (createTaskDto.dependencies && createTaskDto.dependencies.length > 0) {
@@ -25,7 +44,7 @@ export class TasksService {
     }
 
     return this.prisma.task.create({
-      data: createTaskDto,
+      data: this.normalizeDates(createTaskDto),
     });
   }
 
@@ -88,7 +107,7 @@ export class TasksService {
 
     return this.prisma.task.update({
       where: { id },
-      data: updateTaskDto,
+      data: this.normalizeDates(updateTaskDto),
     });
   }
 

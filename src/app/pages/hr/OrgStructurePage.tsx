@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useHRConfig, type OrgLevelConfig } from "../../stores/hrConfigStore";
+import { useHRConfig } from "../../stores/hrConfigStore";
 import {
   fetchOrgUnits,
   createOrgUnit,
@@ -7,7 +7,7 @@ import {
   type OrgUnit as ApiOrgUnit,
   type OrgUnitKind,
 } from "../../api/org-units";
-import { Plus, X, Edit3, Save, CheckCircle, Building2, Users, Layers, Archive, Shield, BookOpen, UserPlus, ArrowUp, ArrowDown, FileText, Check } from "lucide-react";
+import { Plus, X, Save, CheckCircle, Building2, Users, Layers, Archive, Shield, BookOpen, UserPlus, ArrowUp, ArrowDown, FileText, Check } from "lucide-react";
 
 interface OrgLevel {
   id: string; name: string; description: string; members: number; archived: boolean;
@@ -51,7 +51,7 @@ const TEMPLATES: StructureTemplate[] = [
 ];
 
 export function OrgStructurePage() {
-  const { orgLevels, setOrgLevels } = useHRConfig();
+  const { setOrgLevels } = useHRConfig();
   const [saved, setSaved] = useState(false);
   const [activeTemplate, setActiveTemplate] = useState<string>(TEMPLATES[0].id);
   const [customTemplate, setCustomTemplate] = useState<StructureTemplate | null>(null);

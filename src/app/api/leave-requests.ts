@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, toApiArray } from './client';
 
 function fmt(date: string | null) {
     if (!date) return '';
@@ -28,7 +28,7 @@ export async function fetchLeaveRequests(params?: { status?: string; employeeId?
     if (params?.status) qs.set('status', params.status);
     if (params?.employeeId) qs.set('employeeId', params.employeeId);
     const query = qs.toString() ? `?${qs}` : '';
-    const data = await apiFetch<any[]>(`/leave-requests${query}`);
+    const data = toApiArray<any>(await apiFetch(`/leave-requests${query}`));
     return data.map(mapLeaveRequest);
 }
 

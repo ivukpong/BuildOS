@@ -25,7 +25,12 @@ interface AttRecord {
   hrs: number;
 }
 
-const today = "Monday, April 28, 2025";
+const today = new Date().toLocaleDateString("en-US", {
+  weekday: "long",
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+});
 
 const statusConfig: Record<
   AttStatus,
