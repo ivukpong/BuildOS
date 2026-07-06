@@ -2,6 +2,17 @@
  * useAuthUser — reads the logged-in user from localStorage (set on login).
  * Returns name, email, role, and derived initials.
  */
+
+/** Plain (non-hook) accessor for the logged-in user's display name. */
+export function getAuthUserName(): string {
+  try {
+    const raw = localStorage.getItem("auth_user");
+    return raw ? (JSON.parse(raw)?.name ?? "") : "";
+  } catch {
+    return "";
+  }
+}
+
 export function useAuthUser() {
   let id = "";
   let name = "";

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
+import { getAuthUserName } from "../../utils/useAuthUser";
 import {
   getPayrollEntries,
   getPayrollRuns,
@@ -139,10 +140,14 @@ export function PayrollIntegrationPage() {
       return {
         ...p,
         status: next,
-        submittedBy: next === "Sent for Approval" ? "Current User" : p.submittedBy,
-        approvedBy: next === "Approved" ? "Finance Manager" : p.approvedBy,
-        approvedAt: next === "Approved" ? "Today" : p.approvedAt,
-        paidAt: next === "Paid" ? "Today" : p.paidAt,
+        submittedBy: next === "Sent for Approval" ? (getAuthUserName() || "Current User") : p.submittedBy,
+        approvedBy: next === "Approved" ? (getAuthUserName() || "Finance Manager") : p.approvedBy,
+        approvedAt: next === "Approved"
+          ? new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+          : p.approvedAt,
+        paidAt: next === "Paid"
+          ? new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+          : p.paidAt,
       };
     }));
     setActiveRun((prev) => {

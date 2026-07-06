@@ -22,6 +22,7 @@ import {
   listCommunications,
   createCommunication,
 } from "../../api/communications";
+import { getAuthUserName } from "../../utils/useAuthUser";
 import { useNumbering } from "../../stores/numberingStore";
 
 const channelStyles: Record<string, { bg: string; icon: React.ReactNode }> = {
@@ -112,7 +113,7 @@ export function CommunicationLogPage() {
     const newEntry: CommunicationLogEntry = {
       id: getNextId("Communication"),
       createdAt: new Date().toISOString(),
-      createdBy: "Current User",
+      createdBy: getAuthUserName() || "Current User",
       ...form,
     };
     const { id: _omit, ...payload } = newEntry;

@@ -3,11 +3,73 @@ import * as bcrypt from 'bcryptjs';
 import * as crypto from 'crypto';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailQueueService } from '../queue/mail-queue.service';
 import type { EmailPayload } from '../email/email.service';
 
 const ADMIN_SETTINGS_KEY = 'admin-settings';
+
+/**
+ * Maps each email trigger to the Prisma model whose fields are exposed as
+ * template variables ("the concerned table"), plus context-only variables
+ * that exist at send time but not on the table (links, company name, …).
+ */
+const EMAIL_TRIGGER_SOURCES: Record<string, { model?: string; extras?: string[] }> = {
+    // HR
+    'Leave Request Submitted': { model: 'LeaveRequest' },
+    'Leave Request Approved': { model: 'LeaveRequest' },
+    'Leave Request Rejected': { model: 'LeaveRequest' },
+    'Payroll Processed': { model: 'PayrollRun' },
+    'Appraisal Cycle Opened': { model: 'Appraisal' },
+    'Employee Onboarding Initiated': { model: 'Employee' },
+    'Salary Advance Requested': { model: 'Claim' },
+    // Procurement
+    'Purchase Request Submitted': { model: 'PurchaseRequest' },
+    'Purchase Request Approved': { model: 'PurchaseRequest' },
+    'Purchase Order Approved': { model: 'PurchaseOrder' },
+    'Send RFQ to Supplier': { model: 'SentRFQ', extras: ['supplier_name', 'supplier_email'] },
+    'Send PO to Supplier': { model: 'PurchaseOrder', extras: ['supplier_name', 'supplier_email'] },
+    'Invoice Received': { model: 'PurchaseInvoice' },
+    'Invoice Overdue': { model: 'PurchaseInvoice' },
+    'Material Request Approved': { model: 'MaterialRequest' },
+    'Request Payment Confirmation': { model: 'Payment' },
+    // Finance
+    'Payment Processed': { model: 'Payment' },
+    'Budget Exceeded': { model: 'Budget' },
+    'Journal Entry Approved': { model: 'JournalEntry' },
+    'Approval Notifications': { model: 'ApprovalRequest' },
+    'WHT Certificate Generated': { model: 'Payment' },
+    // Projects
+    'Project Created': { model: 'Project' },
+    'Milestone Completed': { model: 'Timeline' },
+    'Project Delayed': { model: 'ProjectDelay' },
+    'Resource Assigned': { model: 'ResourceAllocation' },
+    'Contract Signed': { model: 'Contractor' },
+    // ESS
+    'Expense Claim Submitted': { model: 'Claim' },
+    'Expense Claim Approved': { model: 'Claim' },
+    'Travel Advance Requested': { model: 'Claim' },
+    'Reimbursement Processed': { model: 'Claim' },
+    // Admin
+    'New User Created': { model: 'User', extras: ['activation_link', 'company_name'] },
+    'Role Changed': { model: 'User', extras: ['role_name', 'company_name'] },
+    'System Alert': { extras: ['system_message', 'action_date', 'company_name'] },
+    'Login Failure (Threshold)': { model: 'User', extras: ['action_date', 'company_name'] },
+    'Password Reset Requested': { model: 'User', extras: ['reset_link', 'company_name'] },
+    // Storefront
+    'Material Transferred': { model: 'StockTransfer' },
+    'Low Stock Alert': { model: 'StoreItem', extras: ['material_name', 'store_name'] },
+    'Stock Adjustment Made': { model: 'StockMovement' },
+    'Procurement Request Sent': { model: 'MaterialRequest' },
+};
+
+/** Fields that make no sense as email variables. */
+const EXCLUDED_VARIABLE_FIELDS = new Set(['password']);
+
+function toSnakeCase(name: string): string {
+    return name.replace(/([a-z0-9])([A-Z])/g, '$1_$2').toLowerCase();
+}
 
 @Injectable()
 export class AdminExtrasService {
@@ -739,6 +801,39 @@ export class AdminExtrasService {
     private async sendInviteEmail(email: string, name: string, activationLink: string): Promise<void> {
                 const companyProfile = await this.prisma.companyProfile.findUnique({ where: { id: 'singleton' } }).catch(() => null);
                 const companyName = String(companyProfile?.name ?? '').trim() || 'BuildOS';
+
+                // Admin-configured template ("New User Created") takes
+                // precedence over the built-in invite email.
+                try {
+                    const userRecord = await this.prisma.user
+                        .findUnique({ where: { email } })
+                        .catch(() => null);
+                    const vars = {
+                        ...this.toTemplateVars(userRecord as any),
+                        name,
+                        user_name: name,
+                        email,
+                        user_email: email,
+                        activation_link: activationLink,
+                        company_name: companyName,
+                    };
+                    const templated = await this.composeTemplatedEmail('New User Created', vars);
+                    if (templated) {
+                        await this.mailQueue.enqueueEmail({
+                            to: email,
+                            subject: templated.subject || `Activate your ${companyName} account`,
+                            text: `${templated.text}\n\nActivate your account: ${activationLink}`,
+                            html: `${templated.html}<p style="margin:16px 0 0;font-family:Segoe UI,Arial,sans-serif;"><a href="${this.escapeHtml(activationLink)}" style="display:inline-block;background:#2563eb;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 20px;border-radius:10px;">Activate Account</a></p>`,
+                            ...(templated.cc.length > 0 ? { cc: templated.cc } : {}),
+                        });
+                        return;
+                    }
+                } catch (error) {
+                    this.logger.warn(
+                        `Falling back to default invite email; template failed: ${(error as Error).message}`,
+                    );
+                }
+
                 const logo = this.resolveInviteLogo(companyProfile?.logoUrl);
                 const escapedName = this.escapeHtml(name);
                 const escapedCompanyName = this.escapeHtml(companyName);
@@ -1935,6 +2030,77 @@ export class AdminExtrasService {
         settings.emailConfigs = settings.emailConfigs.filter((item: any) => item.id !== id);
         await this.writeAdminSettings(settings);
         return { id, deleted: true };
+    }
+
+    /**
+     * Template variables per trigger, derived from the Prisma schema so the
+     * palette always lists every field of the concerned table.
+     */
+    getEmailTemplateVariables(): Record<string, string[]> {
+        const modelFields = new Map<string, string[]>();
+        for (const model of Prisma.dmmf.datamodel.models) {
+            const fields = model.fields
+                .filter((f) => f.kind === 'scalar' || f.kind === 'enum')
+                .map((f) => toSnakeCase(f.name))
+                .filter((f) => !EXCLUDED_VARIABLE_FIELDS.has(f));
+            modelFields.set(model.name, fields);
+        }
+        const result: Record<string, string[]> = {};
+        for (const [trigger, source] of Object.entries(EMAIL_TRIGGER_SOURCES)) {
+            const fields = source.model ? (modelFields.get(source.model) ?? []) : [];
+            result[trigger] = [...new Set([...(source.extras ?? []), ...fields])];
+        }
+        return result;
+    }
+
+    /** Replaces {{ variable }} tokens (case-insensitive, optional spaces). */
+    private renderEmailTemplate(template: string, vars: Record<string, unknown>): string {
+        return String(template ?? '').replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (match, key) => {
+            const normalized = toSnakeCase(String(key));
+            const value = vars[normalized] ?? vars[String(key)];
+            if (value === undefined || value === null) return match;
+            if (value instanceof Date) return value.toISOString().slice(0, 10);
+            return String(value);
+        });
+    }
+
+    /** Snake-cases every scalar property of a record into template vars. */
+    private toTemplateVars(record: Record<string, unknown> | null | undefined): Record<string, unknown> {
+        const vars: Record<string, unknown> = {};
+        for (const [key, value] of Object.entries(record ?? {})) {
+            if (value === null || value === undefined) continue;
+            if (typeof value === 'object' && !(value instanceof Date)) continue;
+            const snake = toSnakeCase(key);
+            if (EXCLUDED_VARIABLE_FIELDS.has(snake)) continue;
+            vars[snake] = value;
+        }
+        return vars;
+    }
+
+    /**
+     * Resolves the enabled admin template for a trigger and renders subject,
+     * plain-text body, a simple HTML body, and CC list. Returns null when no
+     * enabled template is configured, so callers keep their built-in default.
+     */
+    async composeTemplatedEmail(
+        trigger: string,
+        vars: Record<string, unknown>,
+    ): Promise<{ subject: string; text: string; html: string; cc: string[] } | null> {
+        const settings = await this.readAdminSettings();
+        const config = settings.emailConfigs.find(
+            (c: any) => c?.enabled !== false && String(c?.trigger ?? '') === trigger,
+        );
+        if (!config || (!String(config.subject ?? '').trim() && !String(config.body ?? '').trim())) {
+            return null;
+        }
+        const subject = this.renderEmailTemplate(String(config.subject ?? ''), vars).trim();
+        const text = this.renderEmailTemplate(String(config.body ?? ''), vars);
+        const html = `<div style="font-family:Segoe UI,Arial,sans-serif;font-size:15px;line-height:1.6;color:#1f2937;white-space:pre-wrap;">${this.escapeHtml(text)}</div>`;
+        const cc = this.renderEmailTemplate(String(config.cc ?? ''), vars)
+            .split(/[,;]/)
+            .map((s: string) => s.trim())
+            .filter((s: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s));
+        return { subject, text, html, cc };
     }
 
     // ── Units ──

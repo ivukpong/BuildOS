@@ -239,7 +239,11 @@ export class AdminExtrasController {
     @Get('email-config')
     @Roles('admin')
     getEmailConfigs() { return this.svc.findEmailConfigs(); }
-    
+
+    @Get('email-config/variables')
+    @Roles('admin')
+    getEmailConfigVariables() { return this.svc.getEmailTemplateVariables(); }
+
     @Post('email-config')
     @Roles('admin')
     createEmailConfig(@Body() body: any) { return this.svc.createEmailConfig(body); }

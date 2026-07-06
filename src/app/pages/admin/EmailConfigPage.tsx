@@ -167,6 +167,7 @@ export function EmailConfigPage() {
   const [saved, setSaved] = useState(false);
   const [deletingConfig, setDeletingConfig] = useState<EmailConfig | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [triggerVars, setTriggerVars] = useState<Record<string, string[]>>({});
 
   useEffect(() => {
     apiFetch<EmailConfig[]>("/admin/email-config")
@@ -174,6 +175,14 @@ export function EmailConfigPage() {
       .catch((err) => {
         console.error("Failed to load email configs:", err);
         setConfigs([]);
+      });
+    apiFetch<Record<string, string[]>>("/admin/email-config/variables")
+      .then((data) =>
+        setTriggerVars(data && typeof data === "object" ? data : {}),
+      )
+      .catch((err) => {
+        console.error("Failed to load template variables:", err);
+        setTriggerVars({});
       });
   }, []);
 
@@ -466,9 +475,18 @@ export function EmailConfigPage() {
                 <div className="mt-2">
                   <p className="text-xs text-gray-400 mb-1.5">
                     Available variables — click to insert:
+                    {!form.trigger && (
+                      <span className="ml-1 text-gray-400">
+                        (select a trigger to see all fields of its table)
+                      </span>
+                    )}
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {(VARS_BY_MODULE[form.module] ?? []).map((v) => (
+                  <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto">
+                    {(
+                      (form.trigger && triggerVars[form.trigger]) ||
+                      VARS_BY_MODULE[form.module] ||
+                      []
+                    ).map((v) => (
                       <button
                         key={v}
                         type="button"

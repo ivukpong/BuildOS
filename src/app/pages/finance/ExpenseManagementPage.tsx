@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
+import { getAuthUserName } from "../../utils/useAuthUser";
 import {
   fetchExpenses,
   approveExpense,
@@ -256,8 +257,12 @@ export function ExpenseManagementPage() {
       category: form.category || "Other",
       amount: parseFloat(form.amount.replace(/,/g, "")),
       description: form.description,
-      createdBy: "Current User",
-      date: "Apr 13, 2026",
+      createdBy: getAuthUserName() || "Current User",
+      date: new Date().toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      }),
       status: "Draft",
     };
     setExpenses([newExp, ...expenses]);

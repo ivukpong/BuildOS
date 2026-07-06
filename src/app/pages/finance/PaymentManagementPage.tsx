@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
+import { getAuthUserName } from "../../utils/useAuthUser";
 import { fetchPayments } from "../../api/payments";
 import { Download, CreditCard, Clock, CheckCircle, XCircle, Send, Eye, X } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
@@ -155,8 +156,10 @@ export function PaymentManagementPage() {
       return {
         ...p,
         status: next,
-        initiatedBy: next === "Payment Initiated" ? "Current User" : p.initiatedBy,
-        completedAt: next === "Payment Completed" ? "Apr 13, 2026" : p.completedAt,
+        initiatedBy: next === "Payment Initiated" ? (getAuthUserName() || "Current User") : p.initiatedBy,
+        completedAt: next === "Payment Completed"
+          ? new Date().toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+          : p.completedAt,
       };
     }));
 

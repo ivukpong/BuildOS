@@ -15,7 +15,6 @@ import {
   ChevronDown,
   CheckSquare,
   BarChart3,
-  History,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -144,11 +143,12 @@ export function AdminLayout() {
           href: "/apps/admin/integrations",
           icon: <Plug className="w-4 h-4" />,
         },
-        {
-          label: "Changelog",
-          href: "/apps/admin/changelog",
-          icon: <History className="w-4 h-4" />,
-        },
+        // Hidden for now — route stays live at /apps/admin/changelog
+        // {
+        //   label: "Changelog",
+        //   href: "/apps/admin/changelog",
+        //   icon: <History className="w-4 h-4" />,
+        // },
       ],
     },
     {

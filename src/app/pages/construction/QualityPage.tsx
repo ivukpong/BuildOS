@@ -12,6 +12,7 @@ import {
 import { getProjectById, qualityNCRs, fmtDate } from "./mockData";
 import type { QualityNCR } from "./types";
 import { listQualityNcrs, createQualityNcr } from "../../api/quality-ncrs";
+import { getAuthUserName } from "../../utils/useAuthUser";
 import { useNumbering } from "../../stores/numberingStore";
 
 type QATab = "compliance" | "inspections" | "ncrs" | "capa" | "schedule";
@@ -241,7 +242,7 @@ function NCRModal({
       date: new Date().toISOString().split("T")[0],
       description: form.description,
       taskId: form.taskId || "WP-001",
-      raisedBy: form.raisedBy || "Current User",
+      raisedBy: form.raisedBy || getAuthUserName() || "Current User",
       correctiveAction: form.correctiveAction,
       responsiblePerson: form.responsiblePerson,
       targetCloseDate: form.targetCloseDate,

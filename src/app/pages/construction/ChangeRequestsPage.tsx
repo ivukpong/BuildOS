@@ -18,6 +18,7 @@ import {
 } from "./mockData";
 import type { ChangeRequest } from "./types";
 import { getCurrencySymbol } from "../../utils/generalSettings";
+import { getAuthUserName } from "../../utils/useAuthUser";
 import {
   listChangeRequests,
   createChangeRequest,
@@ -759,7 +760,7 @@ export function ChangeRequestsPage() {
                           onClick={() =>
                             updateCR(c.id, {
                               status: "Approved",
-                              approverId: "Current User",
+                              approverId: getAuthUserName() || "Current User",
                               approvedAt: new Date()
                                 .toISOString()
                                 .split("T")[0],
@@ -774,7 +775,7 @@ export function ChangeRequestsPage() {
                           onClick={() =>
                             updateCR(c.id, {
                               status: "Rejected",
-                              approverId: "Current User",
+                              approverId: getAuthUserName() || "Current User",
                               approvedAt: new Date()
                                 .toISOString()
                                 .split("T")[0],

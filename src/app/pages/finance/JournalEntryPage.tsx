@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
+import { getAuthUserName } from "../../utils/useAuthUser";
 import {
   getJournalEntries,
   getChartAccounts,
@@ -184,7 +185,7 @@ export function JournalEntryPage() {
     } else {
       const newEntry: JournalEntry = {
         id: getNextId("JournalEntry"),
-        ...form, status, createdBy: "Current User",
+        ...form, status, createdBy: getAuthUserName() || "Current User",
       };
       setEntries([newEntry, ...entries]);
       logChange({ module: "Finance", action: "Created", entityType: "JournalEntry", entityId: newEntry.id, summary: `Journal Entry ${newEntry.id}: ${form.description} [${status}]`, performedBy: "Current User" });

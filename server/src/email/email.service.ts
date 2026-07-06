@@ -16,6 +16,7 @@ export interface EmailPayload {
     /** Overrides the configured EMAIL_FROM when provided. */
     from?: string;
     replyTo?: string;
+    cc?: string[];
     attachments?: EmailAttachment[];
 }
 
@@ -81,6 +82,7 @@ export class EmailService {
         if (payload.text) sendPayload.text = payload.text;
         if (payload.html) sendPayload.html = payload.html;
         if (payload.replyTo) sendPayload.replyTo = payload.replyTo;
+        if (payload.cc && payload.cc.length > 0) sendPayload.cc = payload.cc;
         if (payload.attachments && payload.attachments.length > 0) {
             sendPayload.attachments = payload.attachments;
         }
