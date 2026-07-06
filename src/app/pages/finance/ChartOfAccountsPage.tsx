@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { getChartAccounts } from "../../api/finance-extras";
+import {
+  getChartAccounts,
+  createChartAccount,
+  updateChartAccount,
+  deleteChartAccount,
+} from "../../api/finance-extras";
 import {
   Plus,
   Search,
@@ -43,8 +48,8 @@ export function ChartOfAccountsPage() {
   const [accounts, setAccounts] = useState<Account[]>([]);
   const { logChange } = useChangelog();
 
-  useEffect(() => {
-    getChartAccounts()
+  function loadAccounts() {
+    return getChartAccounts()
       .then((data) =>
         setAccounts(
           data.map((a) => ({
@@ -57,8 +62,11 @@ export function ChartOfAccountsPage() {
             balance: a.balance ?? 0,
           })),
         ),
-      )
-      .catch(console.error);
+      );
+  }
+
+  useEffect(() => {
+    loadAccounts().catch(console.error);
   }, []);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<AccountType | "All">("All");
@@ -92,13 +100,35 @@ export function ChartOfAccountsPage() {
 
   function saveAccount() {
     if (!form.code.trim() || !form.name.trim()) return;
+    const payload = {
+      code: form.code,
+      name: form.name,
+      type: form.type,
+      parentId: form.parentId || undefined,
+      description: form.description,
+    };
     if (editId) {
-      setAccounts((prev) => prev.map((a) => a.id === editId ? { ...a, ...form, parentId: form.parentId || null } : a));
-      logChange({ module: "Finance", action: "Updated", entityType: "Account", entityId: editId, summary: `Account ${form.code} ${form.name} updated`, performedBy: "Sola Adeleke" });
+      updateChartAccount(editId, payload)
+        .then(() => {
+          logChange({ module: "Finance", action: "Updated", entityType: "Account", entityId: editId, summary: `Account ${form.code} ${form.name} updated`, performedBy: "Current User" });
+          return loadAccounts();
+        })
+        .catch((err) => {
+          console.error(err);
+          // Fall back to local update so the UI stays responsive.
+          setAccounts((prev) => prev.map((a) => a.id === editId ? { ...a, ...form, parentId: form.parentId || null } : a));
+        });
     } else {
-      const newAcc: Account = { id: `a${Date.now()}`, ...form, parentId: form.parentId || null };
-      setAccounts((prev) => [...prev, newAcc]);
-      logChange({ module: "Finance", action: "Created", entityType: "Account", entityId: newAcc.id, summary: `Account ${newAcc.code} ${newAcc.name} created`, performedBy: "Sola Adeleke" });
+      createChartAccount(payload)
+        .then((created: any) => {
+          logChange({ module: "Finance", action: "Created", entityType: "Account", entityId: created?.id ?? form.code, summary: `Account ${form.code} ${form.name} created`, performedBy: "Current User" });
+          return loadAccounts();
+        })
+        .catch((err) => {
+          console.error(err);
+          const newAcc: Account = { id: `a${Date.now()}`, ...form, parentId: form.parentId || null };
+          setAccounts((prev) => [...prev, newAcc]);
+        });
     }
     setShowModal(false);
   }
@@ -106,8 +136,15 @@ export function ChartOfAccountsPage() {
   function confirmDelete() {
     if (!deleteId) return;
     const del = accounts.find(a => a.id === deleteId);
-    setAccounts((prev) => prev.filter((a) => a.id !== deleteId && a.parentId !== deleteId));
-    if (del) logChange({ module: "Finance", action: "Deleted", entityType: "Account", entityId: deleteId, summary: `Account ${del.code} ${del.name} and children deleted`, performedBy: "Sola Adeleke" });
+    deleteChartAccount(deleteId)
+      .then(() => {
+        if (del) logChange({ module: "Finance", action: "Deleted", entityType: "Account", entityId: deleteId, summary: `Account ${del.code} ${del.name} and children deleted`, performedBy: "Current User" });
+        return loadAccounts();
+      })
+      .catch((err) => {
+        console.error(err);
+        setAccounts((prev) => prev.filter((a) => a.id !== deleteId && a.parentId !== deleteId));
+      });
     setDeleteId(null);
   }
 

@@ -21,11 +21,11 @@ import {
   ragLabel,
   ragBg,
   ragText,
-  staffList,
 } from "./mockData";
 import type { Project, ContractType } from "./types";
 import { useResources } from "../../contexts/ResourceContext";
 import { fetchConstructionProjects, createConstructionProject } from "../../api/projects";
+import { fetchEmployees } from "../../api/employees";
 import { setProjectsCache, upsertProjectCache } from "./projectStore";
 
 type ProjectStatus = Project["status"];
@@ -101,6 +101,27 @@ export function ProjectsListPage() {
   const [form, setForm] = useState(DEFAULT_FORM);
   const [projectList, setProjectList] = useState<Project[]>([]);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [staffList, setStaffList] = useState<string[]>([]);
+
+  // Load employees for the Project Manager dropdown.
+  useEffect(() => {
+    let active = true;
+    fetchEmployees({ status: "active" })
+      .then((employees) => {
+        if (!active) return;
+        setStaffList(
+          employees
+            .map((e) => `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim())
+            .filter(Boolean),
+        );
+      })
+      .catch(() => {
+        /* leave dropdown empty on failure */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Load projects from the backend. Shows a clean empty state until the user
   // creates projects.

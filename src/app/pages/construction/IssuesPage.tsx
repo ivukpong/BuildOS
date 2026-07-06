@@ -13,11 +13,11 @@ import {
   getIssuesByProject,
   getProjectById,
   getTasksByProject,
-  staffList,
   fmtDate,
 } from "./mockData";
 import type { Issue } from "./types";
 import { listIssues, createIssue } from "../../api/construction-issues";
+import { fetchEmployees } from "../../api/employees";
 import { useNumbering } from "../../stores/numberingStore";
 
 function daysOpen(dateRaised: string): number {
@@ -90,6 +90,27 @@ export function IssuesPage() {
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [showLogModal, setShowLogModal] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [staffList, setStaffList] = useState<string[]>([]);
+
+  // Load employees for the owner dropdown.
+  useEffect(() => {
+    let active = true;
+    fetchEmployees({ status: "active" })
+      .then((employees) => {
+        if (!active) return;
+        setStaffList(
+          employees
+            .map((e) => `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim())
+            .filter(Boolean),
+        );
+      })
+      .catch(() => {
+        /* leave dropdown empty on failure */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Load issues from the backend, falling back to mock data when the API is
   // unavailable or returns no records for this project.

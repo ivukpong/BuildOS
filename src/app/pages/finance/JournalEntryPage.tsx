@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { formatCurrencyByGeneralSettings } from "../../utils/generalSettings";
 import {
   getJournalEntries,
+  getChartAccounts,
   JournalEntry as ApiJournalEntry,
 } from "../../api/finance-extras";
 import { Plus, Search, Eye, Edit, Trash2, X } from "lucide-react";
@@ -31,8 +32,6 @@ interface JournalEntry {
   lines: JournalLine[];
 }
 
-const ACCOUNTS: { code: string; name: string }[] = [];
-
 const blankLine = (): JournalLine => ({
   id: `ln-${Date.now()}-${Math.random()}`,
   account: "",
@@ -52,6 +51,24 @@ export function JournalEntryPage() {
   const { logChange } = useChangelog();
   const { getNextId } = useNumbering();
   const [entries, setEntries] = useState<JournalEntry[]>([]);
+  const [accounts, setAccounts] = useState<{ code: string; name: string }[]>(
+    [],
+  );
+  // Load the Chart of Accounts for the debit/credit dropdowns.
+  useEffect(() => {
+    getChartAccounts()
+      .then((data) => {
+        setAccounts(
+          (data as any[]).map((a) => ({
+            code: String(a.code ?? ""),
+            name: String(a.name ?? ""),
+          })),
+        );
+      })
+      .catch(() => {
+        /* leave dropdown empty on failure */
+      });
+  }, []);
   useEffect(() => {
     getJournalEntries()
       .then((data: ApiJournalEntry[]) => {
@@ -147,7 +164,7 @@ export function JournalEntryPage() {
         if (l.id !== id) return l;
         const updated = { ...l, [field]: value };
         if (field === "account") {
-          const acct = ACCOUNTS.find((a) => a.name === value);
+          const acct = accounts.find((a) => a.name === value);
           if (acct) updated.glCode = acct.code;
         }
         return updated;
@@ -438,7 +455,7 @@ export function JournalEntryPage() {
                               className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-emerald-500"
                             >
                               <option value="">Select account</option>
-                              {ACCOUNTS.map((a) => (
+                              {accounts.map((a) => (
                                 <option key={a.code} value={a.name}>
                                   {a.name}
                                 </option>

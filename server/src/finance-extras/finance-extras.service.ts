@@ -92,10 +92,19 @@ export class FinanceExtrasService {
         return this.prisma.chartAccount.findUniqueOrThrow({ where: { id } });
     }
     createAccount(data: any) {
-        return this.prisma.chartAccount.create({ data });
+        return this.prisma.chartAccount.create({ data: this.sanitizeAccount(data, true) });
     }
     updateAccount(id: string, data: any) {
-        return this.prisma.chartAccount.update({ where: { id }, data });
+        return this.prisma.chartAccount.update({ where: { id }, data: this.sanitizeAccount(data) });
+    }
+    /** Whitelist ChartAccount columns; clients may send extra UI-only fields. */
+    private sanitizeAccount(data: any, isCreate = false) {
+        const out: any = {};
+        for (const key of ['code', 'name', 'type', 'category', 'balance', 'isActive']) {
+            if (data?.[key] !== undefined) out[key] = data[key];
+        }
+        if (isCreate && out.category === undefined) out.category = String(data?.type ?? 'General');
+        return out;
     }
     deleteAccount(id: string) {
         return this.prisma.chartAccount.delete({ where: { id } });

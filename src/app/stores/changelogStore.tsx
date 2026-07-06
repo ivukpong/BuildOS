@@ -22,6 +22,20 @@ interface ChangelogContextValue {
 
 const ChangelogContext = createContext<ChangelogContextValue | null>(null);
 
+/** Upstream sample personas that should resolve to the logged-in user. */
+const PLACEHOLDER_ACTORS = new Set(["Sola Adeleke", "Current User", ""]);
+
+function resolveActor(performedBy: string): string {
+  if (!PLACEHOLDER_ACTORS.has(performedBy)) return performedBy;
+  try {
+    const raw = localStorage.getItem("auth_user");
+    const name = raw ? JSON.parse(raw)?.name : "";
+    return name || performedBy || "System";
+  } catch {
+    return performedBy || "System";
+  }
+}
+
 export function ChangelogProvider({ children }: { children: ReactNode }) {
   const [entries, setEntries] = useState<ChangelogEntry[]>([]);
 
@@ -30,6 +44,7 @@ export function ChangelogProvider({ children }: { children: ReactNode }) {
       id: `cl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       timestamp: new Date().toISOString(),
       ...entry,
+      performedBy: resolveActor(entry.performedBy),
     }, ...prev]);
   }, []);
 

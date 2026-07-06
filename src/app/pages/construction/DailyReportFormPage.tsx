@@ -27,9 +27,10 @@ import {
   getVendorsByProject,
   getReportsByProject,
   fmtDate,
-  staffList,
 } from "./mockData";
 import { createDailyReport } from "../../api/daily-reports";
+import { fetchEmployees } from "../../api/employees";
+import { useAuthUser } from "../../utils/useAuthUser";
 import type {
   DailyReport,
   DailyManpower,
@@ -253,24 +254,29 @@ function newExpenseRow(projectId: string): DailyExpense {
   };
 }
 
-function newCommLogRow(projectId: string): CommunicationLogEntry {
+function newCommLogRow(
+  projectId: string,
+  author = "",
+): CommunicationLogEntry {
   return {
     id: nextId("CL"),
     projectId,
     date: todayStr,
-    from: staffList[0],
+    from: author,
     to: "",
     channel: "email",
     subject: "",
     summary: "",
     status: "sent",
-    createdBy: staffList[0],
+    createdBy: author,
     createdAt: new Date().toISOString(),
   };
 }
 
 export function DailyReportFormPage() {
   const { getNextId } = useNumbering();
+  const { name: currentUserName } = useAuthUser();
+  const [staffList, setStaffList] = useState<string[]>([]);
   const { id: projectId, reportId } = useParams<{
     id: string;
     reportId?: string;
@@ -280,6 +286,26 @@ export function DailyReportFormPage() {
   const projectVendors = getVendorsByProject(projectId || "");
   const projectTasks = getTasksByProject(projectId || "");
   const existingReports = getReportsByProject(projectId || "");
+
+  // Load employees for personnel dropdowns.
+  useEffect(() => {
+    let active = true;
+    fetchEmployees({ status: "active" })
+      .then((employees) => {
+        if (!active) return;
+        setStaffList(
+          employees
+            .map((e) => `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim())
+            .filter(Boolean),
+        );
+      })
+      .catch(() => {
+        /* leave dropdowns empty on failure */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const summaryTasks = projectTasks.filter((t) => t.level === 2);
   const workPackages = projectTasks.filter((t) => t.level === 4);
@@ -543,7 +569,7 @@ export function DailyReportFormPage() {
       projectId: projectId || "",
       reportDate,
       weather,
-      submittedBy: existingDraft?.submittedBy || staffList[0],
+      submittedBy: existingDraft?.submittedBy || currentUserName || staffList[0] || "",
       submittedAt: existingDraft?.submittedAt || new Date().toISOString(),
       status: effectiveStatus,
       unlockedBy: null,
@@ -1652,7 +1678,7 @@ export function DailyReportFormPage() {
                 onClick={() =>
                   setCommLogRows((prev) => [
                     ...prev,
-                    newCommLogRow(projectId || ""),
+                    newCommLogRow(projectId || "", currentUserName),
                   ])
                 }
                 className="flex items-center gap-1.5 px-3 py-2 rounded-md text-sm font-medium text-white hover:opacity-90 transition-opacity"

@@ -10,8 +10,9 @@ import {
   Plus,
   XCircle,
 } from "lucide-react";
-import { getProjectById, hseMatrix, fmtDate, staffList } from "./mockData";
+import { getProjectById, hseMatrix, fmtDate } from "./mockData";
 import { listHseRecords, createHseRecord } from "../../api/hse-records";
+import { fetchEmployees } from "../../api/employees";
 import { useNumbering } from "../../stores/numberingStore";
 
 type HSETab =
@@ -280,6 +281,27 @@ export function HSEPage() {
   const [localMatrix, setLocalMatrix] = useState(
     hseMatrix.filter((m) => m.projectId === id),
   );
+  const [staffList, setStaffList] = useState<string[]>([]);
+
+  // Load employees for personnel dropdowns.
+  useEffect(() => {
+    let active = true;
+    fetchEmployees({ status: "active" })
+      .then((employees) => {
+        if (!active) return;
+        setStaffList(
+          employees
+            .map((e) => `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim())
+            .filter(Boolean),
+        );
+      })
+      .catch(() => {
+        /* leave dropdowns empty on failure */
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
   useEffect(() => {
     if (!id) return;
     let active = true;

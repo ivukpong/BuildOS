@@ -1457,6 +1457,30 @@ export class AdminExtrasService {
 
         const userIdPrefix = await this.resolveCompanyUserIdPrefix();
         const userId = await this.ensureUserId(created, userIdPrefix);
+
+        // Provision a matching Employee record (linked by email) so the user
+        // appears in staff dropdowns, payroll, leave, and claims flows. The
+        // auth layer resolves user->employee by email at login.
+        try {
+            const [firstName, ...restName] = name.split(/\s+/);
+            await this.prisma.employee.upsert({
+                where: { email: normalizedEmail },
+                update: {},
+                create: {
+                    firstName: firstName || name,
+                    lastName: restName.join(' ') || '',
+                    email: normalizedEmail,
+                    phone: String(data?.phone ?? ''),
+                    dateHired: new Date(),
+                    status: 'active',
+                },
+            });
+        } catch (err) {
+            // Employee provisioning is best-effort; the user account itself
+            // was created successfully.
+            this.logger?.warn?.(`Employee upsert failed for ${normalizedEmail}: ${err}`);
+        }
+
         return this.shapeUserResponse({ ...created, userId }, userIdPrefix);
     }
 

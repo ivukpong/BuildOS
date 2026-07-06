@@ -14,6 +14,7 @@ import {
   LinkIcon,
 } from "lucide-react";
 import { getReferenceData } from "../../api/reference-data";
+import { fetchPurchaseOrders } from "../../api/purchase-orders";
 import { formatDateByGeneralSettings } from "../../utils/generalSettings";
 import { useNumbering } from "../../stores/numberingStore";
 
@@ -78,7 +79,6 @@ const statusConfig: Record<
   },
 };
 
-const GRN_PO_REFS: string[] = [];
 const GRN_UNITS = [
   "Bags",
   "Units",
@@ -113,11 +113,27 @@ function RecordDeliveryModal({
   const fmtDate = (d: Date) => formatDateByGeneralSettings(d);
   const isAdditional = !!existingGrn;
 
-  const [poRef, setPoRef] = useState(existingGrn?.poRef || GRN_PO_REFS[0]);
+  const [poRef, setPoRef] = useState(existingGrn?.poRef || "");
+  const [poRefs, setPoRefs] = useState<string[]>([]);
   const [supplier, setSupplier] = useState(existingGrn?.supplier || "");
   const [warehouses, setWarehouses] = useState<string[]>([]);
   const [warehouse, setWarehouse] = useState(existingGrn?.warehouse || "");
   const [deliveryNote, setDeliveryNote] = useState("");
+
+  // Load open purchase orders for the PO reference dropdown.
+  useEffect(() => {
+    fetchPurchaseOrders()
+      .then((orders) => {
+        const refs = (orders as any[])
+          .map((o) => String(o.poNumber ?? o.reference ?? o.id ?? ""))
+          .filter(Boolean);
+        setPoRefs(refs);
+        setPoRef((prev) => prev || refs[0] || "");
+      })
+      .catch(() => {
+        /* leave dropdown empty on failure */
+      });
+  }, []);
 
   useEffect(() => {
     getReferenceData()
@@ -245,7 +261,8 @@ function RecordDeliveryModal({
                   onChange={(e) => setPoRef(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                  {GRN_PO_REFS.map((r) => (
+                  <option value="">Select PO…</option>
+                  {poRefs.map((r) => (
                     <option key={r}>{r}</option>
                   ))}
                 </select>

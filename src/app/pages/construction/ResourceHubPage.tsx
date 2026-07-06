@@ -10,8 +10,9 @@ import {
   MapPin,
   Calendar,
 } from "lucide-react";
-import { projects as mockProjects, staffList, vendors } from "./mockData";
+import { projects as mockProjects, vendors } from "./mockData";
 import { fetchConstructionProjects } from "../../api/projects";
+import { fetchEmployees } from "../../api/employees";
 
 const vendorActivity = [
   {
@@ -49,11 +50,21 @@ const vendorActivity = [
 export function ResourceHubPage() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState(mockProjects);
+  const [staffList, setStaffList] = useState<string[]>([]);
 
   useEffect(() => {
     fetchConstructionProjects()
       .then((data) => {
         if (data.length > 0) setProjects(data as typeof mockProjects);
+      })
+      .catch(() => {});
+    fetchEmployees({ status: "active" })
+      .then((employees) => {
+        setStaffList(
+          employees
+            .map((e) => `${e.firstName ?? ""} ${e.lastName ?? ""}`.trim())
+            .filter(Boolean),
+        );
       })
       .catch(() => {});
   }, []);
