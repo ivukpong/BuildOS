@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
-import { fetchDepartments } from "../../api/departments";
+import { toast } from "sonner";
+import { fetchDepartments, createDepartment, deleteDepartment } from "../../api/departments";
 import { getDepartmentPayrollSummary } from "../../api/hr-extras";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 import {
   getCurrencySymbol,
   formatNumberByGeneralSettings,
@@ -49,8 +51,11 @@ export function DepartmentsPage() {
       netPay: number;
     }[]
   >([]);
+  function loadDepartments() {
+    return fetchDepartments().then(setDepts);
+  }
   useEffect(() => {
-    fetchDepartments().then(setDepts);
+    loadDepartments();
     getDepartmentPayrollSummary()
       .then(setPayrollSummary)
       .catch(() => setPayrollSummary([]));
@@ -58,10 +63,47 @@ export function DepartmentsPage() {
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Department | null>(null);
   const [newName, setNewName] = useState("");
   const [newDesc, setNewDesc] = useState("");
   const [newHead, setNewHead] = useState("");
   const [newLocation, setNewLocation] = useState("");
+
+  function handleCreateDepartment() {
+    if (!newName.trim()) {
+      toast.error("Department name is required");
+      return;
+    }
+    setCreating(true);
+    createDepartment({
+      name: newName.trim(),
+      description: newDesc.trim(),
+      location: newLocation.trim(),
+    })
+      .then(() => loadDepartments())
+      .then(() => {
+        setShowCreate(false);
+        setNewName("");
+        setNewDesc("");
+        setNewHead("");
+        setNewLocation("");
+        toast.success("Department created");
+      })
+      .catch(() => toast.error("Failed to create department. Please try again."))
+      .finally(() => setCreating(false));
+  }
+
+  function handleDeleteDepartment() {
+    if (!deleteTarget) return;
+    deleteDepartment(deleteTarget.id)
+      .then(() => loadDepartments())
+      .then(() => {
+        setDeleteTarget(null);
+        toast.success("Department deleted");
+      })
+      .catch(() => toast.error("Failed to delete department. It may still have employees assigned."));
+  }
 
   const filtered = depts.filter(
     (d) =>
@@ -187,7 +229,10 @@ export function DepartmentsPage() {
                     </button>
                     <button
                       className="p-1.5 rounded hover:bg-red-50 text-gray-400 hover:text-red-600"
-                      onClick={(e) => e.stopPropagation()}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(dept);
+                      }}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -297,13 +342,31 @@ export function DepartmentsPage() {
               >
                 Cancel
               </button>
-              <button className="px-4 py-2 bg-indigo-700 text-white rounded-md text-sm hover:bg-indigo-800">
-                Create Department
+              <button
+                onClick={handleCreateDepartment}
+                disabled={creating}
+                className="px-4 py-2 bg-indigo-700 text-white rounded-md text-sm hover:bg-indigo-800 disabled:opacity-50"
+              >
+                {creating ? "Creating…" : "Create Department"}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={deleteTarget !== null}
+        title="Delete Department?"
+        description={
+          deleteTarget
+            ? `This will permanently remove "${deleteTarget.name}". This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        isDangerous
+        onConfirm={handleDeleteDepartment}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useParams, useNavigate, useSearchParams } from "react-router";
+import { toast } from "sonner";
 import {
   getCurrencySymbol,
   formatNumberByGeneralSettings,
@@ -24,7 +25,8 @@ import {
   X,
   Save,
 } from "lucide-react";
-import { fetchEmployee, updateEmployee } from "../../api/employees";
+import { fetchEmployee, updateEmployee, toEmployeeUpdatePayload } from "../../api/employees";
+import { fetchDepartments } from "../../api/departments";
 import {
   getAttendance,
   getPayslips,
@@ -94,6 +96,7 @@ const attendanceBadge: Record<string, string> = {
 export function EmployeeProfilePage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [tab, setTab] = useState<TabId>("personal");
   const [emp, setEmp] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -102,6 +105,14 @@ export function EmployeeProfilePage() {
   const [projects, setProjects] = useState<WorkforceAllocation[]>([]);
   const [editOpen, setEditOpen] = useState(false);
   const [editDraft, setEditDraft] = useState<any>({});
+  const [saving, setSaving] = useState(false);
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+
+  useEffect(() => {
+    fetchDepartments()
+      .then((depts) => setDepartments(depts.map((d) => ({ id: d.id, name: d.name }))))
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!id) return;
@@ -118,6 +129,10 @@ export function EmployeeProfilePage() {
         setPayslips(slips);
         setProjects(allocs);
         setEditDraft({ ...e });
+        if (searchParams.get("edit") === "1") {
+          setEditOpen(true);
+          setSearchParams({}, { replace: true });
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -129,15 +144,18 @@ export function EmployeeProfilePage() {
   }
 
   function saveEdit() {
-    updateEmployee(emp.id, editDraft)
+    setSaving(true);
+    updateEmployee(emp.id, toEmployeeUpdatePayload(editDraft))
       .then(() => {
         setEmp((prev: any) => ({ ...prev, ...editDraft }));
         setEditOpen(false);
+        toast.success("Employee updated");
       })
       .catch((err) => {
-        alert("Failed to save employee. Please try again.");
+        toast.error("Failed to save employee. Please try again.");
         console.error(err);
-      });
+      })
+      .finally(() => setSaving(false));
   }
 
   function df(key: string, value: string) {
@@ -157,10 +175,10 @@ export function EmployeeProfilePage() {
       <div className="flex flex-col items-center justify-center py-24 gap-3">
         <p className="text-gray-400 text-sm">Employee not found.</p>
         <button
-          onClick={() => navigate("/apps/hr")}
+          onClick={() => navigate("/apps/hr/employees")}
           className="text-indigo-600 text-sm hover:underline"
         >
-          Back to HR
+          Back to Employees
         </button>
       </div>
     );
@@ -185,7 +203,7 @@ export function EmployeeProfilePage() {
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate("/apps/hr")}
+            onClick={() => navigate("/apps/hr/employees")}
             className="p-1.5 rounded hover:bg-gray-100 text-gray-500"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -302,7 +320,10 @@ export function EmployeeProfilePage() {
                 },
                 {
                   label: "Emergency Contact",
-                  value: "—",
+                  value:
+                    [emp.emergencyContact, emp.emergencyPhone]
+                      .filter(Boolean)
+                      .join(" · ") || "—",
                   icon: <AlertCircle className="w-4 h-4 text-amber-500" />,
                 },
               ].map((r) => (
@@ -339,13 +360,17 @@ export function EmployeeProfilePage() {
             {[
               { label: "Employee ID", value: emp.id },
               { label: "Job Title / Role", value: emp.role },
-              { label: "Department", value: emp.department },
-              { label: "Grade Level", value: "—" },
+              { label: "Department", value: emp.department || "—" },
+              { label: "Grade Level", value: emp.gradeLevel || "—" },
               { label: "Employment Type", value: emp.employmentType ?? "—" },
-              { label: "Work Location", value: "—" },
-              { label: "Reports To", value: "—" },
               { label: "Date Hired", value: emp.dateHired ?? "—" },
-              { label: "Monthly Salary", value: "—" },
+              {
+                label: "Monthly Salary",
+                value:
+                  emp.baseSalary > 0
+                    ? `${getCurrencySymbol()}${formatNumberByGeneralSettings(emp.baseSalary)}`
+                    : "—",
+              },
             ].map((r) => (
               <div
                 key={r.label}
@@ -651,11 +676,25 @@ export function EmployeeProfilePage() {
                   <label className="block text-xs font-medium text-gray-600 mb-1">
                     Department
                   </label>
-                  <input
-                    value={editDraft.department}
-                    onChange={(e) => df("department", e.target.value)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
+                  <select
+                    value={editDraft.departmentId}
+                    onChange={(e) => {
+                      const dept = departments.find((d) => d.id === e.target.value);
+                      setEditDraft((prev: any) => ({
+                        ...prev,
+                        departmentId: e.target.value,
+                        department: dept?.name ?? prev.department,
+                      }));
+                    }}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Select department…</option>
+                    {departments.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -670,13 +709,7 @@ export function EmployeeProfilePage() {
                     onChange={(e) => df("employmentType", e.target.value)}
                     className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
-                    {[
-                      "Full-time",
-                      "Part-time",
-                      "Contract",
-                      "Intern",
-                      "Consultant",
-                    ].map((t) => (
+                    {["Full-time", "Contract"].map((t) => (
                       <option key={t}>{t}</option>
                     ))}
                   </select>
@@ -696,19 +729,110 @@ export function EmployeeProfilePage() {
                   </select>
                 </div>
               </div>
+
+              {/* Grade / Salary */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Grade Level
+                  </label>
+                  <input
+                    value={editDraft.gradeLevel ?? ""}
+                    onChange={(e) => df("gradeLevel", e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Monthly Salary
+                  </label>
+                  <input
+                    type="number"
+                    value={editDraft.baseSalary ?? 0}
+                    onChange={(e) => df("baseSalary", e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* Personal details */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Date of Birth
+                  </label>
+                  <input
+                    type="date"
+                    value={editDraft.dateOfBirth ?? ""}
+                    onChange={(e) => df("dateOfBirth", e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Gender
+                  </label>
+                  <select
+                    value={editDraft.gender ?? ""}
+                    onChange={(e) => df("gender", e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="">Select…</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">
+                  Address
+                </label>
+                <input
+                  value={editDraft.address ?? ""}
+                  onChange={(e) => df("address", e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Emergency Contact
+                  </label>
+                  <input
+                    value={editDraft.emergencyContact ?? ""}
+                    onChange={(e) => df("emergencyContact", e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-600 mb-1">
+                    Emergency Phone
+                  </label>
+                  <input
+                    value={editDraft.emergencyPhone ?? ""}
+                    onChange={(e) => df("emergencyPhone", e.target.value)}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
             </div>
             <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-100">
               <button
                 onClick={() => setEditOpen(false)}
-                className="px-4 py-2 text-sm border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50"
+                disabled={saving}
+                className="px-4 py-2 text-sm border border-gray-300 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={saveEdit}
-                className="px-4 py-2 text-sm bg-indigo-700 text-white rounded-xl hover:bg-indigo-800 flex items-center gap-2"
+                disabled={saving}
+                className="px-4 py-2 text-sm bg-indigo-700 text-white rounded-xl hover:bg-indigo-800 flex items-center gap-2 disabled:opacity-60"
               >
-                <Save className="w-4 h-4" /> Save Changes
+                <Save className="w-4 h-4" /> {saving ? "Saving\u2026" : "Save Changes"}
               </button>
             </div>
           </div>

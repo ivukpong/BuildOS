@@ -1,7 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
-import { fetchEmployees } from "../../api/employees";
-import { formatDateByGeneralSettings } from "../../utils/generalSettings";
+import { toast } from "sonner";
+import { fetchEmployees, createEmployee, EMPLOYMENT_TYPE_TO_BACKEND } from "../../api/employees";
+import { fetchDepartments } from "../../api/departments";
+import { useNumbering } from "../../stores/numberingStore";
+import { useClickOutside } from "../../utils/useClickOutside";
 import {
   Users,
   Search,
@@ -53,44 +56,35 @@ const empTypeColor: Record<string, string> = {
   Contract: "bg-orange-100 text-orange-700",
 };
 
-const departments = [
-  "Engineering",
-  "Operations",
-  "Finance",
-  "Human Resources",
-  "Procurement",
-  "Health & Safety",
-  "Administration",
-  "IT & Systems",
-];
-
-const EMPLOYEE_FILTER_FIELDS: FilterFieldDef[] = [
-  { key: "role", label: "Role / Position", type: "text" },
-  {
-    key: "department",
-    label: "Department",
-    type: "select",
-    options: departments,
-  },
-  {
-    key: "status",
-    label: "Status",
-    type: "select",
-    options: ["active", "inactive", "on_leave"],
-  },
-  {
-    key: "employmentType",
-    label: "Employment Type",
-    type: "select",
-    options: ["Full-time", "Contract"],
-  },
-];
+function buildEmployeeFilterFields(departmentNames: string[]): FilterFieldDef[] {
+  return [
+    { key: "role", label: "Role / Position", type: "text" },
+    {
+      key: "department",
+      label: "Department",
+      type: "select",
+      options: departmentNames,
+    },
+    {
+      key: "status",
+      label: "Status",
+      type: "select",
+      options: ["active", "inactive", "on_leave"],
+    },
+    {
+      key: "employmentType",
+      label: "Employment Type",
+      type: "select",
+      options: ["Full-time", "Contract"],
+    },
+  ];
+}
 
 interface AddEmpForm {
   firstName: string;
   lastName: string;
   role: string;
-  department: string;
+  departmentId: string;
   email: string;
   phone: string;
   employmentType: string;
@@ -115,7 +109,7 @@ const emptyEmpForm: AddEmpForm = {
   firstName: "",
   lastName: "",
   role: "",
-  department: departments[0],
+  departmentId: "",
   email: "",
   phone: "",
   employmentType: "Full-time",
@@ -124,9 +118,13 @@ const emptyEmpForm: AddEmpForm = {
 function AddEmployeeModal({
   onSave,
   onClose,
+  departments,
+  saving,
 }: {
   onSave: (f: AddEmpForm) => void;
   onClose: () => void;
+  departments: { id: string; name: string }[];
+  saving: boolean;
 }) {
   const [form, setForm] = useState<AddEmpForm>({ ...emptyEmpForm });
   const set = (k: keyof AddEmpForm, v: string) =>
@@ -135,7 +133,7 @@ function AddEmployeeModal({
     form.firstName.trim() &&
     form.lastName.trim() &&
     form.role.trim() &&
-    form.department;
+    form.departmentId;
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full">
@@ -186,13 +184,14 @@ function AddEmployeeModal({
               Department <span className="text-red-500">*</span>
             </label>
             <select
-              value={form.department}
-              onChange={(e) => set("department", e.target.value)}
+              value={form.departmentId}
+              onChange={(e) => set("departmentId", e.target.value)}
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
             >
+              <option value="">Select department…</option>
               {departments.map((d) => (
-                <option key={d} value={d}>
-                  {d}
+                <option key={d.id} value={d.id}>
+                  {d.name}
                 </option>
               ))}
             </select>
@@ -251,10 +250,10 @@ function AddEmployeeModal({
           </button>
           <button
             onClick={() => valid && onSave(form)}
-            disabled={!valid}
+            disabled={!valid || saving}
             className="px-4 py-2 bg-indigo-700 text-white rounded-md text-sm font-medium hover:bg-indigo-800 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Create Employee
+            {saving ? "Creating\u2026" : "Create Employee"}
           </button>
         </div>
       </div>
@@ -264,9 +263,13 @@ function AddEmployeeModal({
 
 export function EmployeesPage() {
   const navigate = useNavigate();
+  const { configs } = useNumbering();
   const [empList, setEmpList] = useState<EmployeeRow[]>([]);
-  useEffect(() => {
-    fetchEmployees().then((data) =>
+  const [departments, setDepartments] = useState<{ id: string; name: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  function loadEmployees() {
+    return fetchEmployees().then((data) =>
       setEmpList(
         data.map((e: any) => ({
           ...e,
@@ -280,12 +283,46 @@ export function EmployeesPage() {
         })),
       ),
     );
+  }
+
+  useEffect(() => {
+    Promise.all([
+      loadEmployees(),
+      fetchDepartments().then((depts) =>
+        setDepartments(depts.map((d) => ({ id: d.id, name: d.name }))),
+      ),
+    ])
+      .catch(() => toast.error("Failed to load employees"))
+      .finally(() => setLoading(false));
   }, []);
+
   const [search, setSearch] = useState("");
   const [advFilters, setAdvFilters] = useState<ActiveFilters>({});
   const [advSort, setAdvSort] = useState<SortConfig>(null);
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [creatingEmployee, setCreatingEmployee] = useState(false);
+  const menuRef = useRef<HTMLTableCellElement>(null);
+  useClickOutside(menuRef, menuOpen !== null, () => setMenuOpen(null));
+
+  const employeeFilterFields = buildEmployeeFilterFields(
+    departments.map((d) => d.name),
+  );
+
+  // Stable, human-friendly Employee IDs following the numbering template
+  // configured for the "Employee" module (e.g. EMP-001), independent of
+  // search/sort/filter order.
+  const idCfg = configs.find((c) => c.module === "Employee");
+  const idOrder = [...empList].sort((a, b) => a.id.localeCompare(b.id));
+  const displayIdMap = new Map<string, string>(
+    idOrder.map((e, i) => [
+      e.id,
+      idCfg
+        ? `${idCfg.prefix}${idCfg.separator}${String(i + 1).padStart(idCfg.padLength, "0")}`
+        : e.id,
+    ]),
+  );
+  const displayId = (id: string) => displayIdMap.get(id) ?? id;
 
   function handleSort(col: string) {
     if (advSort?.field === col) {
@@ -299,7 +336,7 @@ export function EmployeesPage() {
 
   const filtered = empList
     .filter((e) => {
-      const matchSearch = `${e.firstName} ${e.lastName} ${e.id} ${e.role}`
+      const matchSearch = `${e.firstName} ${e.lastName} ${displayId(e.id)} ${e.role}`
         .toLowerCase()
         .includes(search.toLowerCase());
       const matchAdv = Object.entries(advFilters).every(([key, vals]) => {
@@ -341,28 +378,30 @@ export function EmployeesPage() {
   }
 
   function handleAddEmployee(form: AddEmpForm) {
-    const newId = `EMP-${String(empList.length + 1).padStart(3, "0")}`;
-    const today = formatDateByGeneralSettings(new Date());
-    setEmpList((prev) => [
-      ...prev,
-      {
-        id: newId,
-        firstName: form.firstName,
-        lastName: form.lastName,
-        role: form.role,
-        department: form.department,
-        status: "active" as EmpStatus,
-        email:
-          form.email ||
-          `${form.firstName.toLowerCase()}.${form.lastName.toLowerCase()}@buildos.ng`,
-        phone: form.phone || "—",
-        dateHired: today,
-        employmentType: form.employmentType,
-        projectCount: 0,
-        projects: [],
-      },
-    ]);
-    setShowAddModal(false);
+    setCreatingEmployee(true);
+    createEmployee({
+      firstName: form.firstName,
+      lastName: form.lastName,
+      role: form.role,
+      departmentId: form.departmentId,
+      email:
+        form.email ||
+        `${form.firstName.toLowerCase()}.${form.lastName.toLowerCase()}@buildos.ng`,
+      phone: form.phone || "",
+      employmentType: EMPLOYMENT_TYPE_TO_BACKEND[form.employmentType] ?? form.employmentType,
+      status: "active",
+      dateHired: new Date().toISOString(),
+    })
+      .then(() => loadEmployees())
+      .then(() => {
+        setShowAddModal(false);
+        toast.success("Employee created");
+      })
+      .catch((err) => {
+        console.error(err);
+        toast.error("Failed to create employee. Please try again.");
+      })
+      .finally(() => setCreatingEmployee(false));
   }
 
   function handleExportCSV() {
@@ -380,7 +419,7 @@ export function EmployeesPage() {
       "Projects",
     ];
     const rows = filtered.map((e) => [
-      e.id,
+      displayId(e.id),
       e.firstName,
       e.lastName,
       e.role,
@@ -404,8 +443,10 @@ export function EmployeesPage() {
     "bg-purple-100 text-purple-700",
     "bg-rose-100 text-rose-700",
   ];
-  const colorFor = (id: string) =>
-    avatarColors[parseInt(id.slice(-3)) % avatarColors.length];
+  const colorFor = (id: string) => {
+    const hash = Array.from(id).reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+    return avatarColors[hash % avatarColors.length];
+  };
 
   return (
     <div className="space-y-5">
@@ -448,7 +489,7 @@ export function EmployeesPage() {
           />
         </div>
         <AdvancedFilter
-          fields={EMPLOYEE_FILTER_FIELDS}
+          fields={employeeFilterFields}
           filters={advFilters}
           onFiltersChange={setAdvFilters}
           sort={advSort}
@@ -504,7 +545,7 @@ export function EmployeesPage() {
                   onClick={() => navigate(`/apps/hr/employees/${emp.id}`)}
                 >
                   <td className="px-4 py-3 font-mono text-xs font-medium text-gray-500">
-                    {emp.id}
+                    {displayId(emp.id)}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2.5">
@@ -557,6 +598,7 @@ export function EmployeesPage() {
                   </td>
                   <td
                     className="px-4 py-3 relative"
+                    ref={menuOpen === emp.id ? menuRef : undefined}
                     onClick={(e) => e.stopPropagation()}
                   >
                     <button
@@ -577,7 +619,13 @@ export function EmployeesPage() {
                         >
                           <Eye className="w-3.5 h-3.5" /> View Profile
                         </button>
-                        <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                        <button
+                          onClick={() => {
+                            setMenuOpen(null);
+                            navigate(`/apps/hr/employees/${emp.id}?edit=1`);
+                          }}
+                          className="flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        >
                           <Edit className="w-3.5 h-3.5" /> Edit
                         </button>
                       </div>
@@ -588,7 +636,12 @@ export function EmployeesPage() {
             })}
           </tbody>
         </table>
-        {filtered.length === 0 && (
+        {loading && (
+          <div className="text-center py-12 text-gray-400 text-sm">
+            Loading employees…
+          </div>
+        )}
+        {!loading && filtered.length === 0 && (
           <div className="text-center py-12 text-gray-400">
             <Users className="w-8 h-8 mx-auto mb-2 opacity-40" />
             <p className="text-sm">No employees match your filters</p>
@@ -600,6 +653,8 @@ export function EmployeesPage() {
         <AddEmployeeModal
           onSave={handleAddEmployee}
           onClose={() => setShowAddModal(false)}
+          departments={departments}
+          saving={creatingEmployee}
         />
       )}
     </div>

@@ -161,7 +161,7 @@ export function AdvancedFilter({
 
       {/* Panel */}
       {open && (
-        <div className="absolute top-full mt-2 left-0 z-50 bg-white border border-gray-200 rounded-2xl shadow-xl w-[480px] overflow-hidden">
+        <div className="absolute top-full mt-2 left-0 z-50 bg-white border border-gray-200 rounded-2xl shadow-xl w-[92vw] max-w-[480px] sm:w-[480px] overflow-hidden">
           {/* Panel header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-800">
@@ -190,7 +190,7 @@ export function AdvancedFilter({
             </div>
           </div>
 
-          <div className="flex h-[360px]">
+          <div className="flex h-[min(360px,60vh)]">
             {/* Field list */}
             <div className="w-44 border-r border-gray-100 overflow-y-auto py-2 shrink-0">
               {fields.map((f) => {

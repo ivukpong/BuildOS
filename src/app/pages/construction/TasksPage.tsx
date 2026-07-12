@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import type { ReactNode } from "react";
+import { toast } from "sonner";
 import {
   Plus,
   Search,
@@ -15,6 +16,7 @@ import {
 import { useTasks } from "../../contexts/TaskContext";
 import type { TaskPriority, TaskCategory } from "../../contexts/TaskContext";
 import { fetchEmployees } from "../../api/employees";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 
 type TaskStatus = "Pending" | "In Progress" | "Completed";
 
@@ -59,6 +61,7 @@ export function TasksPage() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | "All">("All");
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -135,6 +138,7 @@ export function TasksPage() {
     if (!form.name.trim()) return;
     if (editId) {
       updateTask(editId, form);
+      toast.success("Task updated");
     } else {
       addTask({
         ...form,
@@ -144,6 +148,7 @@ export function TasksPage() {
         projectId: undefined,
         projectName: undefined,
       });
+      toast.success("Task created");
     }
     setShowModal(false);
   }
@@ -156,7 +161,14 @@ export function TasksPage() {
   }
 
   function handleDelete(id: string) {
-    deleteTask(id);
+    setDeleteId(id);
+  }
+
+  function confirmDelete() {
+    if (!deleteId) return;
+    deleteTask(deleteId);
+    setDeleteId(null);
+    toast.success("Task deleted");
   }
 
   const isOverdue = (dueDate: string, status: TaskStatus) =>
@@ -282,7 +294,7 @@ export function TasksPage() {
                   </span>
                 </div>
               </div>
-              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+              <div className="flex items-center gap-1 shrink-0">
                 <button
                   onClick={() => openEdit(task)}
                   className="p-1.5 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg"
@@ -387,6 +399,7 @@ export function TasksPage() {
                   <input
                     type="date"
                     value={form.dueDate}
+                    min={today}
                     onChange={(e) =>
                       setForm({ ...form, dueDate: e.target.value })
                     }
@@ -430,6 +443,16 @@ export function TasksPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={deleteId !== null}
+        title="Delete Task?"
+        description="This action cannot be undone."
+        confirmLabel="Delete"
+        isDangerous
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteId(null)}
+      />
     </div>
   );
 }

@@ -21,7 +21,7 @@ export function ConstructionLayout() {
     {
       label: "Projects",
       items: [
-        { label: "All Projects", href: "/apps/construction", icon: <FolderKanban className="w-4 h-4" />, end: true },
+        { label: "All Projects", href: "/apps/construction/projects", icon: <FolderKanban className="w-4 h-4" />, end: true },
       ],
     },
     {

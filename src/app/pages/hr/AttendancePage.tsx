@@ -1,5 +1,11 @@
 import { useState, useEffect } from "react";
-import { getAttendance } from "../../api/hr-extras";
+import { toast } from "sonner";
+import {
+  getAttendance,
+  createAttendanceRecord,
+  updateAttendanceRecord,
+} from "../../api/hr-extras";
+import { fetchEmployees } from "../../api/employees";
 import {
   CheckCircle,
   XCircle,
@@ -9,13 +15,16 @@ import {
   Download,
   CalendarDays,
   AlertTriangle,
+  HelpCircle,
 } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
 
-type AttStatus = "present" | "absent" | "late" | "half_day" | "leave";
+type AttStatus = "present" | "absent" | "late" | "half_day" | "leave" | "unmarked";
+const VALID_MARKED_STATUSES = ["present", "absent", "late", "half_day", "leave"] as const;
 
 interface AttRecord {
   id: string;
+  recordId?: string;
   name: string;
   role: string;
   department: string;
@@ -66,6 +75,12 @@ const statusConfig: Record<
     icon: <CalendarDays className="w-3.5 h-3.5 text-purple-500" />,
     rowColor: "bg-purple-50/30",
   },
+  unmarked: {
+    label: "Not Marked",
+    badge: "bg-gray-100 text-gray-500",
+    icon: <HelpCircle className="w-3.5 h-3.5 text-gray-400" />,
+    rowColor: "",
+  },
 };
 
 // NOTE: depts derived inside component from API records
@@ -83,27 +98,63 @@ export function AttendancePage() {
   ];
 
   useEffect(() => {
-    getAttendance()
-      .then((data) =>
+    Promise.all([fetchEmployees(), getAttendance()])
+      .then(([employees, attendance]) => {
+        const todayStr = new Date().toDateString();
+        const attByEmployee = new Map(
+          attendance
+            .filter((r) => new Date(r.date).toDateString() === todayStr)
+            .map((r) => [r.employeeId, r]),
+        );
         setRecords(
-          data.map((r) => ({
-            id: r.employeeId,
-            name: r.employeeName,
-            role: "—",
-            department: r.department ?? "—",
-            checkIn: r.clockIn ?? "—",
-            checkOut: r.clockOut ?? "—",
-            status: (
-              ["present", "absent", "late", "half_day", "leave"] as const
-            ).includes(r.status as AttStatus)
-              ? (r.status as AttStatus)
-              : "present",
-            hrs: r.hoursWorked ?? 0,
-          })),
-        ),
-      )
-      .catch(() => {});
+          employees.map((e) => {
+            const rec = attByEmployee.get(e.id);
+            return {
+              id: e.id,
+              recordId: rec?.id,
+              name: `${e.firstName} ${e.lastName}`.trim(),
+              role: e.role || "—",
+              department: e.department || "—",
+              checkIn: rec?.clockIn ?? "—",
+              checkOut: rec?.clockOut ?? "—",
+              status: rec
+                ? VALID_MARKED_STATUSES.includes(
+                    rec.status as (typeof VALID_MARKED_STATUSES)[number],
+                  )
+                  ? (rec.status as AttStatus)
+                  : "present"
+                : "unmarked",
+              hrs: rec?.hoursWorked ?? 0,
+            };
+          }),
+        );
+      })
+      .catch(() => toast.error("Failed to load attendance"));
   }, []);
+
+  /** Persists a status change for one employee, creating or updating their
+   * attendance record for today as appropriate. */
+  function persistStatus(rec: AttRecord, status: AttStatus) {
+    const payload = {
+      employeeId: rec.id,
+      employeeName: rec.name,
+      department: rec.department,
+      date: new Date().toISOString(),
+      status,
+    };
+    const request = rec.recordId
+      ? updateAttendanceRecord(rec.recordId, payload)
+      : createAttendanceRecord(payload);
+    request
+      .then((saved) => {
+        setRecords((prev) =>
+          prev.map((r) =>
+            r.id === rec.id ? { ...r, status, recordId: saved.id } : r,
+          ),
+        );
+      })
+      .catch(() => toast.error(`Failed to save attendance for ${rec.name}`));
+  }
 
   const counts = {
     present: records.filter((r) => r.status === "present").length,
@@ -111,6 +162,7 @@ export function AttendancePage() {
     late: records.filter((r) => r.status === "late").length,
     half_day: records.filter((r) => r.status === "half_day").length,
     leave: records.filter((r) => r.status === "leave").length,
+    unmarked: records.filter((r) => r.status === "unmarked").length,
   };
 
   const filtered = records.filter((r) => {
@@ -135,14 +187,14 @@ export function AttendancePage() {
   }
 
   function markSelected(status: AttStatus) {
-    setRecords((prev) =>
-      prev.map((r) => (selected.has(r.id) ? { ...r, status } : r)),
-    );
+    records.filter((r) => selected.has(r.id)).forEach((r) => persistStatus(r, status));
     setSelected(new Set());
+    toast.success(`Marked ${selected.size} employee${selected.size === 1 ? "" : "s"} as ${statusConfig[status].label}`);
   }
 
   function markOne(id: string, status: AttStatus) {
-    setRecords((prev) => prev.map((r) => (r.id === id ? { ...r, status } : r)));
+    const rec = records.find((r) => r.id === id);
+    if (rec) persistStatus(rec, status);
   }
 
   const avatarColors = [
@@ -204,11 +256,10 @@ export function AttendancePage() {
             <Download className="w-3.5 h-3.5" /> Export
           </button>
           <button
-            onClick={() =>
-              setRecords((prev) =>
-                prev.map((r) => ({ ...r, status: "present" as AttStatus })),
-              )
-            }
+            onClick={() => {
+              records.forEach((r) => persistStatus(r, "present"));
+              toast.success("Marked all employees as Present");
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-700 text-white rounded-md text-sm hover:bg-indigo-800"
           >
             <CheckCircle className="w-3.5 h-3.5" /> Mark All Present
@@ -321,6 +372,17 @@ export function AttendancePage() {
       </div>
 
       {/* Alerts */}
+      {counts.unmarked > 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 flex items-center gap-2 text-sm text-gray-600">
+          <HelpCircle className="w-4 h-4 flex-shrink-0" />
+          <span>
+            <strong>
+              {counts.unmarked} employee{counts.unmarked > 1 ? "s" : ""}
+            </strong>{" "}
+            not yet marked for today.
+          </span>
+        </div>
+      )}
       {counts.absent > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-center gap-2 text-sm text-red-700">
           <AlertTriangle className="w-4 h-4 flex-shrink-0" />

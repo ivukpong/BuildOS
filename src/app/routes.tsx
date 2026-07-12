@@ -222,8 +222,9 @@ export const router = createBrowserRouter([
             path: "construction",
             Component: ConstructionLayout,
             children: [
-              { index: true, Component: ProjectsListPage },
+              { index: true, Component: PortfolioDashboardPage },
               { path: "dashboard", Component: PortfolioDashboardPage },
+              { path: "projects", Component: ProjectsListPage },
               { path: "schedule", Component: ScheduleOverviewPage },
               {
                 path: "tasks",
@@ -365,8 +366,9 @@ export const router = createBrowserRouter([
             path: "hr",
             Component: HRLayout,
             children: [
-              { index: true, Component: EmployeesPage },
+              { index: true, Component: HRDashboardPage },
               { path: "dashboard", Component: HRDashboardPage },
+              { path: "employees", Component: EmployeesPage },
               { path: "employees/:id", Component: EmployeeProfilePage },
               { path: "departments", Component: DepartmentsPage },
               { path: "org-structure", Component: OrgStructurePage },

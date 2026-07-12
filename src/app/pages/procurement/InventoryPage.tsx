@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getMaterials, Material as ApiMaterial } from "../../api/materials";
+import { useClickOutside } from "../../utils/useClickOutside";
 import {
   getCurrencySymbol,
   formatNumberByGeneralSettings,
@@ -113,6 +114,8 @@ export function InventoryPage() {
   }, []);
   const [statusFilter, setStatusFilter] = useState("All");
   const [menuOpen, setMenuOpen] = useState<string | null>(null);
+  const menuRef = useRef<HTMLTableCellElement>(null);
+  useClickOutside(menuRef, menuOpen !== null, () => setMenuOpen(null));
   const [sortKey, setSortKey] = useState<MatSortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -396,7 +399,7 @@ export function InventoryPage() {
                   <td className="px-4 py-3 text-xs text-gray-500">
                     {m.supplier}
                   </td>
-                  <td className="px-4 py-3 relative">
+                  <td className="px-4 py-3 relative" ref={menuOpen === m.id ? menuRef : undefined}>
                     <button
                       onClick={() =>
                         setMenuOpen(menuOpen === m.id ? null : m.id)

@@ -131,7 +131,7 @@ export function ResourceHubPage() {
               Active Projects
             </h3>
             <button
-              onClick={() => navigate("/apps/construction")}
+              onClick={() => navigate("/apps/construction/projects")}
               className="text-xs text-orange-600 font-medium hover:text-orange-700"
             >
               View all →

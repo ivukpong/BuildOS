@@ -58,7 +58,7 @@ const sidebarSections = [
     items: [
       {
         label: "All Employees",
-        href: "/apps/hr",
+        href: "/apps/hr/employees",
         icon: <Users className="w-4 h-4" />,
         end: true,
       },

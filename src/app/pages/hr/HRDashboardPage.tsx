@@ -256,7 +256,7 @@ export function HRDashboardPage() {
             <Clock className="w-3.5 h-3.5" /> Mark Attendance
           </button>
           <button
-            onClick={() => navigate("/apps/hr")}
+            onClick={() => navigate("/apps/hr/employees")}
             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-700 text-white rounded-md text-sm hover:bg-indigo-800"
           >
             <Users className="w-3.5 h-3.5" /> All Employees

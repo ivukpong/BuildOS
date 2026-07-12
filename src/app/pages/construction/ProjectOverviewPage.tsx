@@ -63,7 +63,7 @@ export function ProjectOverviewPage() {
           <AlertTriangle className="w-12 h-12 text-amber-400 mx-auto mb-3" />
           <p className="text-gray-500">Project ID is missing.</p>
           <button
-            onClick={() => navigate("/apps/construction")}
+            onClick={() => navigate("/apps/construction/projects")}
             className="mt-4 text-blue-600 hover:underline text-sm"
           >
             Back to Projects

@@ -17,10 +17,13 @@ import {
 } from "../../api/admin-extras";
 import { formatDateTimeByGeneralSettings } from "../../utils/generalSettings";
 
+const ACTIVITY_PREVIEW_COUNT = 5;
+
 export function AdminDashboardPage() {
   const [summary, setSummary] = useState<AdminSystemSummary | null>(null);
   const [activityLog, setActivityLog] = useState<AdminActivity[]>([]);
   const [allUsers, setAllUsers] = useState<{ lastLogin?: string }[]>([]);
+  const [showAllActivity, setShowAllActivity] = useState(false);
 
   useEffect(() => {
     getAdminSystemSummary().then(setSummary).catch(console.error);
@@ -215,11 +218,26 @@ export function AdminDashboardPage() {
 
         {/* Recent Activity */}
         <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-900 mb-4">
-            Recent Activity
-          </h2>
-          <div className="space-y-3">
-            {activityLog.map((item) => (
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-900">
+              Recent Activity
+            </h2>
+            {activityLog.length > ACTIVITY_PREVIEW_COUNT && (
+              <button
+                onClick={() => setShowAllActivity((v) => !v)}
+                className="text-xs font-medium text-indigo-600 hover:text-indigo-800"
+              >
+                {showAllActivity ? "Show less" : "View more"}
+              </button>
+            )}
+          </div>
+          <div
+            className={`space-y-3 ${showAllActivity ? "max-h-80 overflow-y-auto pr-1" : ""}`}
+          >
+            {(showAllActivity
+              ? activityLog
+              : activityLog.slice(0, ACTIVITY_PREVIEW_COUNT)
+            ).map((item) => (
               <div
                 key={item.id}
                 className="flex items-start gap-3 rounded-lg bg-gray-50 border border-gray-100 p-3"
@@ -239,6 +257,14 @@ export function AdminDashboardPage() {
               <p className="text-sm text-gray-400">No recent activity.</p>
             )}
           </div>
+          {activityLog.length > ACTIVITY_PREVIEW_COUNT && (
+            <NavLink
+              to="/apps/admin/audit-logs"
+              className="mt-3 inline-block text-xs font-medium text-gray-400 hover:text-indigo-600"
+            >
+              View full audit log →
+            </NavLink>
+          )}
         </div>
       </div>
 

@@ -75,7 +75,7 @@ export function ProjectTabsLayout() {
         <div className="text-center">
           <p className="text-lg font-semibold text-gray-900">Project not found</p>
           <p className="text-sm text-gray-500 mt-1">No project matches ID &ldquo;{id}&rdquo;.</p>
-          <button onClick={() => navigate("/apps/construction")} className="mt-4 px-4 py-2 text-white rounded-lg text-sm font-medium" style={{ backgroundColor: "#E8973A" }}>
+          <button onClick={() => navigate("/apps/construction/projects")} className="mt-4 px-4 py-2 text-white rounded-lg text-sm font-medium" style={{ backgroundColor: "#E8973A" }}>
             Back to Projects
           </button>
         </div>
@@ -89,7 +89,7 @@ export function ProjectTabsLayout() {
     <div style={{ backgroundColor: "#F7F8FA" }} className="min-h-full space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <button onClick={() => navigate("/apps/construction")} className="flex items-center gap-1.5 text-sm" style={{ color: "#718096" }}>
+          <button onClick={() => navigate("/apps/construction/projects")} className="flex items-center gap-1.5 text-sm" style={{ color: "#718096" }}>
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <div className="w-px h-5" style={{ backgroundColor: "#E2E8F0" }} />

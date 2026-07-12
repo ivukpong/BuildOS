@@ -723,7 +723,7 @@ export function SettingsPage() {
                 sourced from the HR module.
               </p>
               <a
-                href="/apps/hr"
+                href="/apps/hr/employees"
                 className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 hover:text-blue-900"
               >
                 Manage Employees in HR Module <ArrowRight className="w-3 h-3" />

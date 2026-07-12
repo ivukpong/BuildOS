@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { getJobRoles, createJobRole } from "../../api/job-roles";
+import { toast } from "sonner";
+import { getJobRoles, createJobRole, deleteJobRole } from "../../api/job-roles";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 import { getCurrencySymbol } from "../../utils/generalSettings";
 import {
   Briefcase,
@@ -45,9 +47,10 @@ export function HRRolesPage() {
   const [newTitle, setNewTitle] = useState("");
   const [newDept, setNewDept] = useState("");
   const [newGrade, setNewGrade] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<Role | null>(null);
 
-  useEffect(() => {
-    getJobRoles()
+  function loadRoles() {
+    return getJobRoles()
       .then((jr) =>
         setRoles(
           jr.map((r) => ({
@@ -64,7 +67,22 @@ export function HRRolesPage() {
         ),
       )
       .catch(() => {});
+  }
+
+  useEffect(() => {
+    loadRoles();
   }, []);
+
+  function handleDeleteRole() {
+    if (!deleteTarget) return;
+    deleteJobRole(deleteTarget.id)
+      .then(() => loadRoles())
+      .then(() => {
+        setDeleteTarget(null);
+        toast.success("Role deleted");
+      })
+      .catch(() => toast.error("Failed to delete role. Please try again."));
+  }
 
   const depts = [
     "All Departments",
@@ -224,7 +242,7 @@ export function HRRolesPage() {
                         <button className="p-1 rounded hover:bg-gray-100 text-gray-400">
                           <Edit className="w-3.5 h-3.5" />
                         </button>
-                        <button className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500">
+                        <button className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500" onClick={() => setDeleteTarget(role)}>
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                         {isOpen ? (
@@ -402,8 +420,9 @@ export function HRRolesPage() {
                           skills: r.skills,
                         },
                       ]);
+                      toast.success("Role created");
                     })
-                    .catch(() => {});
+                    .catch(() => toast.error("Failed to create role. Please try again."));
                   setShowCreate(false);
                   setNewTitle("");
                   setNewDept("");
@@ -416,6 +435,20 @@ export function HRRolesPage() {
           </div>
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={deleteTarget !== null}
+        title="Delete Role?"
+        description={
+          deleteTarget
+            ? `This will permanently remove "${deleteTarget.title}". This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        isDangerous
+        onConfirm={handleDeleteRole}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

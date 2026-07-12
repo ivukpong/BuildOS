@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 import { Plus, Edit, Trash2, FolderKanban, FolderX } from "lucide-react";
 import {
   fetchClaimTypes,
@@ -7,6 +8,7 @@ import {
   deleteClaimType,
   type ClaimType,
 } from "../../api/claim-types";
+import { ConfirmationModal } from "../../components/ConfirmationModal";
 
 const EMPTY = { name: "", description: "", isProjectBased: false };
 
@@ -46,9 +48,16 @@ export function ClaimTypeSetupPage() {
   }
 
   async function remove(id: string) {
-    await deleteClaimType(id);
-    setClaimTypes((prev) => prev.filter((x) => x.id !== id));
+    try {
+      await deleteClaimType(id);
+      setClaimTypes((prev) => prev.filter((x) => x.id !== id));
+      toast.success("Claim type deleted");
+    } catch {
+      toast.error("Failed to delete claim type. Please try again.");
+    }
   }
+
+  const [deleteTarget, setDeleteTarget] = useState<ClaimType | null>(null);
 
   return (
     <div className="space-y-5">
@@ -217,7 +226,7 @@ export function ClaimTypeSetupPage() {
                       <Edit className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => remove(c.id)}
+                      onClick={() => setDeleteTarget(c)}
                       className="p-1 rounded hover:bg-red-50 text-gray-400 hover:text-red-500"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -239,6 +248,23 @@ export function ClaimTypeSetupPage() {
           </tbody>
         </table>
       </div>
+
+      <ConfirmationModal
+        isOpen={deleteTarget !== null}
+        title="Delete Claim Type?"
+        description={
+          deleteTarget
+            ? `This will permanently remove "${deleteTarget.name}". This action cannot be undone.`
+            : ""
+        }
+        confirmLabel="Delete"
+        isDangerous
+        onConfirm={() => {
+          if (deleteTarget) remove(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }
