@@ -92,12 +92,7 @@ function fmt(n: number) {
 }
 
 type MatSortKey =
-  | "name"
-  | "category"
-  | "currentStock"
-  | "unitCost"
-  | "stockValue"
-  | "status";
+  "name" | "category" | "currentStock" | "unitCost" | "stockValue" | "status";
 type SortDir = "asc" | "desc";
 
 export function InventoryPage() {
@@ -358,7 +353,11 @@ export function InventoryPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((m) => {
-              const cfg = statusConfig[m.status];
+              const cfg = statusConfig[m.status] ?? {
+                badge: "bg-gray-100 text-gray-700",
+                icon: null,
+                label: String(m.status ?? "Unknown"),
+              };
               const stockValue = m.currentStock * m.unitCost;
               return (
                 <tr key={m.id} className="hover:bg-gray-50">
@@ -399,7 +398,10 @@ export function InventoryPage() {
                   <td className="px-4 py-3 text-xs text-gray-500">
                     {m.supplier}
                   </td>
-                  <td className="px-4 py-3 relative" ref={menuOpen === m.id ? menuRef : undefined}>
+                  <td
+                    className="px-4 py-3 relative"
+                    ref={menuOpen === m.id ? menuRef : undefined}
+                  >
                     <button
                       onClick={() =>
                         setMenuOpen(menuOpen === m.id ? null : m.id)

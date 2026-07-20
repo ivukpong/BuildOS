@@ -61,12 +61,8 @@ function mapMovement(m: StockMovement): MovementRow {
   return {
     id: m.id,
     ts: valid ? d!.getTime() : 0,
-    date: valid
-      ? formatDateByGeneralSettings(d!)
-      : "—",
-    time: valid
-      ? formatTimeByGeneralSettings(d!)
-      : "",
+    date: valid ? formatDateByGeneralSettings(d!) : "—",
+    time: valid ? formatTimeByGeneralSettings(d!) : "",
     material: m.materialName ?? "—",
     category: "",
     type,
@@ -352,7 +348,12 @@ export function StockMovementPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((m) => {
-              const cfg = typeConfig[m.type];
+              const cfg = typeConfig[m.type] ?? {
+                row: "",
+                badge: "bg-gray-100 text-gray-700",
+                icon: null,
+                label: String(m.type ?? "Unknown"),
+              };
               return (
                 <tr key={m.id} className={`hover:bg-gray-50 ${cfg.row}`}>
                   <td className="px-4 py-3 font-mono text-xs font-medium text-gray-700">

@@ -558,7 +558,11 @@ export function SentRequestsPage() {
               </tr>
             )}
             {filtered.map((r) => {
-              const cfg = STATUS_CFG[r.status];
+              const cfg = STATUS_CFG[r.status] ?? {
+                badge: "bg-gray-100 text-gray-700",
+                icon: null,
+                label: String(r.status ?? "Unknown"),
+              };
               const isOpen = expanded === r.id;
               return (
                 <>

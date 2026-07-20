@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
-import { formatDateByGeneralSettings, getCurrencySymbol } from "../../utils/generalSettings";
+import {
+  formatDateByGeneralSettings,
+  getCurrencySymbol,
+} from "../../utils/generalSettings";
 import {
   Users,
   UserCheck,
@@ -38,6 +41,11 @@ const attConfig: Record<string, { badge: string; icon: React.ReactNode }> = {
   },
 };
 
+const defaultAttendanceConfig = {
+  badge: "bg-slate-100 text-slate-700",
+  icon: <Clock className="w-3.5 h-3.5 text-slate-500" />,
+};
+
 function fmt(n: number) {
   const symbol = getCurrencySymbol();
   const abs = Math.abs(n);
@@ -58,28 +66,42 @@ export function HRDashboardPage() {
   >([]);
   const [netPayroll, setNetPayroll] = useState(0);
 
+  const toArray = <T,>(value: unknown): T[] =>
+    Array.isArray(value) ? (value as T[]) : [];
+
   useEffect(() => {
     fetchEmployees()
-      .then(setAllEmployees)
+      .then((data) => setAllEmployees(toArray<any>(data)))
       .catch(() => {});
     fetchDepartments()
-      .then(setAllDepartments)
+      .then((data) => setAllDepartments(toArray<any>(data)))
       .catch(() => {});
     getAttendance()
-      .then(setTodayAttendance)
+      .then((data) => setTodayAttendance(toArray<any>(data)))
       .catch(() => {});
     getWorkforceAllocations()
-      .then(setAllAllocs)
+      .then((data) => setAllAllocs(toArray<any>(data)))
       .catch(() => {});
     getPayrollRuns()
       .then((runs) => {
-        const latest = runs[0];
+        const safeRuns = toArray<any>(runs);
+        const latest = safeRuns[0];
         if (!latest) return;
         return getPayrollEntries(latest.id).then((ents) => {
-          const gross = ents.reduce((s, e) => s + e.grossPay, 0);
-          const allowances = ents.reduce((s, e) => s + e.allowances, 0);
-          const deductions = ents.reduce((s, e) => s + e.deductions, 0);
-          const tax = ents.reduce((s, e) => s + e.tax, 0);
+          const safeEntries = toArray<any>(ents);
+          const gross = safeEntries.reduce(
+            (s, e) => s + Number(e.grossPay ?? 0),
+            0,
+          );
+          const allowances = safeEntries.reduce(
+            (s, e) => s + Number(e.allowances ?? 0),
+            0,
+          );
+          const deductions = safeEntries.reduce(
+            (s, e) => s + Number(e.deductions ?? 0),
+            0,
+          );
+          const tax = safeEntries.reduce((s, e) => s + Number(e.tax ?? 0), 0);
           setPayrollSummary([
             { label: "Base Salaries", amount: gross - allowances },
             { label: "Allowances", amount: allowances },
@@ -116,6 +138,7 @@ export function HRDashboardPage() {
   const absentCount = todayAttendance.filter(
     (a) => a.status === "absent",
   ).length;
+  const attendanceTotal = Math.max(todayAttendance.length, 1);
 
   const projectMap = new Map<
     string,
@@ -244,8 +267,7 @@ export function HRDashboardPage() {
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">HR Dashboard</h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            Workforce overview —{" "}
-            {formatDateByGeneralSettings(new Date())}
+            Workforce overview — {formatDateByGeneralSettings(new Date())}
           </p>
         </div>
         <div className="flex gap-2">
@@ -304,19 +326,19 @@ export function HRDashboardPage() {
           <div
             className="bg-green-400 transition-all"
             style={{
-              width: `${(presentCount / todayAttendance.length) * 100}%`,
+              width: `${(presentCount / attendanceTotal) * 100}%`,
             }}
             title="Present"
           />
           <div
             className="bg-amber-400 transition-all"
-            style={{ width: `${(lateCount / todayAttendance.length) * 100}%` }}
+            style={{ width: `${(lateCount / attendanceTotal) * 100}%` }}
             title="Late"
           />
           <div
             className="bg-red-300 transition-all"
             style={{
-              width: `${(absentCount / todayAttendance.length) * 100}%`,
+              width: `${(absentCount / attendanceTotal) * 100}%`,
             }}
             title="Absent"
           />
@@ -350,11 +372,20 @@ export function HRDashboardPage() {
         </div>
         <div className="mt-4 grid grid-cols-4 gap-2">
           {todayAttendance.slice(0, 8).map((a) => {
-            const cfg = attConfig[a.status];
+            const statusKey = String(a?.status ?? "").toLowerCase();
+            const cfg = attConfig[statusKey] ?? defaultAttendanceConfig;
+            const rowClass =
+              statusKey === "present"
+                ? "border-green-100 bg-green-50"
+                : statusKey === "late"
+                  ? "border-amber-100 bg-amber-50"
+                  : statusKey === "absent"
+                    ? "border-red-100 bg-red-50"
+                    : "border-slate-100 bg-slate-50";
             return (
               <div
                 key={a.name}
-                className={`flex items-center gap-2 px-3 py-2 rounded-md border ${a.status === "present" ? "border-green-100 bg-green-50" : a.status === "late" ? "border-amber-100 bg-amber-50" : "border-red-100 bg-red-50"}`}
+                className={`flex items-center gap-2 px-3 py-2 rounded-md border ${rowClass}`}
               >
                 {cfg.icon}
                 <div className="min-w-0">

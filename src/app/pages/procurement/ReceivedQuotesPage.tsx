@@ -238,7 +238,8 @@ function RecordDocModal({
 
   function handleSave() {
     if (!valid) return;
-    const nextId = docType === "quote" ? getNextId("Quote") : getNextId("PurchaseInvoice");
+    const nextId =
+      docType === "quote" ? getNextId("Quote") : getNextId("PurchaseInvoice");
     const selectedStore = stores.find((s) => s.name === destinationStore);
     onSave({
       id: nextId,
@@ -1345,7 +1346,11 @@ export function ReceivedQuotesPage() {
               </tr>
             )}
             {filtered.map((d) => {
-              const cfg = STATUS_CFG[d.status];
+              const cfg = STATUS_CFG[d.status] ?? {
+                badge: "bg-gray-100 text-gray-700",
+                icon: null,
+                label: String(d.status ?? "Unknown"),
+              };
               const isOpen = expanded === d.id;
               return (
                 <>

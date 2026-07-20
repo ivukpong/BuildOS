@@ -750,7 +750,11 @@ export function GoodsReceiptPage() {
       {/* GRN Cards */}
       <div className="space-y-3">
         {filtered.map((grn) => {
-          const cfg = statusConfig[grn.status];
+          const cfg = statusConfig[grn.status] ?? {
+            badge: "bg-gray-100 text-gray-700",
+            icon: null,
+            label: String(grn.status ?? "Unknown"),
+          };
           const isExpanded = expanded === grn.id;
           const hasRejections = grn.items.some((i) => i.rejected > 0);
           return (

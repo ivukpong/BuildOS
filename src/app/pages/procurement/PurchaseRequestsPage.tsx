@@ -678,7 +678,9 @@ export function PurchaseRequestsPage() {
       sortable: true,
       className: "text-right",
       headerClassName: "text-right",
-      render: (pr) => <span className="font-semibold">{fmt(pr.estimatedValue)}</span>,
+      render: (pr) => (
+        <span className="font-semibold">{fmt(pr.estimatedValue)}</span>
+      ),
     },
     {
       key: "raisedDate",
@@ -692,8 +694,17 @@ export function PurchaseRequestsPage() {
       sortable: true,
       filterable: true,
       render: (pr) => {
-        const cfg = PR_STATUS_CFG[pr.status];
-        return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.badge}`}>{cfg.label}</span>;
+        const cfg = PR_STATUS_CFG[pr.status] ?? {
+          badge: "bg-gray-100 text-gray-700",
+          label: String(pr.status ?? "Unknown"),
+        };
+        return (
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full font-medium ${cfg.badge}`}
+          >
+            {cfg.label}
+          </span>
+        );
       },
     },
     {
@@ -705,21 +716,45 @@ export function PurchaseRequestsPage() {
         <div className="flex items-center gap-1">
           {pr.status === "pending_approval" && (
             <>
-              <button onClick={(e) => { e.stopPropagation(); rejectPR(pr.id); }}
-                className="px-2 py-1 text-xs border border-red-200 text-red-700 rounded hover:bg-red-50">Reject</button>
-              <button onClick={(e) => { e.stopPropagation(); approvePR(pr.id); }}
-                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700">Approve</button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  rejectPR(pr.id);
+                }}
+                className="px-2 py-1 text-xs border border-red-200 text-red-700 rounded hover:bg-red-50"
+              >
+                Reject
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  approvePR(pr.id);
+                }}
+                className="px-2 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Approve
+              </button>
             </>
           )}
           {pr.status === "approved" && (
-            <button onClick={(e) => { e.stopPropagation(); setSendFor(pr); }}
-              className="px-2 py-1 text-xs bg-blue-700 text-white rounded hover:bg-blue-800 flex items-center gap-1">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setSendFor(pr);
+              }}
+              className="px-2 py-1 text-xs bg-blue-700 text-white rounded hover:bg-blue-800 flex items-center gap-1"
+            >
               <Send className="w-3 h-3" /> Send
             </button>
           )}
-          {(pr.status === "quotes_received" || pr.status === "sent_to_suppliers") && (
-            <button onClick={(e) => { e.stopPropagation(); }}
-              className="px-2 py-1 text-xs bg-purple-700 text-white rounded hover:bg-purple-800 flex items-center gap-1">
+          {(pr.status === "quotes_received" ||
+            pr.status === "sent_to_suppliers") && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+              }}
+              className="px-2 py-1 text-xs bg-purple-700 text-white rounded hover:bg-purple-800 flex items-center gap-1"
+            >
               <ShoppingCart className="w-3 h-3" /> PO
             </button>
           )}
@@ -729,13 +764,35 @@ export function PurchaseRequestsPage() {
   ];
 
   function approvePR(id: string) {
-    setPrList((prev) => prev.map((pr) => pr.id === id ? { ...pr, status: "approved" as PRStatus } : pr));
-    logChange({ module: "procurement", action: "approved", entityType: "purchase_request", entityId: id, summary: `Approved PR ${id}`, performedBy: "Amaka Osei" });
+    setPrList((prev) =>
+      prev.map((pr) =>
+        pr.id === id ? { ...pr, status: "approved" as PRStatus } : pr,
+      ),
+    );
+    logChange({
+      module: "procurement",
+      action: "approved",
+      entityType: "purchase_request",
+      entityId: id,
+      summary: `Approved PR ${id}`,
+      performedBy: "Amaka Osei",
+    });
   }
 
   function rejectPR(id: string) {
-    setPrList((prev) => prev.map((pr) => pr.id === id ? { ...pr, status: "cancelled" as PRStatus } : pr));
-    logChange({ module: "procurement", action: "rejected", entityType: "purchase_request", entityId: id, summary: `Rejected PR ${id}`, performedBy: "Amaka Osei" });
+    setPrList((prev) =>
+      prev.map((pr) =>
+        pr.id === id ? { ...pr, status: "cancelled" as PRStatus } : pr,
+      ),
+    );
+    logChange({
+      module: "procurement",
+      action: "rejected",
+      entityType: "purchase_request",
+      entityId: id,
+      summary: `Rejected PR ${id}`,
+      performedBy: "Amaka Osei",
+    });
   }
 
   function sendToSuppliers(id: string) {
@@ -755,13 +812,29 @@ export function PurchaseRequestsPage() {
             },
       ),
     );
-    logChange({ module: "procurement", action: "sent_to_suppliers", entityType: "purchase_request", entityId: id, summary: `Sent PR ${id} to suppliers`, performedBy: "Amaka Osei" });
+    logChange({
+      module: "procurement",
+      action: "sent_to_suppliers",
+      entityType: "purchase_request",
+      entityId: id,
+      summary: `Sent PR ${id} to suppliers`,
+      performedBy: "Amaka Osei",
+    });
   }
 
   function handleExport() {
-    exportCSV("purchase-requests",
-      ["PR ID", "Title / Description", "Requester", "Department", "Total", "Date", "Status"],
-      filtered.map(pr => [
+    exportCSV(
+      "purchase-requests",
+      [
+        "PR ID",
+        "Title / Description",
+        "Requester",
+        "Department",
+        "Total",
+        "Date",
+        "Status",
+      ],
+      filtered.map((pr) => [
         pr.id,
         pr.project,
         pr.raisedBy,
@@ -776,7 +849,14 @@ export function PurchaseRequestsPage() {
   function handleCreatePR(pr: PurchaseRequest) {
     setPrList((prev) => [pr, ...prev]);
     setShowNewPR(false);
-    logChange({ module: "procurement", action: "created", entityType: "purchase_request", entityId: pr.id, summary: `Created PR ${pr.id} for ${pr.project}`, performedBy: "Amaka Osei" });
+    logChange({
+      module: "procurement",
+      action: "created",
+      entityType: "purchase_request",
+      entityId: pr.id,
+      summary: `Created PR ${pr.id} for ${pr.project}`,
+      performedBy: "Amaka Osei",
+    });
   }
 
   if (loading)
@@ -832,8 +912,16 @@ export function PurchaseRequestsPage() {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <AdvancedFilter fields={PR_FILTER_FIELDS} filters={advFilters} onFiltersChange={setAdvFilters} sort={advSort} onSortChange={setAdvSort} />
-        <span className="text-xs text-gray-400">{filtered.length} result{filtered.length !== 1 ? "s" : ""}</span>
+        <AdvancedFilter
+          fields={PR_FILTER_FIELDS}
+          filters={advFilters}
+          onFiltersChange={setAdvFilters}
+          sort={advSort}
+          onSortChange={setAdvSort}
+        />
+        <span className="text-xs text-gray-400">
+          {filtered.length} result{filtered.length !== 1 ? "s" : ""}
+        </span>
       </div>
 
       <DataTable<PurchaseRequest>
@@ -841,9 +929,17 @@ export function PurchaseRequestsPage() {
         data={filtered}
         keyExtractor={(pr) => pr.id}
         searchPlaceholder="Search PRs, projects, references…"
-        searchFields={[(pr) => pr.id, (pr) => pr.project, (pr) => pr.raisedBy, (pr) => pr.materialRequestRef]}
+        searchFields={[
+          (pr) => pr.id,
+          (pr) => pr.project,
+          (pr) => pr.raisedBy,
+          (pr) => pr.materialRequestRef,
+        ]}
         headerExtra={
-          <button onClick={handleExport} className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-100">
+          <button
+            onClick={handleExport}
+            className="flex items-center gap-1 text-xs text-gray-600 hover:text-gray-800 px-2 py-1 rounded-lg border border-gray-200 hover:bg-gray-100"
+          >
             <Download className="w-3 h-3" /> Export
           </button>
         }

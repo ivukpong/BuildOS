@@ -199,7 +199,8 @@ function NewPostingModal({
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-600 mb-1">
-                Amount ({getCurrencySymbol()}) <span className="text-red-500">*</span>
+                Amount ({getCurrencySymbol()}){" "}
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -490,7 +491,11 @@ export function ScheduledPostingPage() {
       {/* Cards */}
       <div className="space-y-3">
         {filtered.map((p) => {
-          const cfg = STATUS_CFG[p.status];
+          const cfg = STATUS_CFG[p.status] ?? {
+            badge: "bg-gray-100 text-gray-700",
+            icon: null,
+            label: String(p.status ?? "Unknown"),
+          };
           return (
             <div
               key={p.id}

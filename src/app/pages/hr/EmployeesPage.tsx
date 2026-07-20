@@ -549,7 +549,11 @@ export function EmployeesPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((emp) => {
-              const cfg = statusConfig[emp.status as EmpStatus];
+              const cfg = statusConfig[emp.status as EmpStatus] ?? {
+                badge: "bg-gray-100 text-gray-700",
+                icon: <Clock className="w-3.5 h-3.5 text-gray-500" />,
+                label: String(emp.status ?? "Unknown"),
+              };
               return (
                 <tr
                   key={emp.id}

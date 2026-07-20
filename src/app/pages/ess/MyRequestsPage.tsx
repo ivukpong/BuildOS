@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router";
 import { getPurchaseRequests } from "../../api/procurement-requests";
+import { getMaterialRequests } from "../../api/materials";
+import { fetchExpenses } from "../../api/expenses";
+import { fetchLeaveRequests } from "../../api/leave-requests";
+import { useAuthUser } from "../../utils/useAuthUser";
 import {
   Clock,
   CheckCircle,
@@ -123,6 +127,19 @@ interface Request {
   approvalHistory: ApprovalHistoryEntry[];
 }
 
+function toReqStatus(status: string | undefined): ReqStatus {
+  const raw = (status ?? "").trim().toLowerCase();
+  if (["approved", "approve", "completed", "done", "paid"].includes(raw)) {
+    return "approved";
+  }
+  if (
+    ["rejected", "reject", "declined", "cancelled", "canceled"].includes(raw)
+  ) {
+    return "rejected";
+  }
+  return "pending";
+}
+
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const statusConfig: Record<
@@ -173,6 +190,7 @@ const typeConfig: Record<ReqType, { icon: React.ReactNode; badge: string }> = {
 
 export function MyRequestsPage() {
   const navigate = useNavigate();
+  const authUser = useAuthUser();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<ReqStatus | "all">("all");
   const [typeFilter, setTypeFilter] = useState<ReqType | "all">("all");
@@ -180,27 +198,140 @@ export function MyRequestsPage() {
   const [myRequests, setMyRequests] = useState<Request[]>([]);
 
   useEffect(() => {
-    getPurchaseRequests()
-      .then((data) =>
-        setMyRequests(
-          data.map((pr) => ({
-            id: pr.prRef || pr.id,
-            type: "Material Request" as ReqType,
-            title: pr.title,
-            project: pr.projectName || "—",
-            date: pr.createdAt?.slice(0, 10) || "",
-            status: (pr.status?.toLowerCase() || "pending") as ReqStatus,
-            items: (pr.items || []).map((i: any) => ({
-              name: i.name || i.description || String(i),
-              qty: i.quantity != null ? String(i.quantity) : undefined,
-            })),
-            comments: pr.notes || "",
-            approvalHistory: [],
+    Promise.allSettled([
+      getPurchaseRequests(),
+      getMaterialRequests(),
+      fetchExpenses(),
+      fetchLeaveRequests(),
+    ])
+      .then((results) => {
+        const purchaseRequests =
+          results[0].status === "fulfilled" && Array.isArray(results[0].value)
+            ? results[0].value
+            : [];
+        const materialRequests =
+          results[1].status === "fulfilled" && Array.isArray(results[1].value)
+            ? results[1].value
+            : [];
+        const expenses =
+          results[2].status === "fulfilled" && Array.isArray(results[2].value)
+            ? results[2].value
+            : [];
+        const leaves =
+          results[3].status === "fulfilled" && Array.isArray(results[3].value)
+            ? results[3].value
+            : [];
+
+        const byKey = `${(authUser.name || authUser.email || "").trim().toLowerCase()}`;
+
+        const mappedPurchase: Request[] = purchaseRequests.map((pr) => ({
+          id: pr.prRef || pr.id,
+          type: "Material Request",
+          title: pr.title || "Purchase request",
+          project: pr.projectName || "—",
+          date: pr.createdAt?.slice(0, 10) || "",
+          status: toReqStatus(pr.status),
+          items: (pr.items || []).map((i: any) => ({
+            name: i.name || i.description || String(i),
+            qty: i.quantity != null ? String(i.quantity) : undefined,
           })),
-        ),
-      )
-      .catch(() => {});
-  }, []);
+          comments: pr.notes || "",
+          approvalHistory: [],
+        }));
+
+        const mappedMaterial: Request[] = materialRequests
+          .filter((mr) => {
+            if (!byKey) return true;
+            return (
+              String(mr.requestedBy || "")
+                .trim()
+                .toLowerCase() === byKey
+            );
+          })
+          .map((mr) => ({
+            id: mr.reference || mr.id,
+            type: "Material Request",
+            title: mr.materialName || "Material request",
+            project: mr.projectName || "—",
+            date: mr.requestDate?.slice(0, 10) || "",
+            status: toReqStatus(mr.status),
+            items: [
+              {
+                name: mr.materialName || "Material",
+                qty:
+                  mr.qty != null
+                    ? `${mr.qty} ${mr.unit || ""}`.trim()
+                    : undefined,
+              },
+            ],
+            comments: mr.purpose || mr.notes || "",
+            approvalHistory: [],
+          }));
+
+        const mappedExpenses: Request[] = expenses
+          .filter((exp: any) => {
+            if (!byKey) return true;
+            return (
+              String(exp.createdBy || "")
+                .trim()
+                .toLowerCase() === byKey
+            );
+          })
+          .map((exp: any) => ({
+            id: exp.id,
+            type: "Expense Request",
+            title: exp.description || "Expense request",
+            project: exp.project || "—",
+            date: exp.date || "",
+            status: toReqStatus(exp.status),
+            items: [
+              {
+                name: exp.category || "Expense",
+                amount: exp.amount != null ? String(exp.amount) : undefined,
+              },
+            ],
+            comments: exp.description || "",
+            approvalHistory: [],
+          }));
+
+        const mappedLeaves: Request[] = leaves
+          .filter((lv: any) => {
+            if (!byKey) return true;
+            return String(lv.employee || "")
+              .trim()
+              .toLowerCase()
+              .includes(byKey);
+          })
+          .map((lv: any) => ({
+            id: lv.refId || lv.id,
+            type: "Leave Request",
+            title: lv.leaveType || "Leave request",
+            project: lv.department || "HR",
+            date: lv.submittedAt || lv.startDate || "",
+            status: toReqStatus(lv.status),
+            items: [
+              {
+                name: `${lv.startDate || ""} - ${lv.endDate || ""}`.trim(),
+                qty: lv.days != null ? `${lv.days} day(s)` : undefined,
+              },
+            ],
+            comments: lv.notes || "",
+            approvalHistory: [],
+          }));
+
+        const merged = [
+          ...mappedMaterial,
+          ...mappedPurchase,
+          ...mappedExpenses,
+          ...mappedLeaves,
+        ].sort((a, b) => b.date.localeCompare(a.date));
+
+        setMyRequests(merged);
+      })
+      .catch(() => {
+        setMyRequests([]);
+      });
+  }, [authUser.email, authUser.name]);
 
   const filtered = myRequests.filter((r) => {
     const matchSearch =

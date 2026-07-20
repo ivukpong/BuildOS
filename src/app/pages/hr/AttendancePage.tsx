@@ -19,8 +19,15 @@ import {
 } from "lucide-react";
 import { exportCSV } from "../../utils/exportCSV";
 
-type AttStatus = "present" | "absent" | "late" | "half_day" | "leave" | "unmarked";
-const VALID_MARKED_STATUSES = ["present", "absent", "late", "half_day", "leave"] as const;
+type AttStatus =
+  "present" | "absent" | "late" | "half_day" | "leave" | "unmarked";
+const VALID_MARKED_STATUSES = [
+  "present",
+  "absent",
+  "late",
+  "half_day",
+  "leave",
+] as const;
 
 interface AttRecord {
   id: string;
@@ -187,9 +194,13 @@ export function AttendancePage() {
   }
 
   function markSelected(status: AttStatus) {
-    records.filter((r) => selected.has(r.id)).forEach((r) => persistStatus(r, status));
+    records
+      .filter((r) => selected.has(r.id))
+      .forEach((r) => persistStatus(r, status));
     setSelected(new Set());
-    toast.success(`Marked ${selected.size} employee${selected.size === 1 ? "" : "s"} as ${statusConfig[status].label}`);
+    toast.success(
+      `Marked ${selected.size} employee${selected.size === 1 ? "" : "s"} as ${statusConfig[status].label}`,
+    );
   }
 
   function markOne(id: string, status: AttStatus) {
@@ -435,7 +446,12 @@ export function AttendancePage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((rec) => {
-              const cfg = statusConfig[rec.status];
+              const cfg = statusConfig[rec.status] ?? {
+                badge: "bg-gray-100 text-gray-700",
+                rowColor: "",
+                icon: <Clock className="w-3.5 h-3.5 text-gray-500" />,
+                label: String(rec.status ?? "Unknown"),
+              };
               return (
                 <tr
                   key={rec.id}

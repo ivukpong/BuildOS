@@ -289,7 +289,11 @@ export function AttendanceLogsPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {paginated.map((log) => {
-              const cfg = statusConfig[log.status];
+              const cfg = statusConfig[log.status] ?? {
+                badge: "bg-gray-100 text-gray-700",
+                icon: <Clock className="w-3.5 h-3.5 text-gray-500" />,
+                label: String(log.status ?? "Unknown"),
+              };
               return (
                 <tr key={log.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3">

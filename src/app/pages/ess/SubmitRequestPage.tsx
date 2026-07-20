@@ -31,6 +31,7 @@ import { useHRConfig } from "../../store/hrConfig";
 import { createExpense } from "../../api/expenses";
 import { createLeaveRequest } from "../../api/leave-requests";
 import { createMaterialRequest } from "../../api/materials";
+import { fetchProjects } from "../../api/projects";
 import { useAuthUser } from "../../utils/useAuthUser";
 
 // Shared material catalogue with stock status — mirrors Storefront inventory
@@ -178,12 +179,6 @@ type Tab = "material" | "finance" | "leave" | "issue" | "change";
 // ─── Shared Attachments Component ────────────────────────────────────────────
 // (moved to src/app/components/AttachmentsSection.tsx)
 
-const projects = [
-  "Downtown Office Complex",
-  "Riverside Residential",
-  "Harbour Bridge Expansion",
-];
-
 const priorities = [
   { value: "low", label: "Low", color: "text-green-700 bg-green-50" },
   { value: "medium", label: "Medium", color: "text-yellow-700 bg-yellow-50" },
@@ -233,7 +228,7 @@ function SuccessCard({
           Submit Another
         </button>
         <button
-          onClick={() => navigate("/apps/ess")}
+          onClick={() => navigate("/apps/ess/requests")}
           className="px-4 py-2 bg-teal-600 text-white rounded-md text-sm hover:bg-teal-700"
         >
           View My Requests
@@ -434,7 +429,13 @@ function MaterialCreationForm({
 }
 
 // ─── Material Form (Normal & Out-of-Stock path) ───────────────────────────────
-function MaterialForm({ onSuccess }: { onSuccess: (id: string) => void }) {
+function MaterialForm({
+  onSuccess,
+  projects,
+}: {
+  onSuccess: (id: string) => void;
+  projects: string[];
+}) {
   const authUser = useAuthUser();
   const [requestKind, setRequestKind] = useState<"material" | "service">(
     "material",
@@ -720,7 +721,7 @@ function MaterialForm({ onSuccess }: { onSuccess: (id: string) => void }) {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Needed By<span className="text-red-500">*</span>
+                    Due date<span className="text-red-500">*</span>
                   </label>
                   <input
                     value={formState.neededDate}
@@ -865,7 +866,7 @@ function MaterialForm({ onSuccess }: { onSuccess: (id: string) => void }) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Required By<span className="text-red-500">*</span>
+                Due date<span className="text-red-500">*</span>
               </label>
               <input
                 value={formState.serviceDate}
@@ -882,7 +883,9 @@ function MaterialForm({ onSuccess }: { onSuccess: (id: string) => void }) {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Estimated Cost{" "}
-                <span className="text-gray-400 font-normal">({getCurrencySymbol()})</span>
+                <span className="text-gray-400 font-normal">
+                  ({getCurrencySymbol()})
+                </span>
               </label>
               <input
                 value={formState.estimatedCost}
@@ -924,7 +927,13 @@ function MaterialForm({ onSuccess }: { onSuccess: (id: string) => void }) {
   );
 }
 
-function ExpenseForm({ onSuccess }: { onSuccess: (id: string) => void }) {
+function ExpenseForm({
+  onSuccess,
+  projects,
+}: {
+  onSuccess: (id: string) => void;
+  projects: string[];
+}) {
   const authUser = useAuthUser();
   const [formState, setFormState] = useState({
     project: "",
@@ -1306,10 +1315,29 @@ function LeaveForm({ onSuccess }: { onSuccess: (id: string) => void }) {
 export function SubmitRequestPage() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<Tab>("material");
+  const [projectOptions, setProjectOptions] = useState<string[]>([]);
   const [successState, setSuccessState] = useState<{
     type: string;
     id: string;
   } | null>(null);
+
+  useEffect(() => {
+    fetchProjects()
+      .then((data) => {
+        const names = Array.isArray(data)
+          ? data
+              .map((p) => p?.name)
+              .filter(
+                (name): name is string =>
+                  typeof name === "string" && name.trim().length > 0,
+              )
+          : [];
+        setProjectOptions(names);
+      })
+      .catch(() => {
+        setProjectOptions([]);
+      });
+  }, []);
 
   if (successState) {
     const tabKey =
@@ -1340,7 +1368,7 @@ export function SubmitRequestPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate("/apps/ess")}
+          onClick={() => navigate("/apps/ess/requests")}
           className="text-gray-400 hover:text-gray-600 transition-colors"
         >
           <ArrowLeft className="w-5 h-5" />
@@ -1417,6 +1445,7 @@ export function SubmitRequestPage() {
           <div className="p-6">
             {tab === "material" && (
               <MaterialForm
+                projects={projectOptions}
                 onSuccess={(id) =>
                   setSuccessState({ type: "Material Request", id })
                 }
@@ -1424,6 +1453,7 @@ export function SubmitRequestPage() {
             )}
             {tab === "finance" && (
               <ExpenseForm
+                projects={projectOptions}
                 onSuccess={(id) =>
                   setSuccessState({ type: "Finance Request", id })
                 }

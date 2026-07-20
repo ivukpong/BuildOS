@@ -292,7 +292,11 @@ export function StockLevelsPage() {
           <tbody className="divide-y divide-gray-100">
             {filtered.map((item) => {
               const status = getStatus(item);
-              const cfg = statusConfig[status];
+              const cfg = statusConfig[status] ?? {
+                badge: "bg-gray-100 text-gray-700",
+                dot: "bg-gray-400",
+                label: String(status ?? "Unknown"),
+              };
               const pct =
                 item.max > 0
                   ? Math.min((item.current / item.max) * 100, 100)
@@ -425,7 +429,8 @@ export function StockLevelsPage() {
                 <p className="text-xs text-gray-400 mt-1.5">
                   Current:{" "}
                   <strong>
-                    {formatNumberByGeneralSettings(adjustModal.current)} {adjustModal.unit}
+                    {formatNumberByGeneralSettings(adjustModal.current)}{" "}
+                    {adjustModal.unit}
                   </strong>
                 </p>
               </div>

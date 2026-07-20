@@ -595,7 +595,11 @@ function UserDetailPanel({
                     badge: "bg-red-100 text-red-700",
                     label: "Rejected",
                   },
-                }[r.type];
+                }[r.type] ?? {
+                  icon: <Clock className="w-4 h-4 text-gray-500" />,
+                  badge: "bg-gray-100 text-gray-700",
+                  label: String(r.type ?? "Unknown"),
+                };
                 return (
                   <div
                     key={i}

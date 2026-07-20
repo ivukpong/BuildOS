@@ -31,11 +31,7 @@ import { useNumbering } from "../../stores/numberingStore";
 import { getReferenceData } from "../../api/reference-data";
 
 type ReqStatus =
-  | "pending"
-  | "approved"
-  | "rejected"
-  | "in_procurement"
-  | "fulfilled";
+  "pending" | "approved" | "rejected" | "in_procurement" | "fulfilled";
 
 type LocalMR = {
   id: string;
@@ -797,7 +793,11 @@ export function MaterialRequestsPage() {
       {/* Cards */}
       <div className="space-y-3">
         {filtered.map((req) => {
-          const cfg = statusConfig[req.status];
+          const cfg = statusConfig[req.status] ?? {
+            badge: "bg-gray-100 text-gray-700",
+            icon: null,
+            label: String(req.status ?? "Unknown"),
+          };
           const isExpanded = expanded === req.id;
           return (
             <div
@@ -924,7 +924,8 @@ export function MaterialRequestsPage() {
                                 {item.material}
                               </td>
                               <td className="px-3 py-2 text-right font-semibold text-gray-900">
-                                {formatNumberByGeneralSettings(item.qty)} {item.unit}
+                                {formatNumberByGeneralSettings(item.qty)}{" "}
+                                {item.unit}
                               </td>
                               <td className="px-3 py-2 text-right">
                                 <span
@@ -936,7 +937,10 @@ export function MaterialRequestsPage() {
                                         : "text-red-600 font-medium"
                                   }
                                 >
-                                  {formatNumberByGeneralSettings(item.available)} {item.unit}
+                                  {formatNumberByGeneralSettings(
+                                    item.available,
+                                  )}{" "}
+                                  {item.unit}
                                 </span>
                               </td>
                               <td className="px-3 py-2 text-xs text-gray-500">

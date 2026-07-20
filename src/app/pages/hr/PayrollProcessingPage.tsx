@@ -96,8 +96,7 @@ export function PayrollProcessingPage() {
   const totalDed = included.reduce((s, e) => s + e.deductions, 0);
   const totalNet = included.reduce((s, e) => s + e.netPay, 0);
 
-  const now = () =>
-    formatTimeByGeneralSettings(new Date()) + " — Apr 10, 2026";
+  const now = () => formatTimeByGeneralSettings(new Date()) + " — Apr 10, 2026";
 
   function advanceStage(to: ApprovalStage) {
     setApprovalStage(to);
@@ -439,7 +438,11 @@ export function PayrollProcessingPage() {
           </thead>
           <tbody className="divide-y divide-gray-50">
             {entries.map((emp) => {
-              const cfg = statusConfig[emp.status];
+              const cfg = statusConfig[emp.status] ?? {
+                badge: "bg-gray-100 text-gray-700",
+                icon: <Clock className="w-3.5 h-3.5 text-gray-500" />,
+                label: String(emp.status ?? "Unknown"),
+              };
               return (
                 <tr
                   key={emp.id}
